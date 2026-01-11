@@ -1,0 +1,35 @@
+
+@plugin "daisyui/theme" {
+  name: "PassportCard";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: #ffffff;
+  --color-base-200: #f5f4f2;
+  --color-base-300: #eeede9;
+  --color-base-content: #1d1c1d;
+  --color-primary: #e10514;
+  --color-primary-content: #ffffff;
+  --color-secondary: #ad0f0f;
+  --color-secondary-content: #ffffff;
+  --color-accent: #2246fc;
+  --color-accent-content: #ffffff;
+  --color-neutral: #e10514;
+  --color-neutral-content: #ffffff;
+  --color-info: #cdedf7;
+  --color-info-content: #050c6f;
+  --color-success: #d5f4c4;
+  --color-success-content: #0b5a14;
+  --color-warning: #f7e8c4;
+  --color-warning-content: #8e6119;
+  --color-error: #ad0f0f;
+  --color-error-content: #ffffff;
+  --radius-selector: 2rem;
+  --radius-field: 2rem;
+  --radius-box: 2rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.28125rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
