@@ -1,0 +1,72 @@
+/**
+ * PassportCard Theme - Additional Brand Utilities
+ * Extends DaisyUI theme with PassportCard-specific utilities
+ */
+
+/* Font Family Utilities */
+.font-english {
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.font-hebrew {
+  font-family: 'Rubik', system-ui, sans-serif;
+  direction: rtl;
+}
+
+/* Brand-specific utility classes */
+.text-brand {
+  color: #E10514;
+}
+
+.bg-brand {
+  background-color: #E10514;
+}
+
+.border-brand {
+  border-color: #E10514;
+}
+
+/* Focus ring using brand color */
+.focus-brand:focus {
+  outline: 2px solid #E10514;
+  outline-offset: 2px;
+}
+
+/* Hover state utilities */
+.hover-brand:hover {
+  background-color: #AD0F0F;
+}
+
+/* PassportCard gradient (for special elements) */
+.gradient-brand {
+  background: linear-gradient(135deg, #E10514 0%, #AD0F0F 100%);
+}
+
+/* Ensure consistent body styling */
+body {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* RTL support for Hebrew content */
+[dir="rtl"],
+.rtl {
+  font-family: 'Rubik', system-ui, sans-serif;
+  direction: rtl;
+}
+
+/* Smooth transitions for interactive elements */
+.transition-brand {
+  transition: all 0.15s ease-in-out;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}

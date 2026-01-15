@@ -1,0 +1,116 @@
+# generated: 2026-01-13
+# project: IdeaSpark
+# project_key: ideaspark
+# tracking_system: file-system
+# story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-01-13
+project: IdeaSpark
+project_key: ideaspark
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+development_status:
+  # Epic 1: Project Foundation & User Authentication
+  epic-1: in-progress
+  1-1-initialize-project-with-vite-and-core-dependencies: review
+  1-2-configure-passportcard-daisyui-theme: review
+  1-3-set-up-supabase-project-and-database-schema: review
+  1-4-user-registration-flow: review
+  1-5-user-login-flow: review
+  1-6-user-logout-and-session-management: ready-for-dev
+  1-7-password-reset-flow: ready-for-dev
+  1-8-protected-routes-and-role-based-access: ready-for-dev
+  1-9-application-shell-and-navigation: ready-for-dev
+  1-10-deploy-to-vercel: ready-for-dev
+  epic-1-retrospective: optional
+
+  # Epic 2: Idea Submission with AI Enhancement
+  epic-2: in-progress
+  2-1-create-ideas-database-table-and-service-layer: ready-for-dev
+  2-2-idea-wizard-step-1-problem-definition: backlog
+  2-3-idea-wizard-step-2-solution-description: backlog
+  2-4-idea-wizard-step-3-impact-assessment: backlog
+  2-5-idea-wizard-step-4-review-and-ai-enhancement: backlog
+  2-6-gemini-edge-function-for-idea-enhancement: backlog
+  2-7-submit-idea-and-save-to-database: backlog
+  2-8-my-ideas-list-view: backlog
+  2-9-idea-detail-view: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: AI-Powered PRD Development
+  epic-3: backlog
+  3-1-create-prd-database-tables-and-service-layer: backlog
+  3-2-prd-builder-page-layout: backlog
+  3-3-gemini-edge-function-for-prd-chat: backlog
+  3-4-chat-interface-with-ai-assistant: backlog
+  3-5-real-time-prd-section-generation: backlog
+  3-6-prd-auto-save-functionality: backlog
+  3-7-prd-section-structure-and-content: backlog
+  3-8-mark-prd-as-complete: backlog
+  3-9-view-completed-prd: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Prototype Generation & Refinement
+  epic-4: backlog
+  4-1-create-prototypes-database-table-and-service-layer: backlog
+  4-2-open-lovable-edge-function-for-prototype-generation: backlog
+  4-3-trigger-prototype-generation-from-completed-prd: backlog
+  4-4-prototype-viewer-with-responsive-preview: backlog
+  4-5-chat-based-prototype-refinement: backlog
+  4-6-prototype-refinement-history: backlog
+  4-7-shareable-prototype-urls: backlog
+  4-8-prototype-status-integration-with-idea: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Admin Pipeline & Triage Workflow
+  epic-5: backlog
+  5-1-admin-dashboard-layout: backlog
+  5-2-all-ideas-list-with-filtering-and-sorting: backlog
+  5-3-idea-pipeline-kanban-view: backlog
+  5-4-approve-idea-for-prd-development: backlog
+  5-5-reject-idea-with-feedback: backlog
+  5-6-view-any-users-idea-prd-and-prototype: backlog
+  5-7-user-list-and-activity-overview: backlog
+  5-8-real-time-dashboard-updates: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Analytics & Innovation Metrics
+  epic-6: backlog
+  6-1-analytics-dashboard-layout: backlog
+  6-2-total-ideas-submitted-metric: backlog
+  6-3-pipeline-stage-breakdown-chart: backlog
+  6-4-completion-rates-metrics: backlog
+  6-5-time-to-decision-metrics: backlog
+  6-6-user-activity-overview: backlog
+  6-7-date-range-filtering-for-analytics: backlog
+  epic-6-retrospective: optional

@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Library Comparison - Choose One for IdeaSpark</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icon Libraries CDNs -->
+    <!-- 1. Heroicons (via inline SVG) -->
+    
+    <!-- 2. Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- 3. Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <!-- 4. Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- 5. Tabler Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <!-- 6. Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- 7. Remix Icon -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <!-- 8. Iconoir -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/iconoir-icons/iconoir@main/css/iconoir.css">
+    
+    <!-- 9. Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Round" rel="stylesheet">
+    
+    <!-- 10. Font Awesome Free -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        :root {
+            --color-primary: #E10514;
+            --color-base-100: #FFFFFF;
+            --color-base-200: #F5F4F2;
+            --color-base-300: #EEEDE9;
+            --color-base-content: #1D1C1D;
+            --shadow-card: 0px 4px 20px 0px rgba(29, 28, 29, 0.15);
+            --radius: 1.25rem;
+        }
+        
+        body {
+            font-family: 'Montserrat', system-ui, sans-serif;
+            background-color: var(--color-base-200);
+            color: var(--color-base-content);
+        }
+        
+        .card {
+            background-color: var(--color-base-100);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-card);
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1rem;
+        }
+        
+        .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .icon-item:hover {
+            background-color: var(--color-base-200);
+        }
+        
+        .icon-item i, .icon-item span.material-icons, .icon-item span.material-icons-outlined, .icon-item span.material-icons-round {
+            font-size: 24px;
+            color: var(--color-base-content);
+        }
+        
+        .icon-item svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--color-base-content);
+        }
+        
+        .icon-label {
+            font-size: 0.75rem;
+            color: #525355;
+            text-align: center;
+        }
+        
+        .library-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            background-color: var(--color-primary);
+            color: white;
+            border-radius: 50%;
+            font-weight: 600;
+            margin-right: 0.75rem;
+        }
+        
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .pros li::before {
+            content: "✅ ";
+        }
+        
+        .cons li::before {
+            content: "⚠️ ";
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background-color: var(--color-base-200);
+            border-radius: 99px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+        
+        .tag-recommended {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+    </style>
+</head>
+<body class="p-8">
+    
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-4xl font-semibold mb-2">Icon Library Comparison</h1>
+        <p class="text-lg opacity-70 mb-8">Choose one icon library for IdeaSpark. All are free and open source.</p>
+        
+        <!-- 1. Heroicons -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">1</span>
+                <h2 class="text-2xl font-semibold">Heroicons</h2>
+                <span class="tag tag-recommended ml-4">Recommended for Tailwind</span>
+            </div>
+            <p class="mb-4 opacity-80">By the makers of Tailwind CSS. Beautiful hand-crafted SVG icons.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>Perfect Tailwind integration</li>
+                    <li>292+ icons, 2 styles (outline/solid)</li>
+                    <li>React components available</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>Smaller icon set</li>
+                    <li>Requires copy-paste or npm</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://heroicons.com" target="_blank" class="text-blue-600 underline">heroicons.com</a></p>
+        </div>
+        
+        <!-- 2. Lucide -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">2</span>
+                <h2 class="text-2xl font-semibold">Lucide Icons</h2>
+                <span class="tag tag-recommended ml-4">Recommended</span>
+            </div>
+            <p class="mb-4 opacity-80">Fork of Feather Icons with more icons and active development.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <i data-lucide="home"></i>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <i data-lucide="plus"></i>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <i data-lucide="search"></i>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <i data-lucide="settings"></i>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <i data-lucide="user"></i>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <i data-lucide="check-circle"></i>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>1400+ icons</li>
+                    <li>Active development</li>
+                    <li>React/Vue/Svelte packages</li>
+                    <li>Consistent stroke width</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>Only outline style</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://lucide.dev" target="_blank" class="text-blue-600 underline">lucide.dev</a></p>
+        </div>
+        
+        <!-- 3. Feather Icons -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">3</span>
+                <h2 class="text-2xl font-semibold">Feather Icons</h2>
+            </div>
+            <p class="mb-4 opacity-80">Simply beautiful open source icons. Clean and minimal.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <i data-feather="home"></i>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <i data-feather="plus"></i>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <i data-feather="search"></i>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <i data-feather="settings"></i>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <i data-feather="user"></i>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <i data-feather="check-circle"></i>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>287 icons</li>
+                    <li>Very clean design</li>
+                    <li>Easy to use</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>No longer maintained</li>
+                    <li>Limited icon set</li>
+                    <li>Only outline style</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://feathericons.com" target="_blank" class="text-blue-600 underline">feathericons.com</a></p>
+        </div>
+        
+        <!-- 4. Phosphor Icons -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">4</span>
+                <h2 class="text-2xl font-semibold">Phosphor Icons</h2>
+                <span class="tag tag-recommended ml-4">Most Versatile</span>
+            </div>
+            <p class="mb-4 opacity-80">Flexible icon family with 6 weights for React, Vue, and more.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <i class="ph ph-house"></i>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ph ph-plus"></i>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ph ph-gear"></i>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ph ph-user"></i>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ph ph-check-circle"></i>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>9000+ icons</li>
+                    <li>6 weights (thin, light, regular, bold, fill, duotone)</li>
+                    <li>React/Vue packages</li>
+                    <li>Very active development</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>Larger file size</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://phosphoricons.com" target="_blank" class="text-blue-600 underline">phosphoricons.com</a></p>
+        </div>
+        
+        <!-- 5. Tabler Icons -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">5</span>
+                <h2 class="text-2xl font-semibold">Tabler Icons</h2>
+                <span class="tag tag-recommended ml-4">Largest Free Set</span>
+            </div>
+            <p class="mb-4 opacity-80">Over 4950 free MIT-licensed high-quality SVG icons.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <i class="ti ti-home"></i>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ti ti-plus"></i>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ti ti-search"></i>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ti ti-settings"></i>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ti ti-user"></i>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ti ti-circle-check"></i>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>4950+ icons (largest free set)</li>
+                    <li>Consistent 24x24 grid</li>
+                    <li>2px stroke width</li>
+                    <li>React/Vue/Svelte packages</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>Only outline style</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://tabler-icons.io" target="_blank" class="text-blue-600 underline">tabler-icons.io</a></p>
+        </div>
+        
+        <!-- 6. Bootstrap Icons -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">6</span>
+                <h2 class="text-2xl font-semibold">Bootstrap Icons</h2>
+            </div>
+            <p class="mb-4 opacity-80">Official open source SVG icon library for Bootstrap.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <i class="bi bi-house"></i>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <i class="bi bi-plus-lg"></i>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <i class="bi bi-search"></i>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <i class="bi bi-gear"></i>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <i class="bi bi-person"></i>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <i class="bi bi-check-circle"></i>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>1800+ icons</li>
+                    <li>Outline and filled variants</li>
+                    <li>Good documentation</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>Bootstrap-focused naming</li>
+                    <li>Some inconsistency in style</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://icons.getbootstrap.com" target="_blank" class="text-blue-600 underline">icons.getbootstrap.com</a></p>
+        </div>
+        
+        <!-- 7. Remix Icon -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">7</span>
+                <h2 class="text-2xl font-semibold">Remix Icon</h2>
+            </div>
+            <p class="mb-4 opacity-80">Open source icon library with neutral style for designers and developers.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <i class="ri-home-line"></i>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ri-add-line"></i>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ri-search-line"></i>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ri-settings-3-line"></i>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ri-user-line"></i>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <i class="ri-checkbox-circle-line"></i>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>2400+ icons</li>
+                    <li>Line and fill variants</li>
+                    <li>Well categorized</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>No React package (use SVG)</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://remixicon.com" target="_blank" class="text-blue-600 underline">remixicon.com</a></p>
+        </div>
+        
+        <!-- 8. Iconoir -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">8</span>
+                <h2 class="text-2xl font-semibold">Iconoir</h2>
+            </div>
+            <p class="mb-4 opacity-80">High-quality selection of free icons. Simple and elegant.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <i class="iconoir-home"></i>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <i class="iconoir-plus"></i>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <i class="iconoir-search"></i>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <i class="iconoir-settings"></i>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <i class="iconoir-user"></i>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <i class="iconoir-check-circle"></i>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>1500+ icons</li>
+                    <li>Very clean design</li>
+                    <li>React/Vue packages</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>Only outline style</li>
+                    <li>Smaller community</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://iconoir.com" target="_blank" class="text-blue-600 underline">iconoir.com</a></p>
+        </div>
+        
+        <!-- 9. Material Icons -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">9</span>
+                <h2 class="text-2xl font-semibold">Material Icons (Google)</h2>
+            </div>
+            <p class="mb-4 opacity-80">Google's official Material Design icon set.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <span class="material-icons-outlined">home</span>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <span class="material-icons-outlined">add</span>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <span class="material-icons-outlined">search</span>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <span class="material-icons-outlined">settings</span>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <span class="material-icons-outlined">person</span>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <span class="material-icons-outlined">check_circle</span>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>2500+ icons</li>
+                    <li>5 styles (filled, outlined, rounded, sharp, two-tone)</li>
+                    <li>Google-backed, well maintained</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>Material Design style (may not fit all brands)</li>
+                    <li>Large font file</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://fonts.google.com/icons" target="_blank" class="text-blue-600 underline">fonts.google.com/icons</a></p>
+        </div>
+        
+        <!-- 10. Font Awesome -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <span class="library-number">10</span>
+                <h2 class="text-2xl font-semibold">Font Awesome (Free)</h2>
+            </div>
+            <p class="mb-4 opacity-80">The web's most popular icon set and toolkit.</p>
+            
+            <div class="icon-grid mb-4">
+                <div class="icon-item">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="icon-label">home</span>
+                </div>
+                <div class="icon-item">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="icon-label">plus</span>
+                </div>
+                <div class="icon-item">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span class="icon-label">search</span>
+                </div>
+                <div class="icon-item">
+                    <i class="fa-solid fa-gear"></i>
+                    <span class="icon-label">settings</span>
+                </div>
+                <div class="icon-item">
+                    <i class="fa-solid fa-user"></i>
+                    <span class="icon-label">user</span>
+                </div>
+                <div class="icon-item">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span class="icon-label">check</span>
+                </div>
+            </div>
+            
+            <div class="pros-cons text-sm">
+                <ul class="pros space-y-1">
+                    <li>2000+ free icons</li>
+                    <li>Brand icons included</li>
+                    <li>Very popular, lots of examples</li>
+                </ul>
+                <ul class="cons space-y-1">
+                    <li>Free version limited</li>
+                    <li>Pro version is paid</li>
+                    <li>Heavier file size</li>
+                </ul>
+            </div>
+            <p class="mt-3 text-sm"><strong>Website:</strong> <a href="https://fontawesome.com/icons" target="_blank" class="text-blue-600 underline">fontawesome.com</a></p>
+        </div>
+        
+        <!-- Summary -->
+        <div class="card p-6 mt-8" style="background-color: #FEF3C7;">
+            <h2 class="text-2xl font-semibold mb-4">📋 Quick Comparison Summary</h2>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b-2 border-gray-300">
+                        <th class="text-left py-2">#</th>
+                        <th class="text-left py-2">Library</th>
+                        <th class="text-left py-2">Icons</th>
+                        <th class="text-left py-2">Styles</th>
+                        <th class="text-left py-2">React</th>
+                        <th class="text-left py-2">Best For</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b"><td class="py-2">1</td><td>Heroicons</td><td>292</td><td>Outline, Solid</td><td>✅</td><td>Tailwind projects</td></tr>
+                    <tr class="border-b"><td class="py-2">2</td><td>Lucide</td><td>1400+</td><td>Outline</td><td>✅</td><td>Modern apps</td></tr>
+                    <tr class="border-b"><td class="py-2">3</td><td>Feather</td><td>287</td><td>Outline</td><td>✅</td><td>Minimal design</td></tr>
+                    <tr class="border-b"><td class="py-2">4</td><td>Phosphor</td><td>9000+</td><td>6 weights</td><td>✅</td><td>Versatility</td></tr>
+                    <tr class="border-b"><td class="py-2">5</td><td>Tabler</td><td>4950+</td><td>Outline</td><td>✅</td><td>Large selection</td></tr>
+                    <tr class="border-b"><td class="py-2">6</td><td>Bootstrap</td><td>1800+</td><td>Outline, Fill</td><td>❌</td><td>Bootstrap projects</td></tr>
+                    <tr class="border-b"><td class="py-2">7</td><td>Remix</td><td>2400+</td><td>Line, Fill</td><td>❌</td><td>Neutral style</td></tr>
+                    <tr class="border-b"><td class="py-2">8</td><td>Iconoir</td><td>1500+</td><td>Outline</td><td>✅</td><td>Clean design</td></tr>
+                    <tr class="border-b"><td class="py-2">9</td><td>Material</td><td>2500+</td><td>5 styles</td><td>✅</td><td>Material Design</td></tr>
+                    <tr><td class="py-2">10</td><td>Font Awesome</td><td>2000+</td><td>Solid, Regular</td><td>✅</td><td>Brand icons</td></tr>
+                </tbody>
+            </table>
+            
+            <div class="mt-6 p-4 bg-white rounded-lg">
+                <h3 class="font-semibold mb-2">🏆 My Top 3 Recommendations for IdeaSpark:</h3>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li><strong>Lucide</strong> - Best balance of icon count, clean design, and React support</li>
+                    <li><strong>Phosphor</strong> - Most versatile with 6 weights (can match any design)</li>
+                    <li><strong>Heroicons</strong> - Perfect Tailwind/DaisyUI integration</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="text-center mt-8 p-6">
+            <p class="text-lg font-semibold">Tell me which number (1-10) you choose!</p>
+            <p class="opacity-70">I'll add it to the design system and fix the form elements.</p>
+        </div>
+        
+    </div>
+    
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Initialize Feather icons
+        feather.replace();
+    </script>
+    
+</body>
+</html>

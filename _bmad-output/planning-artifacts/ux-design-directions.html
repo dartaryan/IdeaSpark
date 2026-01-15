@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IdeaSpark - Design Direction Mockups</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            --color-primary: #E10514;
+            --color-primary-focus: #AD0F0F;
+            --color-secondary: #1D1C1D;
+            --color-accent: #2246FC;
+            --color-success: #10B981;
+            --color-warning: #F59E0B;
+            --color-base-100: #FFFFFF;
+            --color-base-200: #F5F4F2;
+            --color-base-300: #EEEDE9;
+            --color-base-content: #1D1C1D;
+            --color-neutral: #525355;
+            --shadow-card: 0px 4px 20px 0px rgba(29, 28, 29, 0.15);
+            --shadow-button: 0px 6px 11px 0px rgba(225, 5, 20, 0.50);
+            --radius: 1.25rem;
+            --radius-sm: 0.625rem;
+        }
+        
+        body {
+            font-family: 'Montserrat', system-ui, sans-serif;
+            background-color: var(--color-base-200);
+            color: var(--color-base-content);
+        }
+        
+        .direction-card {
+            background: var(--color-base-100);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-card);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .direction-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0px 8px 30px 0px rgba(29, 28, 29, 0.2);
+        }
+        
+        .mockup-frame {
+            background: var(--color-base-200);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--color-base-300);
+        }
+        
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+            border-radius: var(--radius);
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-button);
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--color-primary-focus);
+        }
+        
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .badge-primary { background-color: var(--color-primary); color: white; }
+        .badge-success { background-color: var(--color-success); color: white; }
+        .badge-warning { background-color: var(--color-warning); color: var(--color-secondary); }
+        
+        .nav-item {
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        
+        .nav-item:hover {
+            background-color: var(--color-base-200);
+        }
+        
+        .nav-item.active {
+            background-color: rgba(225, 5, 20, 0.1);
+            color: var(--color-primary);
+        }
+        
+        .sidebar {
+            background: var(--color-base-100);
+            border-right: 1px solid var(--color-base-300);
+        }
+        
+        .card-item {
+            background: var(--color-base-100);
+            border-radius: var(--radius);
+            padding: 1rem;
+            border: 1px solid var(--color-base-300);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .card-item:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 2px 8px rgba(225, 5, 20, 0.1);
+        }
+        
+        .list-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--color-base-300);
+            transition: background-color 0.2s;
+        }
+        
+        .list-item:hover {
+            background-color: var(--color-base-200);
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: var(--color-base-300);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--color-primary);
+            border-radius: 3px;
+        }
+        
+        .chat-bubble-ai {
+            background: var(--color-base-200);
+            border-radius: var(--radius);
+            padding: 1rem;
+            max-width: 80%;
+        }
+        
+        .chat-bubble-user {
+            background: var(--color-primary);
+            color: white;
+            border-radius: var(--radius);
+            padding: 1rem;
+            max-width: 80%;
+            margin-left: auto;
+        }
+        
+        .comparison-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            border: 2px solid var(--color-base-300);
+            background: var(--color-base-100);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .comparison-btn:hover {
+            border-color: var(--color-primary);
+        }
+        
+        .comparison-btn.active {
+            border-color: var(--color-primary);
+            background: rgba(225, 5, 20, 0.05);
+        }
+        
+        /* STRICT DESIGN RULES:
+           1. NO BLACK ICONS - use neutral (#525355) or primary (#E10514)
+           2. NO EMOJIS - never use emojis in UI
+        */
+        
+        .icon {
+            width: 20px;
+            height: 20px;
+            stroke: var(--color-neutral); /* Never black, always neutral gray */
+            stroke-width: 1.5;
+            fill: none;
+        }
+        
+        .icon-sm { width: 16px; height: 16px; }
+        .icon-lg { width: 24px; height: 24px; }
+        
+        .icon-primary { stroke: var(--color-primary); }
+        .icon-white { stroke: white; }
+    </style>
+</head>
+<body class="min-h-screen">
+    
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-semibold" style="color: var(--color-primary);">IdeaSpark Design Directions</h1>
+                    <p class="text-sm opacity-70">Choose your preferred visual approach</p>
+                </div>
+                <div class="flex gap-2">
+                    <span class="badge badge-primary">Pasportcard DSM</span>
+                    <span class="badge" style="background: var(--color-base-200);">Linear-Inspired</span>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Introduction -->
+    <section class="max-w-7xl mx-auto px-6 py-8">
+        <div class="direction-card p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Design Direction Exploration</h2>
+            <p class="mb-4 opacity-80">
+                Below are 6 different design directions for IdeaSpark. All use the same foundation 
+                (Pasportcard DSM colors, Montserrat font, 20px radius, Heroicons) but explore different 
+                layouts, densities, and interaction patterns.
+            </p>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div class="p-3 rounded-lg" style="background: var(--color-base-200);">
+                    <strong>Layout:</strong> Where things are positioned
+                </div>
+                <div class="p-3 rounded-lg" style="background: var(--color-base-200);">
+                    <strong>Density:</strong> How much content fits
+                </div>
+                <div class="p-3 rounded-lg" style="background: var(--color-base-200);">
+                    <strong>Navigation:</strong> How users move around
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Direction 1: Linear Classic -->
+    <section class="max-w-7xl mx-auto px-6 pb-12">
+        <div class="direction-card">
+            <div class="p-6 border-b" style="border-color: var(--color-base-300);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="badge badge-primary mb-2">Direction 1</span>
+                        <h3 class="text-2xl font-semibold">Linear Classic</h3>
+                        <p class="opacity-70">Sidebar navigation + Card grid • Medium density • Most like Linear</p>
+                    </div>
+                    <div class="text-right text-sm opacity-70">
+                        <p>Best for: <strong>Power users</strong></p>
+                        <p>Keyboard-first navigation</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <!-- Mockup -->
+                <div class="mockup-frame" style="height: 500px;">
+                    <div class="flex h-full">
+                        <!-- Sidebar -->
+                        <div class="sidebar w-56 p-4 flex flex-col">
+                            <div class="flex items-center gap-2 mb-6">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--color-primary);">
+                                    <svg class="icon-sm" style="stroke: white;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>
+                                </div>
+                                <span class="font-semibold">IdeaSpark</span>
+                            </div>
+                            <div class="nav-item active flex items-center gap-2 mb-1">
+                                <svg class="icon-sm" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>
+                                My Ideas
+                            </div>
+                            <div class="nav-item flex items-center gap-2 mb-1">
+                                <svg class="icon-sm" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                                PRDs
+                            </div>
+                            <div class="nav-item flex items-center gap-2 mb-1">
+                                <svg class="icon-sm" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" /></svg>
+                                Prototypes
+                            </div>
+                            <div class="mt-auto">
+                                <div class="nav-item flex items-center gap-2">
+                                    <svg class="icon-sm" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    Settings
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Main Content -->
+                        <div class="flex-1 p-6" style="background: var(--color-base-200);">
+                            <div class="flex items-center justify-between mb-6">
+                                <h2 class="text-xl font-semibold">My Ideas</h2>
+                                <button class="btn-primary flex items-center gap-2">
+                                    <svg class="icon-sm" style="stroke: white;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                                    New Idea
+                                </button>
+                            </div>
+                            <!-- Card Grid -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="card-item">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <span class="badge badge-success">Approved</span>
+                                        <span class="text-xs opacity-50">2 days ago</span>
+                                    </div>
+                                    <h4 class="font-medium mb-1">Customer Claim Tracker</h4>
+                                    <p class="text-sm opacity-70 mb-3">Real-time claim status visibility</p>
+                                    <div class="progress-bar"><div class="progress-fill" style="width: 100%;"></div></div>
+                                </div>
+                                <div class="card-item">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <span class="badge badge-primary">In Progress</span>
+                                        <span class="text-xs opacity-50">Today</span>
+                                    </div>
+                                    <h4 class="font-medium mb-1">API Caching Layer</h4>
+                                    <p class="text-sm opacity-70 mb-3">Reduce database load by 60%</p>
+                                    <div class="progress-bar"><div class="progress-fill" style="width: 43%;"></div></div>
+                                </div>
+                                <div class="card-item">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <span class="badge badge-warning">Submitted</span>
+                                        <span class="text-xs opacity-50">3 days ago</span>
+                                    </div>
+                                    <h4 class="font-medium mb-1">Mobile Performance</h4>
+                                    <p class="text-sm opacity-70 mb-3">Reduce app load time by 40%</p>
+                                    <div class="progress-bar"><div class="progress-fill" style="width: 0%;"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Direction 2: Compact List View -->
+    <section class="max-w-7xl mx-auto px-6 pb-12">
+        <div class="direction-card">
+            <div class="p-6 border-b" style="border-color: var(--color-base-300);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="badge badge-primary mb-2">Direction 2</span>
+                        <h3 class="text-2xl font-semibold">Compact List View</h3>
+                        <p class="opacity-70">Sidebar navigation + Dense list • High density • Data-focused</p>
+                    </div>
+                    <div class="text-right text-sm opacity-70">
+                        <p>Best for: <strong>Many ideas</strong></p>
+                        <p>Scannable at a glance</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="mockup-frame" style="height: 500px;">
+                    <div class="flex h-full">
+                        <!-- Sidebar (narrower) -->
+                        <div class="sidebar w-48 p-3 flex flex-col text-sm">
+                            <div class="flex items-center gap-2 mb-4 px-2">
+                                <div class="w-6 h-6 rounded flex items-center justify-center" style="background: var(--color-primary);">
+                                    <svg class="icon-sm" style="stroke: white; width: 14px; height: 14px;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>
+                                </div>
+                                <span class="font-semibold text-sm">IdeaSpark</span>
+                            </div>
+                            <div class="px-2 py-1.5 rounded" style="background: rgba(225,5,20,0.1); color: var(--color-primary);">
+                                My Ideas (3)
+                            </div>
+                            <div class="px-2 py-1.5 opacity-70 hover:opacity-100">PRDs (2)</div>
+                            <div class="px-2 py-1.5 opacity-70 hover:opacity-100">Prototypes (1)</div>
+                            <div class="mt-auto px-2 py-1.5 opacity-70 hover:opacity-100">Settings</div>
+                        </div>
+                        <!-- Main Content -->
+                        <div class="flex-1" style="background: var(--color-base-100);">
+                            <div class="flex items-center justify-between p-4 border-b" style="border-color: var(--color-base-300);">
+                                <div class="flex items-center gap-4">
+                                    <h2 class="font-semibold">My Ideas</h2>
+                                    <input type="text" placeholder="Search ideas..." class="px-3 py-1.5 rounded-lg text-sm" style="background: var(--color-base-200); border: none; width: 200px;">
+                                </div>
+                                <button class="btn-primary text-sm py-1.5 px-3">+ New Idea</button>
+                            </div>
+                            <!-- List View -->
+                            <div class="divide-y" style="border-color: var(--color-base-300);">
+                                <div class="list-item flex items-center gap-4">
+                                    <span class="badge badge-success text-xs">Approved</span>
+                                    <div class="flex-1">
+                                        <span class="font-medium">Customer Claim Tracker</span>
+                                        <span class="text-sm opacity-50 ml-2">Real-time claim status visibility</span>
+                                    </div>
+                                    <div class="w-24">
+                                        <div class="progress-bar h-1"><div class="progress-fill" style="width: 100%;"></div></div>
+                                    </div>
+                                    <span class="text-xs opacity-50">2d ago</span>
+                                </div>
+                                <div class="list-item flex items-center gap-4">
+                                    <span class="badge badge-primary text-xs">In Progress</span>
+                                    <div class="flex-1">
+                                        <span class="font-medium">API Caching Layer</span>
+                                        <span class="text-sm opacity-50 ml-2">Reduce database load by 60%</span>
+                                    </div>
+                                    <div class="w-24">
+                                        <div class="progress-bar h-1"><div class="progress-fill" style="width: 43%;"></div></div>
+                                    </div>
+                                    <span class="text-xs opacity-50">Today</span>
+                                </div>
+                                <div class="list-item flex items-center gap-4">
+                                    <span class="badge badge-warning text-xs">Submitted</span>
+                                    <div class="flex-1">
+                                        <span class="font-medium">Mobile Performance</span>
+                                        <span class="text-sm opacity-50 ml-2">Reduce app load time by 40%</span>
+                                    </div>
+                                    <div class="w-24">
+                                        <div class="progress-bar h-1"><div class="progress-fill" style="width: 0%;"></div></div>
+                                    </div>
+                                    <span class="text-xs opacity-50">3d ago</span>
+                                </div>
+                                <div class="list-item flex items-center gap-4 opacity-50">
+                                    <span class="badge text-xs" style="background: var(--color-base-300);">Draft</span>
+                                    <div class="flex-1">
+                                        <span class="font-medium">Customer Portal Redesign</span>
+                                        <span class="text-sm opacity-50 ml-2">Modern self-service portal</span>
+                                    </div>
+                                    <div class="w-24">
+                                        <div class="progress-bar h-1"><div class="progress-fill" style="width: 0%;"></div></div>
+                                    </div>
+                                    <span class="text-xs opacity-50">1w ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Direction 3: Top Navigation -->
+    <section class="max-w-7xl mx-auto px-6 pb-12">
+        <div class="direction-card">
+            <div class="p-6 border-b" style="border-color: var(--color-base-300);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="badge badge-primary mb-2">Direction 3</span>
+                        <h3 class="text-2xl font-semibold">Top Navigation</h3>
+                        <p class="opacity-70">Horizontal nav + Full-width cards • Medium density • Traditional web app</p>
+                    </div>
+                    <div class="text-right text-sm opacity-70">
+                        <p>Best for: <strong>Familiar UX</strong></p>
+                        <p>Easy to learn</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="mockup-frame" style="height: 500px;">
+                    <div class="flex flex-col h-full">
+                        <!-- Top Nav -->
+                        <div class="flex items-center justify-between px-6 py-3" style="background: var(--color-base-100); border-bottom: 1px solid var(--color-base-300);">
+                            <div class="flex items-center gap-6">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--color-primary);">
+                                        <svg class="icon-sm" style="stroke: white;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>
+                                    </div>
+                                    <span class="font-semibold">IdeaSpark</span>
+                                </div>
+                                <nav class="flex gap-1">
+                                    <span class="nav-item active">Ideas</span>
+                                    <span class="nav-item">PRDs</span>
+                                    <span class="nav-item">Prototypes</span>
+                                </nav>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <button class="btn-primary text-sm">+ New Idea</button>
+                                <div class="w-8 h-8 rounded-full" style="background: var(--color-base-300);"></div>
+                            </div>
+                        </div>
+                        <!-- Main Content -->
+                        <div class="flex-1 p-8" style="background: var(--color-base-200);">
+                            <div class="max-w-4xl mx-auto">
+                                <h2 class="text-2xl font-semibold mb-6">My Ideas</h2>
+                                <div class="space-y-4">
+                                    <div class="card-item flex items-center gap-6">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-3 mb-2">
+                                                <h4 class="font-medium text-lg">Customer Claim Tracker</h4>
+                                                <span class="badge badge-success">Approved</span>
+                                            </div>
+                                            <p class="text-sm opacity-70">Real-time claim status visibility for customers to reduce support calls.</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-medium" style="color: var(--color-success);">Complete</div>
+                                            <div class="text-xs opacity-50">2 days ago</div>
+                                        </div>
+                                    </div>
+                                    <div class="card-item flex items-center gap-6">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-3 mb-2">
+                                                <h4 class="font-medium text-lg">API Caching Layer</h4>
+                                                <span class="badge badge-primary">In Progress</span>
+                                            </div>
+                                            <p class="text-sm opacity-70">Reduce database load by 60% with intelligent caching.</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-medium" style="color: var(--color-primary);">43%</div>
+                                            <div class="text-xs opacity-50">Today</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Direction 4: Command-First -->
+    <section class="max-w-7xl mx-auto px-6 pb-12">
+        <div class="direction-card">
+            <div class="p-6 border-b" style="border-color: var(--color-base-300);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="badge badge-primary mb-2">Direction 4</span>
+                        <h3 class="text-2xl font-semibold">Command-First</h3>
+                        <p class="opacity-70">Minimal sidebar + Command palette prominent • Low visual noise • Keyboard power</p>
+                    </div>
+                    <div class="text-right text-sm opacity-70">
+                        <p>Best for: <strong>Speed users</strong></p>
+                        <p>Cmd+K everything</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="mockup-frame" style="height: 500px;">
+                    <div class="flex h-full">
+                        <!-- Minimal Sidebar -->
+                        <div class="sidebar w-16 py-4 flex flex-col items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--color-primary);">
+                                <svg class="icon" style="stroke: white;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(225,5,20,0.1); color: var(--color-primary);">
+                                <svg class="icon" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity">
+                                <svg class="icon" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity">
+                                <svg class="icon" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" /></svg>
+                            </div>
+                            <div class="mt-auto w-10 h-10 rounded-xl flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity">
+                                <svg class="icon" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            </div>
+                        </div>
+                        <!-- Main Content -->
+                        <div class="flex-1 flex flex-col" style="background: var(--color-base-100);">
+                            <!-- Command Bar -->
+                            <div class="p-4 border-b" style="border-color: var(--color-base-300);">
+                                <div class="flex items-center gap-3 px-4 py-3 rounded-xl" style="background: var(--color-base-200);">
+                                    <svg class="icon opacity-50" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                                    <span class="opacity-50">Search or type a command...</span>
+                                    <span class="ml-auto text-xs px-2 py-1 rounded" style="background: var(--color-base-300);">⌘K</span>
+                                </div>
+                            </div>
+                            <!-- Content -->
+                            <div class="flex-1 p-6 overflow-auto" style="background: var(--color-base-200);">
+                                <h2 class="text-xl font-semibold mb-4">My Ideas</h2>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div class="card-item">
+                                        <span class="badge badge-success mb-2">Approved</span>
+                                        <h4 class="font-medium">Customer Claim Tracker</h4>
+                                        <p class="text-sm opacity-70 mt-1">Real-time visibility</p>
+                                    </div>
+                                    <div class="card-item">
+                                        <span class="badge badge-primary mb-2">In Progress</span>
+                                        <h4 class="font-medium">API Caching Layer</h4>
+                                        <p class="text-sm opacity-70 mt-1">43% complete</p>
+                                    </div>
+                                    <div class="card-item">
+                                        <span class="badge badge-warning mb-2">Submitted</span>
+                                        <h4 class="font-medium">Mobile Performance</h4>
+                                        <p class="text-sm opacity-70 mt-1">Pending review</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Direction 5: PRD Builder Focus -->
+    <section class="max-w-7xl mx-auto px-6 pb-12">
+        <div class="direction-card">
+            <div class="p-6 border-b" style="border-color: var(--color-base-300);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="badge badge-primary mb-2">Direction 5</span>
+                        <h3 class="text-2xl font-semibold">PRD Builder (Split View)</h3>
+                        <p class="opacity-70">Chat left + Preview right • The core experience • Defining interaction</p>
+                    </div>
+                    <div class="text-right text-sm opacity-70">
+                        <p>Best for: <strong>PRD building</strong></p>
+                        <p>Real-time collaboration feel</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="mockup-frame" style="height: 500px;">
+                    <div class="flex h-full">
+                        <!-- Chat Side -->
+                        <div class="w-1/2 flex flex-col" style="background: var(--color-base-100); border-right: 1px solid var(--color-base-300);">
+                            <div class="p-4 border-b" style="border-color: var(--color-base-300);">
+                                <div class="flex items-center gap-2">
+                                    <svg class="icon" style="color: var(--color-primary);" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>
+                                    <span class="font-semibold">PRD Builder</span>
+                                    <span class="text-sm opacity-50 ml-auto">Section 3/7</span>
+                                </div>
+                            </div>
+                            <div class="flex-1 p-4 overflow-auto space-y-4">
+                                <div class="chat-bubble-ai">
+                                    Great! Now let's define your target users. Who will primarily use this feature?
+                                </div>
+                                <div class="chat-bubble-user">
+                                    Our customers who submitted insurance claims and want to track their status.
+                                </div>
+                                <div class="chat-bubble-ai">
+                                    Perfect! I've added that to your PRD. What frustrations do these users currently have?
+                                </div>
+                            </div>
+                            <div class="p-4 border-t" style="border-color: var(--color-base-300);">
+                                <div class="flex gap-2">
+                                    <input type="text" placeholder="Type your answer..." class="flex-1 px-4 py-2 rounded-xl" style="background: var(--color-base-200); border: none;">
+                                    <button class="btn-primary px-4">Send</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Preview Side -->
+                        <div class="w-1/2 flex flex-col" style="background: var(--color-base-200);">
+                            <div class="p-4 border-b" style="border-color: var(--color-base-300); background: var(--color-base-100);">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold">Live PRD Preview</span>
+                                    <span class="text-xs px-2 py-1 rounded" style="background: var(--color-success); color: white;">Auto-saved</span>
+                                </div>
+                            </div>
+                            <div class="flex-1 p-4 overflow-auto">
+                                <div class="p-4 rounded-xl" style="background: var(--color-base-100);">
+                                    <h3 class="font-semibold mb-3">PRD: Customer Claim Tracker</h3>
+                                    <div class="space-y-3 text-sm">
+                                        <div class="flex items-center gap-2">
+                                            <span style="color: var(--color-success);">✓</span>
+                                            <span>Problem Statement</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span style="color: var(--color-success);">✓</span>
+                                            <span>Goals & Metrics</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span style="color: var(--color-primary);">→</span>
+                                            <span class="font-medium">Target Users</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 opacity-50">
+                                            <span>○</span>
+                                            <span>User Stories</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 opacity-50">
+                                            <span>○</span>
+                                            <span>Requirements</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Direction 6: Prototype Reveal -->
+    <section class="max-w-7xl mx-auto px-6 pb-12">
+        <div class="direction-card">
+            <div class="p-6 border-b" style="border-color: var(--color-base-300);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="badge badge-primary mb-2">Direction 6</span>
+                        <h3 class="text-2xl font-semibold">Prototype Reveal (Full Screen)</h3>
+                        <p class="opacity-70">Immersive prototype view • The "aha moment" • Device toggles + sharing</p>
+                    </div>
+                    <div class="text-right text-sm opacity-70">
+                        <p>Best for: <strong>The reveal</strong></p>
+                        <p>Maximum "wow" impact</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="mockup-frame" style="height: 500px; background: rgba(29,28,29,0.95);">
+                    <div class="flex flex-col h-full">
+                        <!-- Top Bar -->
+                        <div class="flex items-center justify-between px-6 py-3" style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <div class="flex items-center gap-4 text-white">
+                                <span class="font-semibold">Customer Claim Tracker</span>
+                                <span class="text-sm opacity-50">Prototype v1</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="px-3 py-1.5 rounded-lg text-white text-sm" style="background: rgba(255,255,255,0.1);">Desktop</button>
+                                <button class="px-3 py-1.5 rounded-lg text-white/50 text-sm hover:text-white">Tablet</button>
+                                <button class="px-3 py-1.5 rounded-lg text-white/50 text-sm hover:text-white">Mobile</button>
+                                <span class="w-px h-6 mx-2" style="background: rgba(255,255,255,0.2);"></span>
+                                <button class="px-3 py-1.5 rounded-lg text-white text-sm flex items-center gap-1" style="background: rgba(255,255,255,0.1);">
+                                    <svg class="icon-sm" style="stroke: white;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
+                                    Share
+                                </button>
+                                <button class="px-3 py-1.5 rounded-lg text-sm" style="background: var(--color-primary); color: white;">
+                                    Refine
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Prototype Frame -->
+                        <div class="flex-1 flex items-center justify-center p-8">
+                            <div class="w-full max-w-4xl rounded-xl overflow-hidden shadow-2xl" style="background: var(--color-base-100);">
+                                <!-- Prototype Content -->
+                                <div class="p-4 flex items-center justify-between" style="border-bottom: 1px solid var(--color-base-300);">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-lg" style="background: var(--color-primary);"></div>
+                                        <span class="font-semibold">PassportCard</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="text-sm">My Claims</span>
+                                        <div class="w-8 h-8 rounded-full" style="background: var(--color-base-300);"></div>
+                                    </div>
+                                </div>
+                                <div class="p-6" style="background: var(--color-base-200);">
+                                    <h2 class="text-xl font-semibold mb-4">Your Claims</h2>
+                                    <div class="space-y-3">
+                                        <div class="p-4 rounded-xl flex items-center gap-4" style="background: var(--color-base-100);">
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: var(--color-success); color: white;">✓</div>
+                                            <div class="flex-1">
+                                                <div class="font-medium">Dental Visit - $450</div>
+                                                <div class="text-sm opacity-50">Claim #12345 • Approved</div>
+                                            </div>
+                                            <button class="text-sm" style="color: var(--color-primary);">View Details</button>
+                                        </div>
+                                        <div class="p-4 rounded-xl flex items-center gap-4" style="background: var(--color-base-100);">
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: var(--color-warning); color: white;">⏳</div>
+                                            <div class="flex-1">
+                                                <div class="font-medium">Hospital Stay - $2,400</div>
+                                                <div class="text-sm opacity-50">Claim #12346 • In Review</div>
+                                            </div>
+                                            <button class="text-sm" style="color: var(--color-primary);">Track Status</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Bottom Bar -->
+                        <div class="px-6 py-3 flex items-center justify-between" style="background: rgba(255,255,255,0.05); border-top: 1px solid rgba(255,255,255,0.1);">
+                            <span class="text-white/50 text-sm">ideaspark.app/p/claim-tracker-xyz123</span>
+                            <button class="text-white/70 hover:text-white text-sm flex items-center gap-1">
+                                <svg class="icon-sm" viewBox="0 0 24 24" style="stroke: currentColor;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+                                Copy Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Comparison Section -->
+    <section class="max-w-7xl mx-auto px-6 py-12">
+        <div class="direction-card p-6">
+            <h2 class="text-2xl font-semibold mb-6">Quick Comparison</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b-2" style="border-color: var(--color-base-300);">
+                            <th class="text-left py-3 pr-4">Direction</th>
+                            <th class="text-left py-3 px-4">Layout</th>
+                            <th class="text-left py-3 px-4">Density</th>
+                            <th class="text-left py-3 px-4">Best For</th>
+                            <th class="text-left py-3 px-4">Linear-like</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b" style="border-color: var(--color-base-300);">
+                            <td class="py-3 pr-4 font-medium">1. Linear Classic</td>
+                            <td class="py-3 px-4">Sidebar + Cards</td>
+                            <td class="py-3 px-4">Medium</td>
+                            <td class="py-3 px-4">Power users</td>
+                            <td class="py-3 px-4" style="color: var(--color-primary);">5/5</td>
+                        </tr>
+                        <tr class="border-b" style="border-color: var(--color-base-300);">
+                            <td class="py-3 pr-4 font-medium">2. Compact List</td>
+                            <td class="py-3 px-4">Sidebar + List</td>
+                            <td class="py-3 px-4">High</td>
+                            <td class="py-3 px-4">Many items</td>
+                            <td class="py-3 px-4" style="color: var(--color-primary);">4/5</td>
+                        </tr>
+                        <tr class="border-b" style="border-color: var(--color-base-300);">
+                            <td class="py-3 pr-4 font-medium">3. Top Navigation</td>
+                            <td class="py-3 px-4">Top nav + Full width</td>
+                            <td class="py-3 px-4">Medium</td>
+                            <td class="py-3 px-4">Familiar UX</td>
+                            <td class="py-3 px-4" style="color: var(--color-neutral);">2/5</td>
+                        </tr>
+                        <tr class="border-b" style="border-color: var(--color-base-300);">
+                            <td class="py-3 pr-4 font-medium">4. Command-First</td>
+                            <td class="py-3 px-4">Mini sidebar + Cmd</td>
+                            <td class="py-3 px-4">Low</td>
+                            <td class="py-3 px-4">Speed users</td>
+                            <td class="py-3 px-4" style="color: var(--color-primary);">5/5</td>
+                        </tr>
+                        <tr class="border-b" style="border-color: var(--color-base-300);">
+                            <td class="py-3 pr-4 font-medium">5. PRD Builder</td>
+                            <td class="py-3 px-4">50/50 Split</td>
+                            <td class="py-3 px-4">Medium</td>
+                            <td class="py-3 px-4">PRD building</td>
+                            <td class="py-3 px-4" style="color: var(--color-neutral);">3/5</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 pr-4 font-medium">6. Prototype Reveal</td>
+                            <td class="py-3 px-4">Full screen</td>
+                            <td class="py-3 px-4">Immersive</td>
+                            <td class="py-3 px-4">Wow moment</td>
+                            <td class="py-3 px-4" style="color: var(--color-neutral);">3/5</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-8 p-4 rounded-xl" style="background: var(--color-base-200);">
+                <h3 class="font-semibold mb-3">My Recommendation:</h3>
+                <p class="mb-2">
+                    <strong>Combine Directions 1 + 4 + 5 + 6:</strong>
+                </p>
+                <ul class="list-disc list-inside space-y-1 text-sm opacity-80">
+                    <li><strong>Dashboard:</strong> Direction 1 (Linear Classic) for main idea management</li>
+                    <li><strong>Navigation:</strong> Direction 4 (Command-First) minimal sidebar + Cmd+K palette</li>
+                    <li><strong>PRD Builder:</strong> Direction 5 (Split View) for the conversation experience</li>
+                    <li><strong>Prototype:</strong> Direction 6 (Full Screen) for maximum "wow" factor</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Call to Action -->
+    <section class="max-w-7xl mx-auto px-6 pb-12">
+        <div class="text-center p-8">
+            <h2 class="text-2xl font-semibold mb-4">Which direction resonates with you?</h2>
+            <p class="opacity-70 mb-6">Pick a favorite, combine elements, or request modifications!</p>
+            <div class="flex justify-center gap-4 flex-wrap">
+                <span class="comparison-btn">Direction 1</span>
+                <span class="comparison-btn">Direction 2</span>
+                <span class="comparison-btn">Direction 3</span>
+                <span class="comparison-btn">Direction 4</span>
+                <span class="comparison-btn">Direction 5</span>
+                <span class="comparison-btn">Direction 6</span>
+            </div>
+        </div>
+    </section>
+    
+    <footer class="text-center py-8 opacity-50 text-sm">
+        IdeaSpark Design Directions • Pasportcard DSM + DaisyUI + Heroicons + Linear UX
+    </footer>
+    
+</body>
+</html>

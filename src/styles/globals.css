@@ -1,0 +1,54 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+/* PassportCard Custom Theme */
+@plugin "daisyui/theme" {
+  name: "passportcard";
+  default: true;
+  color-scheme: light;
+  
+  /* Primary Colors - PassportCard Brand Red */
+  --color-primary: #E10514;
+  --color-primary-content: #FFFFFF;
+  
+  /* Secondary Colors - Dark */
+  --color-secondary: #1D1C1D;
+  --color-secondary-content: #FFFFFF;
+  
+  /* Accent Colors */
+  --color-accent: #FF6B35;
+  --color-accent-content: #FFFFFF;
+  
+  /* Neutral Colors */
+  --color-neutral: #1D1C1D;
+  --color-neutral-content: #FFFFFF;
+  
+  /* Base Colors */
+  --color-base-100: #FFFFFF;
+  --color-base-200: #F5F4F2;
+  --color-base-300: #E8E6E3;
+  --color-base-content: #1D1C1D;
+  
+  /* State Colors */
+  --color-info: #3B82F6;
+  --color-info-content: #FFFFFF;
+  --color-success: #22C55E;
+  --color-success-content: #FFFFFF;
+  --color-warning: #F59E0B;
+  --color-warning-content: #FFFFFF;
+  --color-error: #EF4444;
+  --color-error-content: #FFFFFF;
+  
+  /* Border Radius - 20px (1.25rem) - DaisyUI 5 variable names */
+  --radius-box: 1.25rem;      /* Cards, modals, alerts */
+  --radius-field: 1.25rem;    /* Buttons, inputs, selects, tabs */
+  --radius-selector: 1.25rem; /* Checkboxes, toggles, badges */
+  
+  /* Animation */
+  --animation-btn: 0.15s;
+  --animation-input: 0.15s;
+  --btn-focus-scale: 0.98;
+}
+
+/* Import additional PassportCard brand utilities */
+@import "./passportcard-theme.css";

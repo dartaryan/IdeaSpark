@@ -1,0 +1,351 @@
+/**
+ * Pasportcard DSM - CSS Custom Properties Export
+ * 
+ * For IdeaSpark Project - DaisyUI Theme Implementation
+ * Version: 1.0.0
+ * Date: 2026-01-11
+ * 
+ * Usage: Import this file into your global stylesheet or root CSS file
+ */
+
+:root {
+  /* ============================================================================
+     BRAND COLORS
+     ============================================================================ */
+  --color-brand-red: #E10514;
+  --color-brand-dark-red: #AD0F0F;
+  --color-brand-black: #1D1C1D;
+  --color-brand-white: #FFFFFF;
+  --color-brand-gradient-start: #E10514;
+  --color-brand-gradient-end: #A2191C;
+
+  /* ============================================================================
+     TEXT COLORS
+     ============================================================================ */
+  --color-text-primary: #1D1C1D;
+  --color-text-secondary: #525355;
+  --color-text-disabled: #67686A;
+  --color-text-placeholder: #525355;
+  --color-text-note: #4A4C4F;
+  --color-text-negative: #FFFFFF;
+  --color-text-link-primary: #2246FC;
+  --color-text-link-secondary: #E10514;
+  --color-text-error: #AD0F0F;
+  --color-text-alerts: #AD0F0F;
+
+  /* Status Text Colors */
+  --color-text-status-1: #1D1C1D;
+  --color-text-status-2: #5C6000;
+  --color-text-status-3: #050C6F;
+  --color-text-status-4: #0B5A14;
+  --color-text-status-5: #5F31F3;
+  --color-text-status-6: #8E6119;
+
+  /* ============================================================================
+     BACKGROUND COLORS
+     ============================================================================ */
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #F5F4F2;
+  --color-bg-tertiary: #EEEDE9;
+  --color-bg-overlay: rgba(29, 28, 29, 0.5);
+  --color-bg-disabled-inputs: #EEEEEE;
+  --color-bg-range: #FBD9DC;
+
+  /* Card Backgrounds */
+  --color-bg-card-primary: #FFFFFF;
+  --color-bg-card-secondary: #F5F4F2;
+  --color-bg-card-tertiary: #FCF2F1;
+  --color-bg-card-note: #FFFBAC;
+
+  /* Status Backgrounds */
+  --color-bg-status-1: #D0D0D0;
+  --color-bg-status-2: #F6F2D0;
+  --color-bg-status-3: #CDEDF7;
+  --color-bg-status-4: #D5F4C4;
+  --color-bg-status-5: #DDD6F4;
+  --color-bg-status-6: #F7E8C4;
+
+  /* ============================================================================
+     BORDER COLORS
+     ============================================================================ */
+  --color-border-default: #525355;
+  --color-border-inputs: #DFDFDF;
+  --color-border-cards: #DFDAD5;
+  --color-border-alerts: #AD0F0F;
+  --color-border-divider: #E10514;
+  --color-border-negative: #FFFFFF;
+  --color-border-focus: #1D1C1D;
+
+  /* ============================================================================
+     BUTTON COLORS
+     ============================================================================ */
+  --color-button-primary: #E10514;
+  --color-button-secondary: #E10514;
+  --color-button-hover: #E10514;
+  --color-button-tertiary-hover: #EEEEEE;
+  --color-button-disabled: #FBD9DC;
+  --color-button-inactive: #525355;
+  --color-button-selectable-default: #525355;
+  --color-button-selectable-active: #E10514;
+  --color-button-selectable-inactive: #FBD9DC;
+  --color-button-selectable-inactive-secondary: #EEEDE9;
+
+  /* ============================================================================
+     UI COLORS
+     ============================================================================ */
+  --color-ui-scroller-primary: rgba(29, 28, 29, 0.5);
+  --color-ui-scroller-secondary: #DFDAD5;
+  --color-ui-progress-default: #F5F4F2;
+  --color-ui-progress-fill: #E10514;
+
+  /* ============================================================================
+     SHADOW COLORS
+     ============================================================================ */
+  --color-shadow-button-primary: rgba(225, 5, 20, 0.5);
+  --color-shadow-card: rgba(29, 28, 29, 0.15);
+
+  /* ============================================================================
+     TYPOGRAPHY
+     ============================================================================ */
+  
+  /* Font Families */
+  --font-family-english: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-hebrew: 'Rubik', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', monospace;
+
+  /* Font Sizes (rem) */
+  --font-size-xs: 0.625rem;     /* 10px */
+  --font-size-sm: 0.75rem;      /* 12px */
+  --font-size-md: 0.875rem;     /* 14px */
+  --font-size-lg: 1rem;         /* 16px */
+  --font-size-xl: 1.125rem;     /* 18px */
+  --font-size-2xl: 1.25rem;     /* 20px */
+  --font-size-3xl: 1.5rem;      /* 24px */
+  --font-size-4xl: 1.625rem;    /* 26px */
+  --font-size-5xl: 2.5rem;      /* 40px */
+
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.0;
+  --line-height-normal: 1.2;
+  --line-height-relaxed: 1.5;
+
+  /* Letter Spacing */
+  --letter-spacing-normal: 0em;
+
+  /* ============================================================================
+     SPACING SCALE
+     ============================================================================ */
+  --spacing-0: 0;
+  --spacing-3xs: 0.125rem;      /* 2px */
+  --spacing-2xs: 0.1875rem;     /* 3px */
+  --spacing-xs: 0.25rem;        /* 4px */
+  --spacing-xs-plus: 0.375rem;  /* 6px */
+  --spacing-sm: 0.5rem;         /* 8px */
+  --spacing-sm-plus: 0.625rem;  /* 10px */
+  --spacing-md: 0.75rem;        /* 12px */
+  --spacing-lg: 1rem;           /* 16px */
+  --spacing-xl: 1.25rem;        /* 20px */
+  --spacing-2xl: 1.5rem;        /* 24px */
+  --spacing-3xl: 2rem;          /* 32px */
+  --spacing-4xl: 2.5rem;        /* 40px */
+  --spacing-5xl: 3rem;          /* 48px */
+  --spacing-6xl: 4rem;          /* 64px */
+  --spacing-7xl: 5rem;          /* 80px */
+  --spacing-8xl: 6rem;          /* 96px */
+
+  /* Component Spacing */
+  --spacing-button-padding-x-sm: 0.5rem;
+  --spacing-button-padding-x-md: 0.75rem;
+  --spacing-button-padding-x-lg: 1rem;
+  --spacing-button-padding-y-sm: 0.25rem;
+  --spacing-button-padding-y-md: 0.5rem;
+  --spacing-button-padding-y-lg: 0.75rem;
+  --spacing-button-gap: 0.5rem;
+
+  --spacing-input-padding-x: 0.75rem;
+  --spacing-input-padding-y: 0.5rem;
+
+  --spacing-card-padding: 1rem;
+  --spacing-card-gap: 0.75rem;
+
+  --spacing-form-field-gap: 1rem;
+  --spacing-form-label-gap: 0.25rem;
+
+  /* Layout Spacing */
+  --spacing-layout-section-gap: 2.5rem;
+  --spacing-layout-container-padding: 1.25rem;
+  --spacing-layout-stack-gap-sm: 0.5rem;
+  --spacing-layout-stack-gap-md: 0.75rem;
+  --spacing-layout-stack-gap-lg: 1rem;
+  --spacing-layout-inline-gap-sm: 0.25rem;
+  --spacing-layout-inline-gap-md: 0.5rem;
+  --spacing-layout-inline-gap-lg: 0.75rem;
+
+  /* ============================================================================
+     SHADOWS
+     ============================================================================ */
+  --shadow-card: 0px 4px 20px 0px rgba(29, 28, 29, 0.15);
+  --shadow-button-primary: 0px 6px 11px 0px rgba(225, 5, 20, 0.50);
+  --shadow-tabs-selected: 0.03125rem 0.125rem 0.625rem rgba(0, 0, 0, 0.1), -0.03125rem 0.125rem 0.625rem rgba(0, 0, 0, 0.1);
+
+  /* ============================================================================
+     BORDER WIDTH
+     ============================================================================ */
+  --border-width-none: 0;
+  --border-width-thin: 0.0625rem;   /* 1px */
+  --border-width-medium: 0.125rem;  /* 2px */
+  --border-width-thick: 0.1875rem;  /* 3px */
+
+  /* ============================================================================
+     BORDER RADIUS
+     ============================================================================ */
+  --border-radius-none: 0;
+  --border-radius-xs: 0.3125rem;    /* 5px */
+  --border-radius-s: 0.625rem;      /* 10px */
+  --border-radius-md: 1.25rem;      /* 20px */
+  --border-radius-pill: 99px;
+
+  /* ============================================================================
+     ANIMATION
+     ============================================================================ */
+  --animation-duration-short: 150ms;
+  --animation-duration-medium: 300ms;
+  --animation-duration-long: 500ms;
+  --animation-easing-default: ease;
+  --animation-easing-ease-in: ease-in;
+  --animation-easing-ease-out: ease-out;
+  --animation-easing-ease-in-out: ease-in-out;
+}
+
+/* ============================================================================
+   RTL SUPPORT
+   ============================================================================ */
+
+[dir="rtl"] {
+  --font-family-primary: var(--font-family-hebrew);
+}
+
+[dir="ltr"] {
+  --font-family-primary: var(--font-family-english);
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+/* Brand Gradient Background */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--color-brand-gradient-start) 0%, var(--color-brand-gradient-end) 100%);
+}
+
+/* Focus Ring */
+.focus-ring {
+  outline: var(--border-width-medium) solid var(--color-border-focus);
+  outline-offset: var(--border-width-medium);
+}
+
+/* Card Shadow */
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+/* Button Primary Shadow */
+.shadow-button-primary {
+  box-shadow: var(--shadow-button-primary);
+}
+
+/* ============================================================================
+   ACCESSIBILITY - REDUCED MOTION
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================================
+   COMPONENT BASE STYLES
+   ============================================================================ */
+
+/* Button Base */
+.btn-base {
+  border-radius: var(--border-radius-md);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-lg);
+  transition: all var(--animation-duration-short) var(--animation-easing-default);
+  cursor: pointer;
+}
+
+.btn-base:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Input Base */
+.input-base {
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--color-border-inputs);
+  padding: var(--spacing-input-padding-y) var(--spacing-input-padding-x);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  transition: border-color var(--animation-duration-short) var(--animation-easing-default);
+}
+
+.input-base:focus {
+  outline: var(--border-width-medium) solid var(--color-border-focus);
+  outline-offset: var(--border-width-medium);
+  border-color: var(--color-border-focus);
+}
+
+.input-base::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.input-base:disabled {
+  background-color: var(--color-bg-disabled-inputs);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+/* Card Base */
+.card-base {
+  background-color: var(--color-bg-card-primary);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-card-padding);
+  box-shadow: var(--shadow-card);
+}
+
+/* Text Base */
+.text-base {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+/* Heading Base */
+.heading-base {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+}
+
+/* ============================================================================
+   END OF PASPORTCARD DSM CSS VARIABLES
+   ============================================================================ */
