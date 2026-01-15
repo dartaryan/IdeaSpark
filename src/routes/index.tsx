@@ -6,8 +6,13 @@ import { LoginPage } from '../features/auth/pages/LoginPage';
 import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../features/auth/pages/ResetPasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { MyIdeasPage } from '../pages/MyIdeasPage';
+import { NewIdeaPage } from '../pages/NewIdeaPage';
+import { AdminDashboardPage } from '../pages/AdminDashboardPage';
+import { AnalyticsPage } from '../pages/AnalyticsPage';
 import { NotAuthorizedPage } from '../pages/NotAuthorizedPage';
 import { AuthenticatedLayout } from '../components/layouts/AuthenticatedLayout';
+import { AdminRoute } from './AdminRoute';
 import { ROUTES } from './routeConstants';
 
 export const router = createBrowserRouter([
@@ -42,33 +47,42 @@ export const router = createBrowserRouter([
   },
 
   // Protected routes - wrapped with AuthenticatedLayout
-  // AuthenticatedLayout handles auth check, loading state, and header
+  // AuthenticatedLayout handles auth check, loading state, sidebar, and header
   {
     element: <AuthenticatedLayout />,
     children: [
+      // User routes
       {
         path: ROUTES.DASHBOARD,
         element: <DashboardPage />,
       },
-      // Future user routes (Story 2.x)
-      // { path: ROUTES.IDEAS, element: <IdeasPage /> },
-      // { path: ROUTES.IDEA_DETAIL, element: <IdeaDetailPage /> },
-      // { path: ROUTES.NEW_IDEA, element: <NewIdeaPage /> },
-      // { path: ROUTES.PRD_BUILDER, element: <PrdBuilderPage /> },
-      // { path: ROUTES.PROTOTYPE, element: <PrototypePage /> },
+      {
+        path: ROUTES.IDEAS,
+        element: <MyIdeasPage />,
+      },
+      {
+        path: ROUTES.NEW_IDEA,
+        element: <NewIdeaPage />,
+      },
+      // Admin routes - wrapped with AdminRoute for role check
+      {
+        path: ROUTES.ADMIN_DASHBOARD,
+        element: (
+          <AdminRoute>
+            <AdminDashboardPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: ROUTES.ADMIN_ANALYTICS,
+        element: (
+          <AdminRoute>
+            <AnalyticsPage />
+          </AdminRoute>
+        ),
+      },
     ],
   },
-
-  // Admin routes - will need AdminRoute wrapper when pages are created
-  // {
-  //   element: <AuthenticatedLayout />,
-  //   children: [
-  //     { path: ROUTES.ADMIN_DASHBOARD, element: <AdminRoute><AdminDashboardPage /></AdminRoute> },
-  //     { path: ROUTES.ADMIN_IDEAS, element: <AdminRoute><AdminIdeasPage /></AdminRoute> },
-  //     { path: ROUTES.ADMIN_USERS, element: <AdminRoute><AdminUsersPage /></AdminRoute> },
-  //     { path: ROUTES.ADMIN_ANALYTICS, element: <AdminRoute><AdminAnalyticsPage /></AdminRoute> },
-  //   ],
-  // },
 
   // Catch-all redirect to login
   {

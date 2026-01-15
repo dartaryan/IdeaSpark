@@ -1,14 +1,18 @@
+import { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { SessionExpiredHandler } from '../../features/auth/components/SessionExpiredHandler';
 import { Header } from '../ui/Header';
+import { Sidebar } from './Sidebar';
 
 /**
  * Layout component for authenticated routes
- * Provides Header, session expiry handling, and auth protection
+ * Provides responsive drawer-based navigation with Header, Sidebar, and session handling
+ * Uses DaisyUI drawer pattern: persistent on desktop (lg+), collapsible on mobile
  */
 export function AuthenticatedLayout() {
   const { user, isLoading } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Show loading spinner while checking auth state
   if (isLoading) {
@@ -24,18 +28,52 @@ export function AuthenticatedLayout() {
     return <Navigate to="/login" replace />;
   }
 
+  const handleMenuClick = () => {
+    setSidebarOpen(true);
+  };
+
+  const handleSidebarClose = () => {
+    setSidebarOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-base-200 flex flex-col">
+    <div className="drawer lg:drawer-open">
       {/* Session expiry handler - redirects on session expiry */}
       <SessionExpiredHandler />
-      
-      {/* Header with user menu */}
-      <Header />
-      
+
+      {/* Mobile drawer toggle (hidden, controlled by state) */}
+      <input
+        id="sidebar-drawer"
+        type="checkbox"
+        className="drawer-toggle"
+        checked={sidebarOpen}
+        onChange={() => setSidebarOpen(!sidebarOpen)}
+      />
+
       {/* Main content area */}
-      <main className="flex-1">
-        <Outlet />
-      </main>
+      <div className="drawer-content flex flex-col min-h-screen">
+        {/* Header with hamburger menu for mobile */}
+        <Header onMenuClick={handleMenuClick} />
+
+        {/* Page content */}
+        <main className="flex-1 p-4 lg:p-6 bg-base-200">
+          <Outlet />
+        </main>
+      </div>
+
+      {/* Sidebar drawer */}
+      <div className="drawer-side z-40">
+        {/* Overlay - closes drawer when clicked */}
+        <label
+          htmlFor="sidebar-drawer"
+          aria-label="Close sidebar"
+          className="drawer-overlay"
+          onClick={handleSidebarClose}
+        />
+
+        {/* Sidebar content */}
+        <Sidebar onNavClick={handleSidebarClose} />
+      </div>
     </div>
   );
 }

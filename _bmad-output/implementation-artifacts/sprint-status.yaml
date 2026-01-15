@@ -48,10 +48,10 @@ development_status:
   1-4-user-registration-flow: review
   1-5-user-login-flow: review
   1-6-user-logout-and-session-management: review
-  1-7-password-reset-flow: ready-for-dev
+  1-7-password-reset-flow: review
   1-8-protected-routes-and-role-based-access: review
-  1-9-application-shell-and-navigation: ready-for-dev
-  1-10-deploy-to-vercel: ready-for-dev
+  1-9-application-shell-and-navigation: review
+  1-10-deploy-to-vercel: in-progress
   epic-1-retrospective: optional
 
   # Epic 2: Idea Submission with AI Enhancement
@@ -63,7 +63,7 @@ development_status:
   2-5-idea-wizard-step-4-review-and-ai-enhancement: ready-for-dev
   2-6-gemini-edge-function-for-idea-enhancement: ready-for-dev
   2-7-submit-idea-and-save-to-database: ready-for-dev
-  2-8-my-ideas-list-view: backlog
+  2-8-my-ideas-list-view: ready-for-dev
   2-9-idea-detail-view: backlog
   epic-2-retrospective: optional
 

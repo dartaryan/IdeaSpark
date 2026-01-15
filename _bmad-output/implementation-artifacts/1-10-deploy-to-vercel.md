@@ -1,6 +1,6 @@
 # Story 1.10: Deploy to Vercel
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -26,11 +26,11 @@ So that **it's accessible via a public URL for demo and testing**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Prepare repository for deployment (AC: 1)
-  - [ ] Verify all code is committed to main branch
-  - [ ] Ensure `.gitignore` excludes `.env.local` and `node_modules`
-  - [ ] Verify `package.json` has correct `build` script: `tsc -b && vite build`
-  - [ ] Test local production build: `npm run build && npm run preview`
+- [x] Task 1: Prepare repository for deployment (AC: 1)
+  - [x] Verify all code is committed to main branch
+  - [x] Ensure `.gitignore` excludes `.env.local` and `node_modules`
+  - [x] Verify `package.json` has correct `build` script: `tsc -b && vite build`
+  - [x] Test local production build: `npm run build && npm run preview`
 
 - [ ] Task 2: Create Vercel account and link GitHub repository (AC: 1, 7)
   - [ ] Sign up for Vercel (free tier) at vercel.com
@@ -67,10 +67,10 @@ So that **it's accessible via a public URL for demo and testing**.
   - [ ] If custom domain needed, add in Vercel Project Settings → Domains
   - [ ] Update Supabase redirect URLs with custom domain
 
-- [ ] Task 8: Document deployment configuration
-  - [ ] Update README.md with deployment instructions
-  - [ ] Document environment variables needed
-  - [ ] Add production URL to project documentation
+- [x] Task 8: Document deployment configuration
+  - [x] Update README.md with deployment instructions
+  - [x] Document environment variables needed
+  - [ ] Add production URL to project documentation (after deployment)
 
 ## Dev Notes
 
@@ -265,10 +265,47 @@ After deployment:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5
 
 ### Debug Log References
 
+- Fixed TypeScript errors preventing production build:
+  - `src/components/layouts/Sidebar.tsx`: Changed `JSX.Element` to `ReactNode` with proper type-only import
+  - `src/features/auth/components/AuthGuard.tsx`: Changed to type-only import for `ReactNode` (verbatimModuleSyntax compliance)
+
 ### Completion Notes List
 
+**Task 1 - Repository Preparation (COMPLETED)**
+- Verified `.gitignore` excludes `.env.local` via `*.local` pattern and `node_modules`
+- Verified `package.json` has correct build script: `tsc -b && vite build`
+- Fixed 2 TypeScript errors that were blocking production build
+- Production build now completes successfully (dist folder generated)
+- All 199 tests pass
+
+**Task 8 - Documentation (COMPLETED)**
+- Created `vercel.json` with SPA routing rewrites to prevent 404 errors on direct URL navigation
+- Replaced boilerplate `README.md` with comprehensive IdeaSpark documentation including:
+  - Project overview and tech stack
+  - Local development setup
+  - Vercel deployment step-by-step guide
+  - Environment variables documentation
+  - Supabase configuration instructions
+  - Common issues and troubleshooting
+
+**Remaining Manual Tasks (Tasks 2-7)**
+- User must complete Vercel account setup (Task 2)
+- User must configure environment variables in Vercel dashboard (Task 3)
+- User must configure Supabase URL settings (Task 4)
+- User must trigger first deployment (Task 5)
+- User must verify production functionality (Task 6)
+- User may optionally configure custom domain (Task 7)
+
 ### File List
+
+**Created:**
+- vercel.json (SPA routing configuration)
+
+**Modified:**
+- README.md (replaced boilerplate with deployment documentation)
+- src/components/layouts/Sidebar.tsx (TypeScript fix: JSX.Element → ReactNode)
+- src/features/auth/components/AuthGuard.tsx (TypeScript fix: type-only import)
