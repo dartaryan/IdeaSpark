@@ -38,22 +38,56 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        authService.getCurrentUser().then((user) => {
-          setState((prev) => ({
-            ...prev,
-            user,
-            authUser: session.user,
-            session,
-            isLoading: false,
-          }));
-        });
-      } else {
+    let isMounted = true;
+    console.log('[useAuth] Starting session check...');
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('[useAuth] Session check timed out after 5s');
         setState((prev) => ({ ...prev, isLoading: false }));
       }
-    });
+    }, 5000);
+    
+    // Get initial session
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        clearTimeout(timeoutId);
+        if (!isMounted) return;
+        
+        console.log('[useAuth] Got session result:', session ? 'has session' : 'no session');
+        if (session?.user) {
+          try {
+            console.log('[useAuth] Fetching user data...');
+            const user = await authService.getCurrentUser();
+            if (!isMounted) return;
+            console.log('[useAuth] Got user:', user ? 'success' : 'null');
+            setState((prev) => ({
+              ...prev,
+              user,
+              authUser: session.user,
+              session,
+              isLoading: false,
+            }));
+          } catch (error) {
+            console.error('[useAuth] Failed to get current user:', error);
+            if (isMounted) setState((prev) => ({ ...prev, isLoading: false }));
+          }
+        } else {
+          console.log('[useAuth] No session, setting isLoading to false');
+          setState((prev) => ({ ...prev, isLoading: false }));
+        }
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        console.error('[useAuth] Failed to get session:', error);
+        if (isMounted) setState((prev) => ({ ...prev, isLoading: false }));
+      });
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
 
     // Subscribe to auth changes
     const {

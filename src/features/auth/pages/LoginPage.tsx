@@ -1,39 +1,78 @@
-import { useState, useEffect } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { LoginForm } from '../components/LoginForm';
 import { useAuth } from '../hooks/useAuth';
+import { useRedirectAfterLogin } from '../../../hooks/useRedirectAfterLogin';
+
+// Helper to check if URL has expired param (called once during initial state)
+function getInitialExpiredState(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('expired') === 'true';
+}
+
+// Helper to check if URL has reset=success param (called once during initial state)
+function getInitialResetSuccessState(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('reset') === 'success';
+}
 
 export function LoginPage() {
   const { user, isLoading } = useAuth();
+  const { redirectToStoredOrDefault } = useRedirectAfterLogin();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [showExpiredMessage, setShowExpiredMessage] = useState(false);
+  // Initialize state from URL params (lazy initialization)
+  const [showExpiredMessage, setShowExpiredMessage] = useState(getInitialExpiredState);
+  const [showResetSuccessMessage, setShowResetSuccessMessage] = useState(getInitialResetSuccessState);
+  const hasCleanedUrl = useRef(false);
+  const hasRedirected = useRef(false);
 
-  // Check for expired query parameter on mount
+  // Clean up URL parameter after mount (this is a side effect, not state update)
   useEffect(() => {
+    if (hasCleanedUrl.current) return;
+    hasCleanedUrl.current = true;
+    
+    const newParams = new URLSearchParams(searchParams);
+    let hasChanges = false;
+
     if (searchParams.get('expired') === 'true') {
-      setShowExpiredMessage(true);
-      // Clear the query parameter from URL without triggering navigation
-      searchParams.delete('expired');
-      setSearchParams(searchParams, { replace: true });
+      newParams.delete('expired');
+      hasChanges = true;
+    }
+
+    if (searchParams.get('reset') === 'success') {
+      newParams.delete('reset');
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      // Clear the query parameters from URL without triggering navigation
+      setSearchParams(newParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  // Redirect if already logged in - supports deep linking
+  useEffect(() => {
+    if (!isLoading && user && !hasRedirected.current) {
+      hasRedirected.current = true;
+      redirectToStoredOrDefault();
+    }
+  }, [isLoading, user, redirectToStoredOrDefault]);
 
   const dismissExpiredMessage = () => {
     setShowExpiredMessage(false);
   };
 
-  // Show loading spinner while checking auth state
-  if (isLoading) {
+  const dismissResetSuccessMessage = () => {
+    setShowResetSuccessMessage(false);
+  };
+
+  // Show loading spinner while checking auth state or redirecting
+  if (isLoading || user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-base-200">
         <span className="loading loading-spinner loading-lg text-primary"></span>
       </div>
     );
-  }
-
-  // Redirect if already logged in (AC: 3)
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
   }
 
   return (
@@ -45,6 +84,46 @@ export function LoginPage() {
             Sign in to continue to IdeaSpark
           </p>
           
+          {/* Password reset success alert */}
+          {showResetSuccessMessage && (
+            <div className="alert alert-success mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="stroke-current shrink-0 h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>Password reset successful! Please log in with your new password.</span>
+              <button
+                onClick={dismissResetSuccessMessage}
+                className="btn btn-ghost btn-xs"
+                aria-label="Dismiss message"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
+
           {/* Session expired alert */}
           {showExpiredMessage && (
             <div className="alert alert-info mb-4">
@@ -86,6 +165,13 @@ export function LoginPage() {
           )}
           
           <LoginForm />
+
+          {/* Forgot password link */}
+          <div className="text-center mt-4">
+            <Link to="/forgot-password" className="link link-primary text-sm">
+              Forgot your password?
+            </Link>
+          </div>
         </div>
       </div>
     </div>

@@ -180,7 +180,8 @@ describe('LoginForm', () => {
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith('Welcome back to IdeaSpark!');
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+      // Now uses redirectToStoredOrDefault which calls navigate with replace: true
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
     });
   });
 

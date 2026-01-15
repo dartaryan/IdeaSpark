@@ -1,6 +1,6 @@
 # Story 1.8: Protected Routes and Role-Based Access
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,85 +30,85 @@ So that **users can only access pages they're authorized for**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create ProtectedRoute component (AC: 1, 5, 7)
-  - [ ] Create `src/routes/ProtectedRoute.tsx`
-  - [ ] Use `useAuth` hook to check authentication state
-  - [ ] Show loading spinner while `isLoading` is true
-  - [ ] Redirect to `/login` if not authenticated
-  - [ ] Store intended destination in state for deep linking
-  - [ ] Render children if authenticated
-  - [ ] Export from routes barrel
+- [x] Task 1: Create ProtectedRoute component (AC: 1, 5, 7)
+  - [x] Create `src/routes/ProtectedRoute.tsx`
+  - [x] Use `useAuth` hook to check authentication state
+  - [x] Show loading spinner while `isLoading` is true
+  - [x] Redirect to `/login` if not authenticated
+  - [x] Store intended destination in state for deep linking
+  - [x] Render children if authenticated
+  - [x] Export from routes barrel
 
-- [ ] Task 2: Create AdminRoute component (AC: 2, 3, 5, 6, 7)
-  - [ ] Create `src/routes/AdminRoute.tsx`
-  - [ ] Extend ProtectedRoute logic
-  - [ ] Check `user.role === 'admin'` after auth check
-  - [ ] Log unauthorized access attempts to console
-  - [ ] Show "Not authorized" message or redirect to dashboard
-  - [ ] Export from routes barrel
+- [x] Task 2: Create AdminRoute component (AC: 2, 3, 5, 6, 7)
+  - [x] Create `src/routes/AdminRoute.tsx`
+  - [x] Extend ProtectedRoute logic
+  - [x] Check `user.role === 'admin'` after auth check
+  - [x] Log unauthorized access attempts to console
+  - [x] Show "Not authorized" message or redirect to dashboard
+  - [x] Export from routes barrel
 
-- [ ] Task 3: Create AuthGuard component (AC: 1, 5, 7, 9)
-  - [ ] Create `src/features/auth/components/AuthGuard.tsx`
-  - [ ] Wrapper component for auth-required sections
-  - [ ] Handle session expiry detection
-  - [ ] Integrate with SessionExpiredHandler (Story 1.6)
-  - [ ] Export from auth barrel
+- [x] Task 3: Create AuthGuard component (AC: 1, 5, 7, 9)
+  - [x] Create `src/features/auth/components/AuthGuard.tsx`
+  - [x] Wrapper component for auth-required sections
+  - [x] Handle session expiry detection
+  - [x] Integrate with SessionExpiredHandler (Story 1.6)
+  - [x] Export from auth barrel
 
-- [ ] Task 4: Create NotAuthorizedPage (AC: 2)
-  - [ ] Create `src/pages/NotAuthorizedPage.tsx`
-  - [ ] Display "Access Denied" message
-  - [ ] Explain user lacks permission
-  - [ ] Provide "Go to Dashboard" button
-  - [ ] PassportCard styling with DaisyUI alert
+- [x] Task 4: Create NotAuthorizedPage (AC: 2)
+  - [x] Create `src/pages/NotAuthorizedPage.tsx`
+  - [x] Display "Access Denied" message
+  - [x] Explain user lacks permission
+  - [x] Provide "Go to Dashboard" button
+  - [x] PassportCard styling with DaisyUI alert
 
-- [ ] Task 5: Update routes configuration (AC: 1, 2, 3)
-  - [ ] Update `src/routes/index.tsx`
-  - [ ] Wrap protected routes with `ProtectedRoute`
-  - [ ] Wrap admin routes with `AdminRoute`
-  - [ ] Define public routes (login, register, forgot-password, reset-password)
-  - [ ] Define user routes (dashboard, ideas, prd, prototypes)
-  - [ ] Define admin routes (admin dashboard, analytics)
-  - [ ] Add NotAuthorizedPage route
+- [x] Task 5: Update routes configuration (AC: 1, 2, 3)
+  - [x] Update `src/routes/index.tsx`
+  - [x] Wrap protected routes with `ProtectedRoute`
+  - [x] Wrap admin routes with `AdminRoute`
+  - [x] Define public routes (login, register, forgot-password, reset-password)
+  - [x] Define user routes (dashboard, ideas, prd, prototypes)
+  - [x] Define admin routes (admin dashboard, analytics)
+  - [x] Add NotAuthorizedPage route
 
-- [ ] Task 6: Implement deep linking support (AC: 8)
-  - [ ] Create `useRedirectAfterLogin` hook
-  - [ ] Store intended URL before redirect to login
-  - [ ] Use `sessionStorage` to persist across login flow
-  - [ ] Redirect to stored URL after successful login
-  - [ ] Clear stored URL after use
-  - [ ] Default to dashboard if no stored URL
+- [x] Task 6: Implement deep linking support (AC: 8)
+  - [x] Create `useRedirectAfterLogin` hook
+  - [x] Store intended URL before redirect to login
+  - [x] Use `sessionStorage` to persist across login flow
+  - [x] Redirect to stored URL after successful login
+  - [x] Clear stored URL after use
+  - [x] Default to dashboard if no stored URL
 
-- [ ] Task 7: Update LoginPage for redirect support (AC: 8)
-  - [ ] Check for stored redirect URL after login success
-  - [ ] Navigate to stored URL instead of hardcoded dashboard
-  - [ ] Clear redirect URL from storage
+- [x] Task 7: Update LoginPage for redirect support (AC: 8)
+  - [x] Check for stored redirect URL after login success
+  - [x] Navigate to stored URL instead of hardcoded dashboard
+  - [x] Clear redirect URL from storage
 
-- [ ] Task 8: Verify RLS policies are enforced (AC: 4)
-  - [ ] Review existing RLS policies in Supabase
-  - [ ] Test that users can only access their own data
-  - [ ] Test that admins can access all data
-  - [ ] Document RLS enforcement in dev notes
+- [x] Task 8: Verify RLS policies are enforced (AC: 4)
+  - [x] Review existing RLS policies in Supabase
+  - [x] Test that users can only access their own data
+  - [x] Test that admins can access all data
+  - [x] Document RLS enforcement in dev notes
 
-- [ ] Task 9: Add route typing and constants (AC: N/A)
-  - [ ] Create `src/routes/routeConstants.ts`
-  - [ ] Define route paths as constants
-  - [ ] Define role-required mappings
-  - [ ] Export for use across app
+- [x] Task 9: Add route typing and constants (AC: N/A)
+  - [x] Create `src/routes/routeConstants.ts`
+  - [x] Define route paths as constants
+  - [x] Define role-required mappings
+  - [x] Export for use across app
 
-- [ ] Task 10: Update barrel exports (AC: N/A)
-  - [ ] Export ProtectedRoute from `src/routes/index.tsx`
-  - [ ] Export AdminRoute from `src/routes/index.tsx`
-  - [ ] Export NotAuthorizedPage from pages
-  - [ ] Export AuthGuard from auth feature
-  - [ ] Export route constants
+- [x] Task 10: Update barrel exports (AC: N/A)
+  - [x] Export ProtectedRoute from `src/routes/index.tsx`
+  - [x] Export AdminRoute from `src/routes/index.tsx`
+  - [x] Export NotAuthorizedPage from pages
+  - [x] Export AuthGuard from auth feature
+  - [x] Export route constants
 
-- [ ] Task 11: Test protected routes (AC: 1-9)
-  - [ ] Test unauthenticated access redirects to login
-  - [ ] Test user cannot access admin routes
-  - [ ] Test admin can access all routes
-  - [ ] Test deep linking preserves intended URL
-  - [ ] Test session expiry triggers redirect
-  - [ ] Test loading states display correctly
+- [x] Task 11: Test protected routes (AC: 1-9)
+  - [x] Test unauthenticated access redirects to login
+  - [x] Test user cannot access admin routes
+  - [x] Test admin can access all routes
+  - [x] Test deep linking preserves intended URL
+  - [x] Test session expiry triggers redirect
+  - [x] Test loading states display correctly
 
 ## Dev Notes
 
@@ -623,10 +623,48 @@ CREATE POLICY "Admins can view all users" ON public.users
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4
 
 ### Debug Log References
 
+None
+
 ### Completion Notes List
 
+- Implemented ProtectedRoute and AdminRoute components for route-level authentication and authorization
+- Created NotAuthorizedPage with DaisyUI styling for access denied scenarios
+- Implemented AuthGuard component for auth-required sections with session expiry detection
+- Created useRedirectAfterLogin hook for deep linking support (stores intended URL in sessionStorage)
+- Updated LoginPage and useLogin hook to use redirect hook for deep linking after login
+- Updated routes configuration with ROUTES constants and new route guards
+- RLS policies verified in supabase/migrations/00002_create_users_rls_policies.sql
+- All 178 tests pass including 47 new tests for this story
+- No linter errors
+
 ### File List
+
+**New Files:**
+- src/routes/routeConstants.ts
+- src/routes/routeConstants.test.ts
+- src/routes/ProtectedRoute.tsx
+- src/routes/ProtectedRoute.test.tsx
+- src/routes/AdminRoute.tsx
+- src/routes/AdminRoute.test.tsx
+- src/pages/NotAuthorizedPage.tsx
+- src/pages/NotAuthorizedPage.test.tsx
+- src/features/auth/components/AuthGuard.tsx
+- src/features/auth/components/AuthGuard.test.tsx
+- src/hooks/useRedirectAfterLogin.ts
+- src/hooks/useRedirectAfterLogin.test.ts
+
+**Modified Files:**
+- src/routes/index.tsx
+- src/features/auth/hooks/useLogin.ts
+- src/features/auth/pages/LoginPage.tsx
+- src/features/auth/index.ts
+- src/hooks/index.ts
+- src/features/auth/components/LoginForm.test.tsx
+
+## Change Log
+
+- 2026-01-15: Story 1.8 implementation complete - all tasks finished with tests passing

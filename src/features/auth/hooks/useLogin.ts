@@ -1,11 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { authService } from '../services/authService';
+import { useRedirectAfterLogin } from '../../../hooks/useRedirectAfterLogin';
 import type { LoginFormData } from '../schemas/authSchemas';
 
 export function useLogin() {
-  const navigate = useNavigate();
+  const { redirectToStoredOrDefault } = useRedirectAfterLogin();
 
   return useMutation({
     mutationFn: async (data: LoginFormData) => {
@@ -17,7 +17,8 @@ export function useLogin() {
     },
     onSuccess: () => {
       toast.success('Welcome back to IdeaSpark!');
-      navigate('/dashboard');
+      // Redirect to stored URL (deep linking) or default to dashboard
+      redirectToStoredOrDefault();
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Login failed. Please try again.');

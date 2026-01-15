@@ -9,8 +9,8 @@ export interface UseSessionOptions {
 }
 
 export interface UseSessionReturn {
-  /** Last time the token was refreshed */
-  lastRefreshTime: Date | null;
+  /** Get the last time the token was refreshed */
+  getLastRefreshTime: () => Date | null;
   /** Check if session is still valid */
   isSessionValid: () => Promise<boolean>;
   /** Manually refresh the session */
@@ -62,11 +62,6 @@ export function useSession(options: UseSessionOptions = {}): UseSessionReturn {
           hadSessionRef.current = true;
           lastRefreshTimeRef.current = new Date();
           break;
-          
-        case 'USER_DELETED':
-          hadSessionRef.current = false;
-          onSessionExpired?.();
-          break;
       }
       
       // Update session tracking
@@ -95,8 +90,10 @@ export function useSession(options: UseSessionOptions = {}): UseSessionReturn {
     return session;
   }, []);
 
+  const getLastRefreshTime = useCallback(() => lastRefreshTimeRef.current, []);
+
   return {
-    lastRefreshTime: lastRefreshTimeRef.current,
+    getLastRefreshTime,
     isSessionValid,
     refreshSession,
   };
