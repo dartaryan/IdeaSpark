@@ -72,7 +72,7 @@ development_status:
   3-1-create-prd-database-tables-and-service-layer: ready-for-dev
   3-2-prd-builder-page-layout: ready-for-dev
   3-3-gemini-edge-function-for-prd-chat: ready-for-dev
-  3-4-chat-interface-with-ai-assistant: backlog
+  3-4-chat-interface-with-ai-assistant: ready-for-dev
   3-5-real-time-prd-section-generation: backlog
   3-6-prd-auto-save-functionality: backlog
   3-7-prd-section-structure-and-content: backlog
