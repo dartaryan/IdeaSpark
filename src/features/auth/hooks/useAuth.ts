@@ -83,18 +83,18 @@ export function useAuth() {
         console.error('[useAuth] Failed to get session:', error);
         if (isMounted) setState((prev) => ({ ...prev, isLoading: false }));
       });
-    
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
 
     // Subscribe to auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session) => {
+      if (!isMounted) return;
+      
+      console.log('[useAuth] Auth state changed:', event, session ? 'has session' : 'no session');
+      
       if (session?.user) {
         const user = await authService.getCurrentUser();
+        if (!isMounted) return;
         setState((prev) => ({
           ...prev,
           user,
@@ -118,7 +118,11 @@ export function useAuth() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const logout = useCallback(async () => {

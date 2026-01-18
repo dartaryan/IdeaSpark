@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IdeaWizard } from './IdeaWizard';
-import { MIN_PROBLEM_CHARS } from '../../schemas/ideaSchemas';
+import { MIN_PROBLEM_CHARS, MIN_SOLUTION_CHARS } from '../../schemas/ideaSchemas';
 
 describe('IdeaWizard', () => {
   it('renders the wizard container', () => {
@@ -50,7 +50,64 @@ describe('IdeaWizard', () => {
 
     // Should now be on step 2
     expect(screen.getByText(/Step 2 of 4/i)).toBeInTheDocument();
-    expect(screen.getByText(/Solution Description/i)).toBeInTheDocument();
+    expect(screen.getByText(/Describe Your Solution/i)).toBeInTheDocument();
+  });
+
+  it('shows problem context card on step 2', async () => {
+    const user = userEvent.setup();
+    render(<IdeaWizard />);
+
+    const problemText = 'This is my detailed problem description that is long enough to be valid';
+
+    // Enter problem text and navigate to step 2
+    await user.type(screen.getByTestId('problem-textarea'), problemText);
+    await user.click(screen.getByTestId('next-button'));
+
+    // Should show problem context card with the problem text
+    expect(screen.getByTestId('problem-context-card')).toBeInTheDocument();
+    expect(screen.getByTestId('problem-context-text')).toHaveTextContent(problemText);
+  });
+
+  it('shows solution textarea on step 2', async () => {
+    const user = userEvent.setup();
+    render(<IdeaWizard />);
+
+    // Navigate to step 2
+    await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+    await user.click(screen.getByTestId('next-button'));
+
+    // Should show solution textarea
+    expect(screen.getByTestId('solution-textarea')).toBeInTheDocument();
+  });
+
+  it('disables Next button on step 2 when solution is too short', async () => {
+    const user = userEvent.setup();
+    render(<IdeaWizard />);
+
+    // Navigate to step 2
+    await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+    await user.click(screen.getByTestId('next-button'));
+
+    // Enter insufficient solution text
+    await user.type(screen.getByTestId('solution-textarea'), 'Too short');
+
+    // Next button should be disabled
+    expect(screen.getByTestId('next-button')).toBeDisabled();
+  });
+
+  it('enables Next button on step 2 when solution meets minimum', async () => {
+    const user = userEvent.setup();
+    render(<IdeaWizard />);
+
+    // Navigate to step 2
+    await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+    await user.click(screen.getByTestId('next-button'));
+
+    // Enter valid solution text
+    await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+
+    // Next button should be enabled
+    expect(screen.getByTestId('next-button')).not.toBeDisabled();
   });
 
   it('marks step 1 as complete when navigating to step 2', async () => {
@@ -122,6 +179,33 @@ describe('IdeaWizard', () => {
     expect(screen.getByText(/Step 1 of 4/i)).toBeInTheDocument();
   });
 
+  it('preserves solution text when navigating back from step 2 and returning', async () => {
+    const user = userEvent.setup();
+    render(<IdeaWizard />);
+
+    const problemText = 'a'.repeat(MIN_PROBLEM_CHARS);
+    const solutionText = 'This is my solution description that is long enough';
+
+    // Navigate to step 2
+    await user.type(screen.getByTestId('problem-textarea'), problemText);
+    await user.click(screen.getByTestId('next-button'));
+
+    // Enter solution text
+    await user.type(screen.getByTestId('solution-textarea'), solutionText);
+
+    // Go back to step 1
+    await user.click(screen.getByTestId('back-button'));
+
+    // Problem text should be preserved
+    expect(screen.getByTestId('problem-textarea')).toHaveValue(problemText);
+
+    // Go forward to step 2 again
+    await user.click(screen.getByTestId('next-button'));
+
+    // Solution text should be preserved
+    expect(screen.getByTestId('solution-textarea')).toHaveValue(solutionText);
+  });
+
   it('can navigate through all steps to step 4', async () => {
     const user = userEvent.setup();
     render(<IdeaWizard />);
@@ -131,8 +215,9 @@ describe('IdeaWizard', () => {
     await user.click(screen.getByTestId('next-button'));
     expect(screen.getByText(/Step 2 of 4/i)).toBeInTheDocument();
 
-    // Step 2 -> 3
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    // Step 2 -> 3 (now requires valid solution)
+    await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+    await user.click(screen.getByTestId('next-button'));
     expect(screen.getByText(/Step 3 of 4/i)).toBeInTheDocument();
 
     // Step 3 -> 4
@@ -144,10 +229,11 @@ describe('IdeaWizard', () => {
     const user = userEvent.setup();
     render(<IdeaWizard />);
 
-    // Navigate to step 4
+    // Navigate to step 4 (now requires valid solution on step 2)
     await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
     await user.click(screen.getByTestId('next-button'));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+    await user.click(screen.getByTestId('next-button'));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     // Submit button should be disabled (until story 2.5)
