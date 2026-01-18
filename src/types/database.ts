@@ -11,6 +11,13 @@ export type Json =
 
 export type UserRole = 'user' | 'admin';
 
+export type IdeaStatus =
+  | 'submitted'
+  | 'approved'
+  | 'prd_development'
+  | 'prototype_complete'
+  | 'rejected';
+
 export interface Database {
   public: {
     Tables: {
@@ -37,11 +44,56 @@ export interface Database {
           updated_at?: string;
         };
       };
+      ideas: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          problem: string;
+          solution: string;
+          impact: string;
+          enhanced_problem: string | null;
+          enhanced_solution: string | null;
+          enhanced_impact: string | null;
+          status: IdeaStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          problem: string;
+          solution: string;
+          impact: string;
+          enhanced_problem?: string | null;
+          enhanced_solution?: string | null;
+          enhanced_impact?: string | null;
+          status?: IdeaStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          problem?: string;
+          solution?: string;
+          impact?: string;
+          enhanced_problem?: string | null;
+          enhanced_solution?: string | null;
+          enhanced_impact?: string | null;
+          status?: IdeaStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: {
       user_role: UserRole;
+      idea_status: IdeaStatus;
     };
   };
 }
@@ -50,3 +102,30 @@ export interface Database {
 export type User = Database['public']['Tables']['users']['Row'];
 export type UserInsert = Database['public']['Tables']['users']['Insert'];
 export type UserUpdate = Database['public']['Tables']['users']['Update'];
+
+// Idea types
+export type Idea = Database['public']['Tables']['ideas']['Row'];
+export type IdeaInsert = Database['public']['Tables']['ideas']['Insert'];
+export type IdeaUpdate = Database['public']['Tables']['ideas']['Update'];
+
+// Input types for service layer (user-facing, doesn't include user_id)
+export interface CreateIdeaInput {
+  title: string;
+  problem: string;
+  solution: string;
+  impact: string;
+  enhanced_problem?: string;
+  enhanced_solution?: string;
+  enhanced_impact?: string;
+}
+
+export interface UpdateIdeaInput {
+  title?: string;
+  problem?: string;
+  solution?: string;
+  impact?: string;
+  enhanced_problem?: string;
+  enhanced_solution?: string;
+  enhanced_impact?: string;
+  status?: IdeaStatus;
+}

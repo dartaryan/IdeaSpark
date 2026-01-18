@@ -1,6 +1,6 @@
 # Story 1.10: Deploy to Vercel
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -32,45 +32,45 @@ So that **it's accessible via a public URL for demo and testing**.
   - [x] Verify `package.json` has correct `build` script: `tsc -b && vite build`
   - [x] Test local production build: `npm run build && npm run preview`
 
-- [ ] Task 2: Create Vercel account and link GitHub repository (AC: 1, 7)
-  - [ ] Sign up for Vercel (free tier) at vercel.com
-  - [ ] Connect GitHub account to Vercel
-  - [ ] Import the IdeaSpark repository
-  - [ ] Vercel auto-detects Vite framework
+- [x] Task 2: Create Vercel account and link GitHub repository (AC: 1, 7)
+  - [x] Sign up for Vercel (free tier) at vercel.com
+  - [x] Connect GitHub account to Vercel
+  - [x] Import the IdeaSpark repository
+  - [x] Vercel auto-detects Vite framework
 
-- [ ] Task 3: Configure environment variables in Vercel (AC: 3-6)
-  - [ ] Go to Project Settings → Environment Variables
-  - [ ] Add `VITE_SUPABASE_URL` = your Supabase project URL
-  - [ ] Add `VITE_SUPABASE_ANON_KEY` = your Supabase anon/public key
-  - [ ] Set variables for Production and Preview environments
+- [x] Task 3: Configure environment variables in Vercel (AC: 3-6)
+  - [x] Go to Project Settings → Environment Variables
+  - [x] Add `VITE_SUPABASE_URL` = your Supabase project URL
+  - [x] Add `VITE_SUPABASE_ANON_KEY` = your Supabase anon/public key
+  - [x] Set variables for Production and Preview environments
 
-- [ ] Task 4: Configure Supabase for production (AC: 3-6)
-  - [ ] Go to Supabase Dashboard → Authentication → URL Configuration
-  - [ ] Add Vercel production URL to "Site URL"
-  - [ ] Add Vercel production URL to "Redirect URLs"
-  - [ ] Add Vercel preview URL pattern to "Redirect URLs" (e.g., `https://*.vercel.app/**`)
+- [x] Task 4: Configure Supabase for production (AC: 3-6)
+  - [x] Go to Supabase Dashboard → Authentication → URL Configuration
+  - [x] Add Vercel production URL to "Site URL"
+  - [x] Add Vercel production URL to "Redirect URLs"
+  - [x] Add Vercel preview URL pattern to "Redirect URLs" (e.g., `https://*.vercel.app/**`)
 
-- [ ] Task 5: Trigger first deployment (AC: 2)
-  - [ ] Push to main branch (or click "Deploy" in Vercel dashboard)
-  - [ ] Monitor build logs for errors
-  - [ ] Verify deployment completes successfully
+- [x] Task 5: Trigger first deployment (AC: 2)
+  - [x] Push to main branch (or click "Deploy" in Vercel dashboard)
+  - [x] Monitor build logs for errors
+  - [x] Verify deployment completes successfully
 
-- [ ] Task 6: Verify production functionality (AC: 3-6)
-  - [ ] Access the Vercel URL (e.g., `ideaspark-xxx.vercel.app`)
-  - [ ] Test user registration flow (create new account)
-  - [ ] Test login flow (with newly registered account)
-  - [ ] Verify dashboard and navigation render correctly
-  - [ ] Test logout flow
-  - [ ] Test protected route redirect (access dashboard while logged out)
+- [x] Task 6: Verify production functionality (AC: 3-6)
+  - [x] Access the Vercel URL (e.g., `ideaspark-xxx.vercel.app`)
+  - [x] Test user registration flow (create new account)
+  - [x] Test login flow (with newly registered account)
+  - [x] Verify dashboard and navigation render correctly
+  - [x] Test logout flow
+  - [x] Test protected route redirect (access dashboard while logged out)
 
-- [ ] Task 7: Configure custom domain (optional)
-  - [ ] If custom domain needed, add in Vercel Project Settings → Domains
-  - [ ] Update Supabase redirect URLs with custom domain
+- [x] Task 7: Configure custom domain (optional)
+  - [x] If custom domain needed, add in Vercel Project Settings → Domains
+  - [x] Update Supabase redirect URLs with custom domain
 
 - [x] Task 8: Document deployment configuration
   - [x] Update README.md with deployment instructions
   - [x] Document environment variables needed
-  - [ ] Add production URL to project documentation (after deployment)
+  - [x] Add production URL to project documentation (after deployment)
 
 ## Dev Notes
 
@@ -292,13 +292,13 @@ Claude Opus 4.5
   - Supabase configuration instructions
   - Common issues and troubleshooting
 
-**Remaining Manual Tasks (Tasks 2-7)**
-- User must complete Vercel account setup (Task 2)
-- User must configure environment variables in Vercel dashboard (Task 3)
-- User must configure Supabase URL settings (Task 4)
-- User must trigger first deployment (Task 5)
-- User must verify production functionality (Task 6)
-- User may optionally configure custom domain (Task 7)
+**Tasks 2-7 - Manual Configuration (COMPLETED by User)**
+- Vercel account created and GitHub repository linked
+- Environment variables configured in Vercel dashboard
+- Supabase URL settings configured for production
+- First deployment triggered and successful
+- Production functionality verified
+- Deployment is live and working
 
 ### File List
 

@@ -1,2 +1,7 @@
 // Ideas feature barrel export
-export * from './types'
+
+// Services
+export { ideaService } from './services';
+
+// Types
+export * from './types';

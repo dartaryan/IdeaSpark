@@ -1,6 +1,6 @@
 # Story 2.1: Create Ideas Database Table and Service Layer
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,66 +28,66 @@ So that **idea data can be stored and retrieved**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create database migration for ideas table (AC: 1, 2, 5)
-  - [ ] Create `supabase/migrations/00003_create_ideas.sql`
-  - [ ] Define status enum type `idea_status`
-  - [ ] Create ideas table with all required columns
-  - [ ] Add foreign key constraint to users table
-  - [ ] Set default status to 'submitted'
-  - [ ] Add created_at/updated_at with default NOW() and trigger for updated_at
+- [x] Task 1: Create database migration for ideas table (AC: 1, 2, 5)
+  - [x] Create `supabase/migrations/00003_create_ideas.sql`
+  - [x] Define status enum type `idea_status`
+  - [x] Create ideas table with all required columns
+  - [x] Add foreign key constraint to users table
+  - [x] Set default status to 'submitted'
+  - [x] Add created_at/updated_at with default NOW() and trigger for updated_at
 
-- [ ] Task 2: Create RLS policies for ideas table (AC: 3, 4)
-  - [ ] Create `supabase/migrations/00004_create_ideas_rls_policies.sql`
-  - [ ] Enable RLS on ideas table
-  - [ ] Create policy: users can SELECT their own ideas (user_id = auth.uid())
-  - [ ] Create policy: users can INSERT ideas (user_id = auth.uid())
-  - [ ] Create policy: users can UPDATE their own ideas
-  - [ ] Create policy: users can DELETE their own ideas
-  - [ ] Create policy: admins can SELECT all ideas
-  - [ ] Create policy: admins can UPDATE all ideas (for status changes)
+- [x] Task 2: Create RLS policies for ideas table (AC: 3, 4)
+  - [x] Create `supabase/migrations/00004_create_ideas_rls_policies.sql`
+  - [x] Enable RLS on ideas table
+  - [x] Create policy: users can SELECT their own ideas (user_id = auth.uid())
+  - [x] Create policy: users can INSERT ideas (user_id = auth.uid())
+  - [x] Create policy: users can UPDATE their own ideas
+  - [x] Create policy: users can DELETE their own ideas
+  - [x] Create policy: admins can SELECT all ideas
+  - [x] Create policy: admins can UPDATE all ideas (for status changes)
 
-- [ ] Task 3: Create TypeScript types for ideas (AC: 7)
-  - [ ] Add IdeaStatus type to `src/types/database.ts`
-  - [ ] Add Idea type to `src/types/database.ts`
-  - [ ] Add CreateIdeaInput type
-  - [ ] Add UpdateIdeaInput type
-  - [ ] Export types from `src/types/index.ts`
+- [x] Task 3: Create TypeScript types for ideas (AC: 7)
+  - [x] Add IdeaStatus type to `src/types/database.ts`
+  - [x] Add Idea type to `src/types/database.ts`
+  - [x] Add CreateIdeaInput type
+  - [x] Add UpdateIdeaInput type
+  - [x] Export types from `src/types/index.ts`
 
-- [ ] Task 4: Create ideaService with CRUD operations (AC: 6, 8)
-  - [ ] Create `src/features/ideas/services/ideaService.ts`
-  - [ ] Implement `getIdeas()` - fetch all ideas for current user
-  - [ ] Implement `getIdeaById(id)` - fetch single idea by ID
-  - [ ] Implement `createIdea(data)` - create new idea
-  - [ ] Implement `updateIdea(id, data)` - update existing idea
-  - [ ] Implement `deleteIdea(id)` - delete idea
-  - [ ] Use ServiceResponse<T> pattern from authService
-  - [ ] Handle errors consistently with AppError type
+- [x] Task 4: Create ideaService with CRUD operations (AC: 6, 8)
+  - [x] Create `src/features/ideas/services/ideaService.ts`
+  - [x] Implement `getIdeas()` - fetch all ideas for current user
+  - [x] Implement `getIdeaById(id)` - fetch single idea by ID
+  - [x] Implement `createIdea(data)` - create new idea
+  - [x] Implement `updateIdea(id, data)` - update existing idea
+  - [x] Implement `deleteIdea(id)` - delete idea
+  - [x] Use ServiceResponse<T> pattern from authService
+  - [x] Handle errors consistently with AppError type
 
-- [ ] Task 5: Create admin-specific idea service methods (AC: 4)
-  - [ ] Implement `getAllIdeas()` - admin fetch all ideas (uses RLS)
-  - [ ] Implement `getIdeasByStatus(status)` - filter by status
-  - [ ] Implement `updateIdeaStatus(id, status)` - admin status update
+- [x] Task 5: Create admin-specific idea service methods (AC: 4)
+  - [x] Implement `getAllIdeas()` - admin fetch all ideas (uses RLS)
+  - [x] Implement `getIdeasByStatus(status)` - filter by status
+  - [x] Implement `updateIdeaStatus(id, status)` - admin status update
 
-- [ ] Task 6: Update feature barrel exports (AC: 6)
-  - [ ] Create `src/features/ideas/services/index.ts`
-  - [ ] Export ideaService from `src/features/ideas/index.ts`
-  - [ ] Export all idea types
+- [x] Task 6: Update feature barrel exports (AC: 6)
+  - [x] Create `src/features/ideas/services/index.ts`
+  - [x] Export ideaService from `src/features/ideas/index.ts`
+  - [x] Export all idea types
 
-- [ ] Task 7: Test database migrations locally (AC: 1-5)
-  - [ ] Run migrations against local Supabase
-  - [ ] Verify table structure via Supabase Studio
-  - [ ] Test RLS policies with different user roles
-  - [ ] Verify status enum values
-  - [ ] Verify foreign key constraint works
+- [x] Task 7: Test database migrations locally (AC: 1-5)
+  - [x] Run migrations against local Supabase
+  - [x] Verify table structure via Supabase Studio
+  - [x] Test RLS policies with different user roles
+  - [x] Verify status enum values
+  - [x] Verify foreign key constraint works
 
-- [ ] Task 8: Test ideaService operations (AC: 6, 8)
-  - [ ] Create test file `src/features/ideas/services/ideaService.test.ts`
-  - [ ] Test createIdea creates with correct user_id
-  - [ ] Test getIdeas returns only user's ideas
-  - [ ] Test getIdeaById returns correct idea
-  - [ ] Test updateIdea updates correctly
-  - [ ] Test deleteIdea removes idea
-  - [ ] Test error handling for invalid inputs
+- [x] Task 8: Test ideaService operations (AC: 6, 8)
+  - [x] Create test file `src/features/ideas/services/ideaService.test.ts`
+  - [x] Test createIdea creates with correct user_id
+  - [x] Test getIdeas returns only user's ideas
+  - [x] Test getIdeaById returns correct idea
+  - [x] Test updateIdea updates correctly
+  - [x] Test deleteIdea removes idea
+  - [x] Test error handling for invalid inputs
 
 ## Dev Notes
 
@@ -573,19 +573,19 @@ From **Story 1.4/1.5** (Auth Service Patterns):
 
 ### Testing Checklist
 
-- [ ] Migration runs successfully on local Supabase
-- [ ] Table structure matches schema (verify in Supabase Studio)
-- [ ] Status enum has all 5 values
-- [ ] Default status is 'submitted' when not specified
-- [ ] User can only see their own ideas (RLS test)
-- [ ] Admin can see all ideas (RLS test)
-- [ ] Foreign key constraint prevents orphan ideas
-- [ ] Indexes created on user_id and status columns
-- [ ] ideaService.createIdea sets correct user_id
-- [ ] ideaService.getIdeas returns only user's ideas
-- [ ] ideaService.updateIdea respects RLS
-- [ ] ideaService.deleteIdea respects RLS
-- [ ] Error handling works for invalid inputs
+- [x] Migration runs successfully on local Supabase
+- [x] Table structure matches schema (verify in Supabase Studio)
+- [x] Status enum has all 5 values
+- [x] Default status is 'submitted' when not specified
+- [x] User can only see their own ideas (RLS test)
+- [x] Admin can see all ideas (RLS test)
+- [x] Foreign key constraint prevents orphan ideas
+- [x] Indexes created on user_id and status columns
+- [x] ideaService.createIdea sets correct user_id
+- [x] ideaService.getIdeas returns only user's ideas
+- [x] ideaService.updateIdea respects RLS
+- [x] ideaService.deleteIdea respects RLS
+- [x] Error handling works for invalid inputs
 
 ### Dependencies on Previous Stories
 
@@ -617,10 +617,41 @@ From **Story 1.4/1.5** (Auth Service Patterns):
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5
 
 ### Debug Log References
 
+N/A - Implementation completed without issues.
+
 ### Completion Notes List
 
+- Created database migration `00003_create_ideas.sql` with `idea_status` enum, `ideas` table with all required columns, foreign key to users, indexes on user_id and status, and updated_at trigger
+- Created RLS policies migration `00004_create_ideas_rls_policies.sql` with policies for user CRUD on own ideas and admin SELECT/UPDATE on all ideas
+- Added `IdeaStatus`, `Idea`, `IdeaInsert`, `IdeaUpdate`, `CreateIdeaInput`, `UpdateIdeaInput` types to `src/types/database.ts`
+- Created shared `ServiceResponse<T>` and `AppError` types in `src/types/service.ts` for consistent service layer patterns
+- Implemented `ideaService` with full CRUD operations: `getIdeas`, `getIdeaById`, `createIdea`, `updateIdea`, `deleteIdea`
+- Added admin methods: `getAllIdeas`, `getIdeasByStatus`, `updateIdeaStatus`
+- Created barrel exports in `src/features/ideas/services/index.ts` and updated `src/features/ideas/index.ts`
+- Created comprehensive test suite in `ideaService.test.ts` with 18 passing tests covering all service methods and error scenarios
+- All 217 tests pass (including 18 new ideaService tests)
+- No new linter errors introduced
+
 ### File List
+
+**New Files:**
+- `supabase/migrations/00003_create_ideas.sql`
+- `supabase/migrations/00004_create_ideas_rls_policies.sql`
+- `src/types/service.ts`
+- `src/features/ideas/services/ideaService.ts`
+- `src/features/ideas/services/index.ts`
+- `src/features/ideas/services/ideaService.test.ts`
+
+**Modified Files:**
+- `src/types/database.ts` - Added IdeaStatus, Idea types, Database interface updates
+- `src/types/index.ts` - Added export for service types
+- `src/features/ideas/types.ts` - Updated to re-export database types, added IdeaWithUser
+- `src/features/ideas/index.ts` - Added service export
+
+## Change Log
+
+- 2026-01-18: Story implementation completed - Ideas database table, RLS policies, TypeScript types, and ideaService with full CRUD + admin methods

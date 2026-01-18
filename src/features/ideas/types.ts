@@ -1,13 +1,20 @@
 // Ideas feature types
-export interface Idea {
-  id: string
-  user_id: string
-  title: string
-  problem_statement: string
-  proposed_solution: string
-  expected_impact: string
-  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected'
-  ai_enhanced_content: string | null
-  created_at: string
-  updated_at: string
+// Re-export database types for feature-level access
+export type {
+  Idea,
+  IdeaStatus,
+  IdeaInsert,
+  IdeaUpdate,
+  CreateIdeaInput,
+  UpdateIdeaInput,
+} from '../../types/database';
+
+import type { Idea } from '../../types/database';
+
+// Feature-specific types
+export interface IdeaWithUser extends Idea {
+  user?: {
+    id: string;
+    email: string;
+  };
 }

@@ -51,27 +51,27 @@ development_status:
   1-7-password-reset-flow: review
   1-8-protected-routes-and-role-based-access: review
   1-9-application-shell-and-navigation: review
-  1-10-deploy-to-vercel: in-progress
+  1-10-deploy-to-vercel: review
   epic-1-retrospective: optional
 
   # Epic 2: Idea Submission with AI Enhancement
   epic-2: in-progress
-  2-1-create-ideas-database-table-and-service-layer: ready-for-dev
-  2-2-idea-wizard-step-1-problem-definition: ready-for-dev
+  2-1-create-ideas-database-table-and-service-layer: review
+  2-2-idea-wizard-step-1-problem-definition: review
   2-3-idea-wizard-step-2-solution-description: ready-for-dev
   2-4-idea-wizard-step-3-impact-assessment: ready-for-dev
   2-5-idea-wizard-step-4-review-and-ai-enhancement: ready-for-dev
   2-6-gemini-edge-function-for-idea-enhancement: ready-for-dev
   2-7-submit-idea-and-save-to-database: ready-for-dev
   2-8-my-ideas-list-view: ready-for-dev
-  2-9-idea-detail-view: backlog
+  2-9-idea-detail-view: ready-for-dev
   epic-2-retrospective: optional
 
   # Epic 3: AI-Powered PRD Development
-  epic-3: backlog
-  3-1-create-prd-database-tables-and-service-layer: backlog
-  3-2-prd-builder-page-layout: backlog
-  3-3-gemini-edge-function-for-prd-chat: backlog
+  epic-3: in-progress
+  3-1-create-prd-database-tables-and-service-layer: ready-for-dev
+  3-2-prd-builder-page-layout: ready-for-dev
+  3-3-gemini-edge-function-for-prd-chat: ready-for-dev
   3-4-chat-interface-with-ai-assistant: backlog
   3-5-real-time-prd-section-generation: backlog
   3-6-prd-auto-save-functionality: backlog
