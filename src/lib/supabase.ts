@@ -10,11 +10,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+// Custom lock function to prevent AbortError conflicts with React StrictMode
+// The default navigator.locks can cause issues when effects run twice in development
+const customLock = async <R>(
+  _name: string,
+  acquireTimeout: number,
+  fn: () => Promise<R>
+): Promise<R> => {
+  // Simple implementation that doesn't use navigator.locks
+  // This avoids AbortError issues while still working correctly
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Lock timeout')), acquireTimeout);
+  });
+  return Promise.race([fn(), timeoutPromise]);
+};
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    lock: customLock,
   },
 });
 

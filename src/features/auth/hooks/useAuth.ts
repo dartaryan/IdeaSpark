@@ -39,20 +39,66 @@ export function useAuth() {
 
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     console.log('[useAuth] Starting session check...');
     
-    // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      if (isMounted) {
-        console.warn('[useAuth] Session check timed out after 5s');
-        setState((prev) => ({ ...prev, isLoading: false }));
+    // Subscribe to auth changes FIRST - this ensures we catch login events
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session) => {
+      if (!isMounted) return;
+      
+      // Clear timeout since auth state changed
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
       }
-    }, 5000);
-    
+      
+      console.log('[useAuth] Auth state changed:', event, session ? 'has session' : 'no session');
+      
+      if (session?.user) {
+        try {
+          const user = await authService.getCurrentUser();
+          if (!isMounted) return;
+          setState((prev) => ({
+            ...prev,
+            user,
+            authUser: session.user,
+            session,
+            isLoading: false,
+          }));
+        } catch (error) {
+          // Handle abort errors gracefully
+          if (error instanceof Error && error.name === 'AbortError') {
+            console.warn('[useAuth] Request aborted, likely due to component unmount');
+            return;
+          }
+          console.error('[useAuth] Failed to get current user:', error);
+          if (isMounted) setState((prev) => ({ ...prev, isLoading: false }));
+        }
+      } else {
+        // Session ended - determine if it was user-initiated or expired
+        const wasUserInitiated = isUserInitiatedLogout.current;
+        isUserInitiatedLogout.current = false; // Reset flag
+        
+        setState((prev) => ({
+          user: null,
+          authUser: null,
+          session: null,
+          isLoading: false,
+          // Mark as expired only if it wasn't user-initiated and we had a previous session
+          sessionExpired: !wasUserInitiated && prev.session !== null && event === 'SIGNED_OUT',
+        }));
+      }
+    });
+
     // Get initial session
     supabase.auth.getSession()
       .then(async ({ data: { session } }) => {
-        clearTimeout(timeoutId);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
         if (!isMounted) return;
         
         console.log('[useAuth] Got session result:', session ? 'has session' : 'no session');
@@ -70,6 +116,11 @@ export function useAuth() {
               isLoading: false,
             }));
           } catch (error) {
+            // Handle abort errors gracefully
+            if (error instanceof Error && error.name === 'AbortError') {
+              console.warn('[useAuth] Request aborted, likely due to component unmount');
+              return;
+            }
             console.error('[useAuth] Failed to get current user:', error);
             if (isMounted) setState((prev) => ({ ...prev, isLoading: false }));
           }
@@ -79,48 +130,32 @@ export function useAuth() {
         }
       })
       .catch((error) => {
-        clearTimeout(timeoutId);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        // Handle abort errors gracefully
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.warn('[useAuth] Session check aborted, likely due to component unmount');
+          return;
+        }
         console.error('[useAuth] Failed to get session:', error);
         if (isMounted) setState((prev) => ({ ...prev, isLoading: false }));
       });
-
-    // Subscribe to auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session) => {
-      if (!isMounted) return;
-      
-      console.log('[useAuth] Auth state changed:', event, session ? 'has session' : 'no session');
-      
-      if (session?.user) {
-        const user = await authService.getCurrentUser();
-        if (!isMounted) return;
-        setState((prev) => ({
-          ...prev,
-          user,
-          authUser: session.user,
-          session,
-          isLoading: false,
-        }));
-      } else {
-        // Session ended - determine if it was user-initiated or expired
-        const wasUserInitiated = isUserInitiatedLogout.current;
-        isUserInitiatedLogout.current = false; // Reset flag
-        
-        setState((prev) => ({
-          user: null,
-          authUser: null,
-          session: null,
-          isLoading: false,
-          // Mark as expired only if it wasn't user-initiated and we had a previous session
-          sessionExpired: !wasUserInitiated && prev.session !== null && event === 'SIGNED_OUT',
-        }));
+    
+    // Add timeout as fallback to prevent infinite loading
+    timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('[useAuth] Session check timed out after 10s');
+        setState((prev) => ({ ...prev, isLoading: false }));
       }
-    });
+    }, 10000);
 
     return () => {
       isMounted = false;
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       subscription.unsubscribe();
     };
   }, []);

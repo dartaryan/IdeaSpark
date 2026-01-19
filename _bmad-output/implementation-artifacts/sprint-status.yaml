@@ -75,7 +75,7 @@ development_status:
   3-4-chat-interface-with-ai-assistant: ready-for-dev
   3-5-real-time-prd-section-generation: ready-for-dev
   3-6-prd-auto-save-functionality: ready-for-dev
-  3-7-prd-section-structure-and-content: backlog
+  3-7-prd-section-structure-and-content: ready-for-dev
   3-8-mark-prd-as-complete: backlog
   3-9-view-completed-prd: backlog
   epic-3-retrospective: optional

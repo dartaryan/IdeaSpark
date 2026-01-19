@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IdeaWizard } from './IdeaWizard';
-import { MIN_PROBLEM_CHARS, MIN_SOLUTION_CHARS } from '../../schemas/ideaSchemas';
+import { MIN_PROBLEM_CHARS, MIN_SOLUTION_CHARS, MIN_IMPACT_CHARS } from '../../schemas/ideaSchemas';
 
 describe('IdeaWizard', () => {
   it('renders the wizard container', () => {
@@ -220,8 +220,9 @@ describe('IdeaWizard', () => {
     await user.click(screen.getByTestId('next-button'));
     expect(screen.getByText(/Step 3 of 4/i)).toBeInTheDocument();
 
-    // Step 3 -> 4
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    // Step 3 -> 4 (now requires valid impact)
+    await user.type(screen.getByTestId('impact-textarea'), 'a'.repeat(MIN_IMPACT_CHARS));
+    await user.click(screen.getByTestId('next-button'));
     expect(screen.getByText(/Step 4 of 4/i)).toBeInTheDocument();
   });
 
@@ -229,15 +230,165 @@ describe('IdeaWizard', () => {
     const user = userEvent.setup();
     render(<IdeaWizard />);
 
-    // Navigate to step 4 (now requires valid solution on step 2)
+    // Navigate to step 4 (requires valid problem, solution, and impact)
     await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
     await user.click(screen.getByTestId('next-button'));
     await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
     await user.click(screen.getByTestId('next-button'));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await user.type(screen.getByTestId('impact-textarea'), 'a'.repeat(MIN_IMPACT_CHARS));
+    await user.click(screen.getByTestId('next-button'));
 
     // Submit button should be disabled (until story 2.5)
     const submitButton = screen.getByRole('button', { name: /submit idea/i });
     expect(submitButton).toBeDisabled();
+  });
+
+  describe('Step 3 - Impact Assessment', () => {
+    it('shows impact textarea on step 3', async () => {
+      const user = userEvent.setup();
+      render(<IdeaWizard />);
+
+      // Navigate to step 3
+      await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+      await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+
+      // Should show impact textarea
+      expect(screen.getByTestId('impact-textarea')).toBeInTheDocument();
+    });
+
+    it('shows guidance prompts card on step 3', async () => {
+      const user = userEvent.setup();
+      render(<IdeaWizard />);
+
+      // Navigate to step 3
+      await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+      await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+
+      // Should show guidance prompts
+      expect(screen.getByTestId('guidance-prompts-card')).toBeInTheDocument();
+      expect(screen.getByText(/Who benefits\?/i)).toBeInTheDocument();
+    });
+
+    it('shows step indicator with steps 1-2 complete and step 3 current', async () => {
+      const user = userEvent.setup();
+      render(<IdeaWizard />);
+
+      // Navigate to step 3
+      await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+      await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+
+      // Steps 1-2 should be complete (success)
+      expect(screen.getByTestId('step-indicator-1')).toHaveClass('bg-success');
+      expect(screen.getByTestId('step-indicator-2')).toHaveClass('bg-success');
+
+      // Step 3 should be current (primary)
+      expect(screen.getByTestId('step-indicator-3')).toHaveClass('bg-primary');
+
+      // Step 4 should be incomplete
+      expect(screen.getByTestId('step-indicator-4')).toHaveClass('bg-base-300');
+    });
+
+    it('disables Next button on step 3 when impact is too short', async () => {
+      const user = userEvent.setup();
+      render(<IdeaWizard />);
+
+      // Navigate to step 3
+      await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+      await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+
+      // Enter insufficient impact text
+      await user.type(screen.getByTestId('impact-textarea'), 'Too short');
+
+      // Next button should be disabled
+      expect(screen.getByTestId('next-button')).toBeDisabled();
+    });
+
+    it('enables Next button on step 3 when impact meets minimum', async () => {
+      const user = userEvent.setup();
+      render(<IdeaWizard />);
+
+      // Navigate to step 3
+      await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+      await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+
+      // Enter valid impact text
+      await user.type(screen.getByTestId('impact-textarea'), 'a'.repeat(MIN_IMPACT_CHARS));
+
+      // Next button should be enabled
+      expect(screen.getByTestId('next-button')).not.toBeDisabled();
+    });
+
+    it('can navigate back from step 3 to step 2', async () => {
+      const user = userEvent.setup();
+      render(<IdeaWizard />);
+
+      // Navigate to step 3
+      await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+      await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+
+      // Click Back
+      await user.click(screen.getByTestId('back-button'));
+
+      // Should be back on step 2
+      expect(screen.getByText(/Step 2 of 4/i)).toBeInTheDocument();
+      expect(screen.getByTestId('solution-textarea')).toBeInTheDocument();
+    });
+
+    it('preserves all data when navigating back from step 3', async () => {
+      const user = userEvent.setup();
+      render(<IdeaWizard />);
+
+      const problemText = 'a'.repeat(MIN_PROBLEM_CHARS);
+      const solutionText = 'a'.repeat(MIN_SOLUTION_CHARS);
+      const impactText = 'This is my impact description';
+
+      // Navigate to step 3 with data
+      await user.type(screen.getByTestId('problem-textarea'), problemText);
+      await user.click(screen.getByTestId('next-button'));
+      await user.type(screen.getByTestId('solution-textarea'), solutionText);
+      await user.click(screen.getByTestId('next-button'));
+      await user.type(screen.getByTestId('impact-textarea'), impactText);
+
+      // Go back to step 2
+      await user.click(screen.getByTestId('back-button'));
+      expect(screen.getByTestId('solution-textarea')).toHaveValue(solutionText);
+
+      // Go back to step 1
+      await user.click(screen.getByTestId('back-button'));
+      expect(screen.getByTestId('problem-textarea')).toHaveValue(problemText);
+
+      // Go forward to step 2
+      await user.click(screen.getByTestId('next-button'));
+      expect(screen.getByTestId('solution-textarea')).toHaveValue(solutionText);
+
+      // Go forward to step 3
+      await user.click(screen.getByTestId('next-button'));
+      expect(screen.getByTestId('impact-textarea')).toHaveValue(impactText);
+    });
+
+    it('shows step label "Assess the Impact" on step 3', async () => {
+      const user = userEvent.setup();
+      render(<IdeaWizard />);
+
+      // Navigate to step 3
+      await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+      await user.type(screen.getByTestId('solution-textarea'), 'a'.repeat(MIN_SOLUTION_CHARS));
+      await user.click(screen.getByTestId('next-button'));
+
+      expect(screen.getByText(/Assess the Impact/i)).toBeInTheDocument();
+    });
   });
 });

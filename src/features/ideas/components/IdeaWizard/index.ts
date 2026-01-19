@@ -3,3 +3,4 @@ export { IdeaWizard } from './IdeaWizard';
 export { StepIndicator } from './StepIndicator';
 export { StepProblem } from './StepProblem';
 export { StepSolution } from './StepSolution';
+export { StepImpact } from './StepImpact';

@@ -5,6 +5,7 @@ import { ideaWizardSchema, type IdeaWizardFormData } from '../../schemas/ideaSch
 import { StepIndicator } from './StepIndicator';
 import { StepProblem } from './StepProblem';
 import { StepSolution } from './StepSolution';
+import { StepImpact } from './StepImpact';
 
 const TOTAL_STEPS = 4;
 
@@ -50,34 +51,7 @@ export function IdeaWizard() {
 
         {currentStep === 2 && <StepSolution onNext={handleNext} onBack={handleBack} />}
 
-        {currentStep === 3 && (
-          <div className="space-y-6">
-            <div className="alert alert-info">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                className="stroke-current shrink-0 w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span>Step 3: Impact Assessment - Coming in Story 2.4</span>
-            </div>
-            <div className="flex justify-between">
-              <button type="button" onClick={handleBack} className="btn btn-ghost">
-                Back
-              </button>
-              <button type="button" onClick={handleNext} className="btn btn-primary">
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        {currentStep === 3 && <StepImpact onNext={handleNext} onBack={handleBack} />}
 
         {currentStep === 4 && (
           <div className="space-y-6">

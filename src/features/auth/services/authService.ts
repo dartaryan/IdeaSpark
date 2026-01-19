@@ -115,6 +115,15 @@ export const authService = {
 
       return { data: userData, error: null };
     } catch (error) {
+      // Handle AbortError gracefully - these occur during React StrictMode
+      // when the component unmounts while a request is in progress
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('Login request aborted (likely due to component unmount)');
+        return {
+          data: null,
+          error: { message: 'Request was cancelled', code: 'ABORT_ERROR' },
+        };
+      }
       console.error('Login error:', error);
       return {
         data: null,
