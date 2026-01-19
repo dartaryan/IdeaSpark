@@ -10,7 +10,7 @@ const STEP_LABELS: Record<number, string> = {
   1: 'Define the Problem',
   2: 'Describe Your Solution',
   3: 'Assess the Impact',
-  4: 'Review & Submit',
+  4: 'Review & Enhance',
 };
 
 /**

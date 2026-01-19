@@ -38,7 +38,7 @@ describe('StepIndicator', () => {
     render(<StepIndicator currentStep={4} totalSteps={4} />);
 
     expect(screen.getByText(/Step 4 of 4/i)).toBeInTheDocument();
-    expect(screen.getByText(/Review & Submit/i)).toBeInTheDocument();
+    expect(screen.getByText(/Review & Enhance/i)).toBeInTheDocument();
   });
 
   it('marks current step with aria-current attribute', () => {

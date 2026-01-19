@@ -6,6 +6,7 @@ import { StepIndicator } from './StepIndicator';
 import { StepProblem } from './StepProblem';
 import { StepSolution } from './StepSolution';
 import { StepImpact } from './StepImpact';
+import { StepReview } from './StepReview';
 
 const TOTAL_STEPS = 4;
 
@@ -42,6 +43,11 @@ export function IdeaWizard() {
     }
   };
 
+  const handleSubmit = () => {
+    // TODO: Story 2.7 - Implement actual submission to database
+    console.log('Submit idea:', methods.getValues());
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-6">
       <StepIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />
@@ -54,32 +60,7 @@ export function IdeaWizard() {
         {currentStep === 3 && <StepImpact onNext={handleNext} onBack={handleBack} />}
 
         {currentStep === 4 && (
-          <div className="space-y-6">
-            <div className="alert alert-info">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                className="stroke-current shrink-0 w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span>Step 4: Review & Submit - Coming in Story 2.5</span>
-            </div>
-            <div className="flex justify-between">
-              <button type="button" onClick={handleBack} className="btn btn-ghost">
-                Back
-              </button>
-              <button type="submit" className="btn btn-primary" disabled>
-                Submit Idea
-              </button>
-            </div>
-          </div>
+          <StepReview onBack={handleBack} onSubmit={handleSubmit} />
         )}
       </FormProvider>
     </div>

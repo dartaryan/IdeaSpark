@@ -1,8 +1,34 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { IdeaWizard } from './IdeaWizard';
 import { MIN_PROBLEM_CHARS, MIN_SOLUTION_CHARS, MIN_IMPACT_CHARS } from '../../schemas/ideaSchemas';
+
+// Mock the useEnhanceIdea hook since Step 4 uses it
+vi.mock('../../hooks/useEnhanceIdea', () => ({
+  useEnhanceIdea: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    error: null,
+    isError: false,
+  }),
+}));
+
+// Wrapper for QueryClient
+function renderWithQueryClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      {ui}
+    </QueryClientProvider>
+  );
+}
 
 describe('IdeaWizard', () => {
   it('renders the wizard container', () => {
@@ -208,7 +234,7 @@ describe('IdeaWizard', () => {
 
   it('can navigate through all steps to step 4', async () => {
     const user = userEvent.setup();
-    render(<IdeaWizard />);
+    renderWithQueryClient(<IdeaWizard />);
 
     // Step 1 -> 2
     await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
@@ -226,9 +252,9 @@ describe('IdeaWizard', () => {
     expect(screen.getByText(/Step 4 of 4/i)).toBeInTheDocument();
   });
 
-  it('shows Submit button disabled on step 4', async () => {
+  it('shows Submit button enabled on step 4', async () => {
     const user = userEvent.setup();
-    render(<IdeaWizard />);
+    renderWithQueryClient(<IdeaWizard />);
 
     // Navigate to step 4 (requires valid problem, solution, and impact)
     await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
@@ -238,9 +264,9 @@ describe('IdeaWizard', () => {
     await user.type(screen.getByTestId('impact-textarea'), 'a'.repeat(MIN_IMPACT_CHARS));
     await user.click(screen.getByTestId('next-button'));
 
-    // Submit button should be disabled (until story 2.5)
-    const submitButton = screen.getByRole('button', { name: /submit idea/i });
-    expect(submitButton).toBeDisabled();
+    // Submit button should be enabled now (Story 2.5 implemented)
+    const submitButton = screen.getByTestId('submit-button');
+    expect(submitButton).not.toBeDisabled();
   });
 
   describe('Step 3 - Impact Assessment', () => {
