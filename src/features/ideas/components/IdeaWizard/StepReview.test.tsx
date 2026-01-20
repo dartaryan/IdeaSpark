@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
 import { StepReview } from './StepReview';
 import {
   ideaWizardSchema,
@@ -13,29 +15,54 @@ import {
 } from '../../schemas/ideaSchemas';
 
 // Mock state for controlling hook behavior in tests
-const mockMutate = vi.fn();
-let mockIsPending = false;
-let mockError: Error | null = null;
-let mockIsError = false;
+const mockEnhanceMutate = vi.fn();
+let mockEnhanceIsPending = false;
+let mockEnhanceError: Error | null = null;
+let mockEnhanceIsError = false;
 
 // Mock the useEnhanceIdea hook
 vi.mock('../../hooks/useEnhanceIdea', () => ({
   useEnhanceIdea: () => ({
-    mutate: mockMutate,
-    isPending: mockIsPending,
-    error: mockError,
-    isError: mockIsError,
+    mutate: mockEnhanceMutate,
+    isPending: mockEnhanceIsPending,
+    error: mockEnhanceError,
+    isError: mockEnhanceIsError,
   }),
 }));
 
+// Mock the useSubmitIdea hook
+const mockSubmitIdea = vi.fn();
+let mockSubmitIsSubmitting = false;
+vi.mock('../../hooks/useSubmitIdea', () => ({
+  useSubmitIdea: () => ({
+    submitIdea: mockSubmitIdea,
+    isSubmitting: mockSubmitIsSubmitting,
+    error: null,
+    reset: vi.fn(),
+    isSuccess: false,
+  }),
+}));
+
+// Create a fresh query client for each test
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+}
+
 beforeEach(() => {
-  mockMutate.mockReset();
-  mockIsPending = false;
-  mockError = null;
-  mockIsError = false;
+  mockEnhanceMutate.mockReset();
+  mockEnhanceIsPending = false;
+  mockEnhanceError = null;
+  mockEnhanceIsError = false;
+  mockSubmitIdea.mockReset();
+  mockSubmitIsSubmitting = false;
 });
 
-// Wrapper component to provide form context
+// Wrapper component to provide form context and required providers
 function TestWrapper({
   children,
   defaultValues = { problem: '', solution: '', impact: '' },
@@ -48,8 +75,15 @@ function TestWrapper({
     mode: 'onChange',
     defaultValues,
   });
+  const queryClient = createTestQueryClient();
 
-  return <FormProvider {...methods}>{children}</FormProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <FormProvider {...methods}>{children}</FormProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
 }
 
 // Default valid texts for all steps
@@ -68,7 +102,7 @@ describe('StepReview', () => {
     it('renders the review heading', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -78,7 +112,7 @@ describe('StepReview', () => {
     it('renders the description text', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -91,7 +125,7 @@ describe('StepReview', () => {
         <TestWrapper
           defaultValues={{ ...defaultValidValues, problem }}
         >
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -105,7 +139,7 @@ describe('StepReview', () => {
         <TestWrapper
           defaultValues={{ ...defaultValidValues, solution }}
         >
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -119,7 +153,7 @@ describe('StepReview', () => {
         <TestWrapper
           defaultValues={{ ...defaultValidValues, impact }}
         >
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -133,7 +167,7 @@ describe('StepReview', () => {
     it('renders the Enhance with AI button prominently', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -144,7 +178,7 @@ describe('StepReview', () => {
     it('Enhance with AI button has primary styling', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -157,7 +191,7 @@ describe('StepReview', () => {
     it('renders Back button', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -167,7 +201,7 @@ describe('StepReview', () => {
     it('renders Submit Idea button', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -179,7 +213,7 @@ describe('StepReview', () => {
       const onBack = vi.fn();
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={onBack} onSubmit={vi.fn()} />
+          <StepReview onBack={onBack} />
         </TestWrapper>
       );
 
@@ -189,25 +223,24 @@ describe('StepReview', () => {
       expect(onBack).toHaveBeenCalledTimes(1);
     });
 
-    it('calls onSubmit when Submit Idea button is clicked', async () => {
+    it('calls submitIdea hook when Submit Idea button is clicked', async () => {
       const user = userEvent.setup();
-      const onSubmit = vi.fn();
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={onSubmit} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
       const submitButton = screen.getByTestId('submit-button');
       await user.click(submitButton);
 
-      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(mockSubmitIdea).toHaveBeenCalledTimes(1);
     });
 
     it('Back button has ghost styling', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -218,7 +251,7 @@ describe('StepReview', () => {
     it('Submit button has primary styling', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -231,7 +264,7 @@ describe('StepReview', () => {
     it('review sections have bg-base-200 background', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -247,7 +280,7 @@ describe('StepReview', () => {
     it('renders edit button for problem section', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -257,7 +290,7 @@ describe('StepReview', () => {
     it('renders edit button for solution section', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -267,7 +300,7 @@ describe('StepReview', () => {
     it('renders edit button for impact section', () => {
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -278,7 +311,7 @@ describe('StepReview', () => {
       const user = userEvent.setup();
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -292,7 +325,7 @@ describe('StepReview', () => {
       const user = userEvent.setup();
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -307,7 +340,7 @@ describe('StepReview', () => {
       const user = userEvent.setup();
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -325,7 +358,7 @@ describe('StepReview', () => {
       const originalProblem = 'Original problem text that is at least fifty characters long';
       render(
         <TestWrapper defaultValues={{ ...defaultValidValues, problem: originalProblem }}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -347,7 +380,7 @@ describe('StepReview', () => {
       const user = userEvent.setup();
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -361,7 +394,7 @@ describe('StepReview', () => {
       const user = userEvent.setup();
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -382,15 +415,15 @@ describe('StepReview', () => {
       const user = userEvent.setup();
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
       const enhanceButton = screen.getByTestId('enhance-button');
       await user.click(enhanceButton);
 
-      expect(mockMutate).toHaveBeenCalledTimes(1);
-      expect(mockMutate).toHaveBeenCalledWith(
+      expect(mockEnhanceMutate).toHaveBeenCalledTimes(1);
+      expect(mockEnhanceMutate).toHaveBeenCalledWith(
         {
           problem: defaultValidValues.problem,
           solution: defaultValidValues.solution,
@@ -403,10 +436,10 @@ describe('StepReview', () => {
 
   describe('Loading State (AC: 5)', () => {
     it('shows loading indicator when AI is processing', () => {
-      mockIsPending = true;
+      mockEnhanceIsPending = true;
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -415,10 +448,10 @@ describe('StepReview', () => {
     });
 
     it('hides Enhance with AI button when loading', () => {
-      mockIsPending = true;
+      mockEnhanceIsPending = true;
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -426,10 +459,10 @@ describe('StepReview', () => {
     });
 
     it('disables Submit button when loading', () => {
-      mockIsPending = true;
+      mockEnhanceIsPending = true;
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -437,10 +470,10 @@ describe('StepReview', () => {
     });
 
     it('hides review cards when loading', () => {
-      mockIsPending = true;
+      mockEnhanceIsPending = true;
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -450,11 +483,11 @@ describe('StepReview', () => {
 
   describe('Error State (AC: 10)', () => {
     it('shows error alert when enhancement fails', () => {
-      mockIsError = true;
-      mockError = new Error('AI service unavailable');
+      mockEnhanceIsError = true;
+      mockEnhanceError = new Error('AI service unavailable');
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -463,11 +496,11 @@ describe('StepReview', () => {
     });
 
     it('shows retry button on error', () => {
-      mockIsError = true;
-      mockError = new Error('AI service unavailable');
+      mockEnhanceIsError = true;
+      mockEnhanceError = new Error('AI service unavailable');
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -475,11 +508,11 @@ describe('StepReview', () => {
     });
 
     it('shows error message in alert', () => {
-      mockIsError = true;
-      mockError = new Error('Custom error message from service');
+      mockEnhanceIsError = true;
+      mockEnhanceError = new Error('Custom error message from service');
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -487,11 +520,11 @@ describe('StepReview', () => {
     });
 
     it('allows proceeding with original text on error (Submit button enabled)', () => {
-      mockIsError = true;
-      mockError = new Error('AI service unavailable');
+      mockEnhanceIsError = true;
+      mockEnhanceError = new Error('AI service unavailable');
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
@@ -500,18 +533,18 @@ describe('StepReview', () => {
 
     it('calls enhance again when retry button is clicked', async () => {
       const user = userEvent.setup();
-      mockIsError = true;
-      mockError = new Error('AI service unavailable');
+      mockEnhanceIsError = true;
+      mockEnhanceError = new Error('AI service unavailable');
       render(
         <TestWrapper defaultValues={defaultValidValues}>
-          <StepReview onBack={vi.fn()} onSubmit={vi.fn()} />
+          <StepReview onBack={vi.fn()} />
         </TestWrapper>
       );
 
       const retryButton = screen.getByTestId('retry-button');
       await user.click(retryButton);
 
-      expect(mockMutate).toHaveBeenCalledTimes(1);
+      expect(mockEnhanceMutate).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -1,6 +1,6 @@
 # Story 2.7: Submit Idea and Save to Database
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,47 +28,47 @@ So that **it enters the innovation pipeline**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create useSubmitIdea hook with React Query mutation (AC: 1, 2, 5, 6)
-  - [ ] Create `src/features/ideas/hooks/useSubmitIdea.ts`
-  - [ ] Use `useMutation` from React Query
-  - [ ] Call `ideaService.createIdea` with wizard data
-  - [ ] Handle success: invalidate ideas query, show toast, navigate
-  - [ ] Handle error: show error toast, preserve form state
-  - [ ] Return mutation state: `isSubmitting`, `error`, `submitIdea`
+- [x] Task 1: Create useSubmitIdea hook with React Query mutation (AC: 1, 2, 5, 6)
+  - [x] Create `src/features/ideas/hooks/useSubmitIdea.ts`
+  - [x] Use `useMutation` from React Query
+  - [x] Call `ideaService.createIdea` with wizard data
+  - [x] Handle success: invalidate ideas query, show toast, navigate
+  - [x] Handle error: show error toast, preserve form state
+  - [x] Return mutation state: `isSubmitting`, `error`, `submitIdea`
 
-- [ ] Task 2: Generate idea title from problem statement (AC: 1, 7)
-  - [ ] Create `generateIdeaTitle` utility function
-  - [ ] Extract first 50 characters of problem text
-  - [ ] Trim at word boundary if possible
-  - [ ] Add ellipsis if truncated
-  - [ ] Place in `src/features/ideas/utils/ideaUtils.ts`
+- [x] Task 2: Generate idea title from problem statement (AC: 1, 7)
+  - [x] Create `generateIdeaTitle` utility function
+  - [x] Extract first 50 characters of problem text
+  - [x] Trim at word boundary if possible
+  - [x] Add ellipsis if truncated
+  - [x] Place in `src/features/ideas/utils/ideaUtils.ts`
 
-- [ ] Task 3: Integrate submit functionality into StepReview component (AC: 1, 6, 7, 8)
-  - [ ] Import and use `useSubmitIdea` hook
-  - [ ] Wire "Submit Idea" button to mutation
-  - [ ] Disable button while `isSubmitting` is true
-  - [ ] Show loading spinner on button during submission
-  - [ ] Map wizard state to `CreateIdeaInput` format
-  - [ ] Include enhanced content if user accepted AI enhancement
+- [x] Task 3: Integrate submit functionality into StepReview component (AC: 1, 6, 7, 8)
+  - [x] Import and use `useSubmitIdea` hook
+  - [x] Wire "Submit Idea" button to mutation
+  - [x] Disable button while `isSubmitting` is true
+  - [x] Show loading spinner on button during submission
+  - [x] Map wizard state to `CreateIdeaInput` format
+  - [x] Include enhanced content if user accepted AI enhancement
 
-- [ ] Task 4: Implement success flow with navigation (AC: 2, 3, 4)
-  - [ ] Show success toast: "Idea submitted successfully!"
-  - [ ] Navigate to `/ideas` using `useNavigate` from react-router-dom
-  - [ ] Ensure React Query cache invalidation triggers fresh ideas fetch
-  - [ ] Clear wizard state after successful submission
+- [x] Task 4: Implement success flow with navigation (AC: 2, 3, 4)
+  - [x] Show success toast: "Idea submitted successfully!"
+  - [x] Navigate to `/ideas` using `useNavigate` from react-router-dom
+  - [x] Ensure React Query cache invalidation triggers fresh ideas fetch
+  - [x] Clear wizard state after successful submission
 
-- [ ] Task 5: Implement error handling and retry flow (AC: 5, 6)
-  - [ ] Display error toast with user-friendly message
-  - [ ] Keep wizard state intact on error (no clearing)
-  - [ ] Enable retry by keeping "Submit Idea" button active after error
-  - [ ] Log error details to console for debugging
+- [x] Task 5: Implement error handling and retry flow (AC: 5, 6)
+  - [x] Display error toast with user-friendly message
+  - [x] Keep wizard state intact on error (no clearing)
+  - [x] Enable retry by keeping "Submit Idea" button active after error
+  - [x] Log error details to console for debugging
 
-- [ ] Task 6: Create integration test for submit flow (AC: 1-6)
-  - [ ] Create `src/features/ideas/hooks/useSubmitIdea.test.ts`
-  - [ ] Test successful submission flow
-  - [ ] Test error handling flow
-  - [ ] Test title generation from problem
-  - [ ] Test data mapping (original vs enhanced)
+- [x] Task 6: Create integration test for submit flow (AC: 1-6)
+  - [x] Create `src/features/ideas/hooks/useSubmitIdea.test.tsx`
+  - [x] Test successful submission flow
+  - [x] Test error handling flow
+  - [x] Test title generation from problem
+  - [x] Test data mapping (original vs enhanced)
 
 ## Dev Notes
 
@@ -513,10 +513,44 @@ User clicks "Submit Idea"
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (via Cursor)
 
 ### Debug Log References
 
+- All 428 tests pass (no regressions)
+- New tests: 37 tests (19 in useSubmitIdea.test.tsx, 18 in ideaUtils.test.ts)
+
 ### Completion Notes List
 
+- Created `useSubmitIdea` hook with React Query mutation for idea submission
+- Created `generateIdeaTitle` utility function with word boundary truncation
+- Created `useToast` hook for DaisyUI toast notifications
+- Integrated submit functionality into StepReview component
+- Implemented success flow: toast notification, cache invalidation, navigation to /ideas
+- Implemented error handling: user-friendly error messages, wizard data preservation
+- Updated StepReview props to use `onClearWizard` instead of `onSubmit` (submission handled by hook)
+- Updated IdeaWizard to provide `onClearWizard` callback
+- Added comprehensive unit tests for useSubmitIdea hook and generateIdeaTitle utility
+- Updated existing StepReview and IdeaWizard tests to include required mocks for new hooks
+
 ### File List
+
+**New Files:**
+- `src/hooks/useToast.ts` - Toast notification hook for DaisyUI
+- `src/features/ideas/hooks/useSubmitIdea.ts` - Idea submission mutation hook
+- `src/features/ideas/hooks/useSubmitIdea.test.tsx` - Unit tests for submission hook
+- `src/features/ideas/utils/ideaUtils.ts` - Title generation utility
+- `src/features/ideas/utils/ideaUtils.test.ts` - Unit tests for utilities
+
+**Modified Files:**
+- `src/hooks/index.ts` - Added useToast export
+- `src/features/ideas/hooks/index.ts` - Added useSubmitIdea, ideaQueryKeys, WizardSubmitData exports
+- `src/features/ideas/index.ts` - Added hooks and utils exports
+- `src/features/ideas/components/IdeaWizard/StepReview.tsx` - Integrated useSubmitIdea hook
+- `src/features/ideas/components/IdeaWizard/IdeaWizard.tsx` - Updated to use onClearWizard callback
+- `src/features/ideas/components/IdeaWizard/StepReview.test.tsx` - Updated tests for new hook
+- `src/features/ideas/components/IdeaWizard/IdeaWizard.test.tsx` - Added required mocks
+
+## Change Log
+
+- 2026-01-20: Story 2.7 implemented - Submit idea and save to database functionality complete

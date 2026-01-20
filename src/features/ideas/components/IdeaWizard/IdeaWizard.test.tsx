@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
 import { IdeaWizard } from './IdeaWizard';
 import { MIN_PROBLEM_CHARS, MIN_SOLUTION_CHARS, MIN_IMPACT_CHARS } from '../../schemas/ideaSchemas';
 
@@ -15,8 +16,19 @@ vi.mock('../../hooks/useEnhanceIdea', () => ({
   }),
 }));
 
-// Wrapper for QueryClient
-function renderWithQueryClient(ui: React.ReactElement) {
+// Mock the useSubmitIdea hook since Step 4 uses it for submission
+vi.mock('../../hooks/useSubmitIdea', () => ({
+  useSubmitIdea: () => ({
+    submitIdea: vi.fn(),
+    isSubmitting: false,
+    error: null,
+    reset: vi.fn(),
+    isSuccess: false,
+  }),
+}));
+
+// Wrapper for QueryClient and Router
+function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -25,7 +37,9 @@ function renderWithQueryClient(ui: React.ReactElement) {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      {ui}
+      <BrowserRouter>
+        {ui}
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
@@ -234,7 +248,7 @@ describe('IdeaWizard', () => {
 
   it('can navigate through all steps to step 4', async () => {
     const user = userEvent.setup();
-    renderWithQueryClient(<IdeaWizard />);
+    renderWithProviders(<IdeaWizard />);
 
     // Step 1 -> 2
     await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));
@@ -254,7 +268,7 @@ describe('IdeaWizard', () => {
 
   it('shows Submit button enabled on step 4', async () => {
     const user = userEvent.setup();
-    renderWithQueryClient(<IdeaWizard />);
+    renderWithProviders(<IdeaWizard />);
 
     // Navigate to step 4 (requires valid problem, solution, and impact)
     await user.type(screen.getByTestId('problem-textarea'), 'a'.repeat(MIN_PROBLEM_CHARS));

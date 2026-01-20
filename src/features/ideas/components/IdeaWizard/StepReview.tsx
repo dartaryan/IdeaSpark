@@ -3,11 +3,12 @@ import { useFormContext } from 'react-hook-form';
 import type { IdeaWizardFormData } from '../../schemas/ideaSchemas';
 import { MIN_PROBLEM_CHARS, MIN_SOLUTION_CHARS, MIN_IMPACT_CHARS } from '../../schemas/ideaSchemas';
 import { useEnhanceIdea } from '../../hooks/useEnhanceIdea';
+import { useSubmitIdea } from '../../hooks/useSubmitIdea';
 import { ComparisonSection } from './ComparisonSection';
 
 interface StepReviewProps {
   onBack: () => void;
-  onSubmit: () => void;
+  onClearWizard?: () => void;
 }
 
 type SectionField = 'problem' | 'solution' | 'impact';
@@ -136,9 +137,9 @@ function ReviewCard({
  * StepReview - Step 4 of the Idea Wizard
  *
  * Allows users to review their complete idea, edit any section,
- * and optionally enhance with AI assistance.
+ * optionally enhance with AI assistance, and submit to the database.
  */
-export function StepReview({ onBack, onSubmit }: StepReviewProps) {
+export function StepReview({ onBack, onClearWizard }: StepReviewProps) {
   const { watch, setValue } = useFormContext<IdeaWizardFormData>();
   const [editingSection, setEditingSection] = useState<SectionField | null>(null);
   const [isEnhanced, setIsEnhanced] = useState(false);
@@ -155,6 +156,7 @@ export function StepReview({ onBack, onSubmit }: StepReviewProps) {
   const impactValue = watch('impact') || '';
 
   const { mutate: enhanceIdea, isPending: isEnhancing, error, isError } = useEnhanceIdea();
+  const { submitIdea, isSubmitting } = useSubmitIdea({ onSuccess: onClearWizard });
 
   const handleEditSection = (section: SectionField) => {
     setEditingSection(section);
@@ -210,6 +212,31 @@ export function StepReview({ onBack, onSubmit }: StepReviewProps) {
   const handleRetry = () => {
     handleEnhance();
   };
+
+  /**
+   * Handle idea submission - maps wizard state to submission format
+   */
+  const handleSubmit = () => {
+    // Determine if user is using any enhanced content
+    const useEnhanced = isEnhanced && (
+      selectedVersions.problem === 'enhanced' ||
+      selectedVersions.solution === 'enhanced' ||
+      selectedVersions.impact === 'enhanced'
+    );
+
+    submitIdea({
+      problem: problemValue,
+      solution: solutionValue,
+      impact: impactValue,
+      enhancedProblem: enhancedContent?.problem,
+      enhancedSolution: enhancedContent?.solution,
+      enhancedImpact: enhancedContent?.impact,
+      useEnhanced,
+    });
+  };
+
+  // Combined loading state for disabling navigation
+  const isLoading = isEnhancing || isSubmitting;
 
   return (
     <div className="space-y-6">
@@ -375,18 +402,26 @@ export function StepReview({ onBack, onSubmit }: StepReviewProps) {
           type="button"
           onClick={onBack}
           className="btn btn-ghost"
+          disabled={isLoading}
           data-testid="back-button"
         >
           Back
         </button>
         <button
           type="button"
-          onClick={onSubmit}
+          onClick={handleSubmit}
           className="btn btn-primary"
-          disabled={isEnhancing}
+          disabled={isLoading}
           data-testid="submit-button"
         >
-          Submit Idea
+          {isSubmitting ? (
+            <>
+              <span className="loading loading-spinner loading-sm"></span>
+              Submitting...
+            </>
+          ) : (
+            'Submit Idea'
+          )}
         </button>
       </div>
     </div>

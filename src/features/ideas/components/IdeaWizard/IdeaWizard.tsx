@@ -43,9 +43,12 @@ export function IdeaWizard() {
     }
   };
 
-  const handleSubmit = () => {
-    // TODO: Story 2.7 - Implement actual submission to database
-    console.log('Submit idea:', methods.getValues());
+  /**
+   * Clear wizard state after successful submission
+   */
+  const handleClearWizard = () => {
+    methods.reset();
+    setCurrentStep(1);
   };
 
   return (
@@ -60,7 +63,7 @@ export function IdeaWizard() {
         {currentStep === 3 && <StepImpact onNext={handleNext} onBack={handleBack} />}
 
         {currentStep === 4 && (
-          <StepReview onBack={handleBack} onSubmit={handleSubmit} />
+          <StepReview onBack={handleBack} onClearWizard={handleClearWizard} />
         )}
       </FormProvider>
     </div>
