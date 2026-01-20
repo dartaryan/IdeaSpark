@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabase';
+
 /**
  * Service Response Type
  * Consistent response wrapper for all service layer operations
@@ -13,21 +15,28 @@ interface EnhancedIdea {
   impact: string;
 }
 
+interface EdgeFunctionResponse {
+  enhanced_problem: string;
+  enhanced_solution: string;
+  enhanced_impact: string;
+}
+
+interface EdgeFunctionError {
+  error: string;
+  code: string;
+}
+
 /**
  * geminiService - Service layer for AI operations using Gemini
  *
- * NOTE: This is a STUB implementation for Story 2.5.
- * Story 2.6 will implement the actual Supabase Edge Function.
- *
- * Edge Function contract:
- * - Endpoint: /functions/v1/gemini-enhance
- * - Method: POST
- * - Body: { problem: string, solution: string, impact: string }
- * - Response: { enhanced_problem: string, enhanced_solution: string, enhanced_impact: string }
+ * Calls the gemini-enhance Supabase Edge Function which:
+ * - Protects the Gemini API key server-side
+ * - Implements retry logic with exponential backoff (3 retries)
+ * - Returns enhanced problem, solution, and impact text
  */
 export const geminiService = {
   /**
-   * Enhance idea with AI assistance
+   * Enhance idea with AI assistance via Supabase Edge Function
    *
    * @param problem - The problem statement
    * @param solution - The proposed solution
@@ -40,27 +49,57 @@ export const geminiService = {
     impact: string
   ): Promise<ServiceResponse<EnhancedIdea>> {
     try {
-      // TODO: Story 2.6 - Replace with actual Edge Function call:
-      // const { data, error } = await supabase.functions.invoke('gemini-enhance', {
-      //   body: { problem, solution, impact }
-      // });
+      const { data, error } = await supabase.functions.invoke<EdgeFunctionResponse>(
+        'gemini-enhance',
+        {
+          body: { problem, solution, impact },
+        }
+      );
 
-      // STUB: Simulate API delay and return mock enhanced content
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (error) {
+        console.error('Edge function error:', error);
+        return {
+          data: null,
+          error: {
+            message: error.message || 'Failed to enhance idea with AI',
+            code: 'EDGE_FUNCTION_ERROR',
+          },
+        };
+      }
 
-      // Mock enhancement logic (prefix with polished language)
-      const enhancedData: EnhancedIdea = {
-        problem: `**Core Challenge:** ${problem}\n\nThis represents a significant opportunity to improve operational efficiency and user experience. The current situation creates friction that impacts key stakeholders and business outcomes.`,
-        solution: `**Proposed Solution:** ${solution}\n\nThis approach leverages modern best practices to address the identified challenges. The implementation would follow an iterative methodology, ensuring continuous validation with stakeholders.`,
-        impact: `**Expected Outcomes:** ${impact}\n\nImplementing this solution is projected to deliver measurable improvements in efficiency, user satisfaction, and cost reduction. Success metrics would be tracked through defined KPIs.`,
+      if (!data) {
+        return {
+          data: null,
+          error: { message: 'No data returned from AI enhancement', code: 'NO_DATA' },
+        };
+      }
+
+      // Check for error response from Edge Function
+      if ('error' in data && 'code' in data) {
+        const errorData = data as unknown as EdgeFunctionError;
+        return {
+          data: null,
+          error: { message: errorData.error, code: errorData.code },
+        };
+      }
+
+      // Map Edge Function response to service response
+      return {
+        data: {
+          problem: data.enhanced_problem,
+          solution: data.enhanced_solution,
+          impact: data.enhanced_impact,
+        },
+        error: null,
       };
-
-      return { data: enhancedData, error: null };
     } catch (error) {
       console.error('AI enhancement error:', error);
       return {
         data: null,
-        error: { message: 'Failed to enhance idea with AI', code: 'AI_ENHANCE_ERROR' },
+        error: {
+          message: 'Failed to enhance idea with AI',
+          code: 'AI_ENHANCE_ERROR',
+        },
       };
     }
   },
