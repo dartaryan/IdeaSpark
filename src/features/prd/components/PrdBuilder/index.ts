@@ -4,3 +4,6 @@ export { PrdPreviewPanel } from './PrdPreviewPanel';
 export { ChatPanelPlaceholder } from './ChatPanelPlaceholder';
 export { PrdBuilderSkeleton } from './PrdBuilderSkeleton';
 export { PrdBuilderError } from './PrdBuilderError';
+export { ChatInterface } from './ChatInterface';
+export { MessageBubble } from './MessageBubble';
+export { TypingIndicator } from './TypingIndicator';
