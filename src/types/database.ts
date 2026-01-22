@@ -146,3 +146,59 @@ export interface UpdateIdeaInput {
   enhanced_impact?: string;
   status?: IdeaStatus;
 }
+
+// PRD types
+export type PrdStatus = 'draft' | 'complete';
+
+export type MessageRole = 'user' | 'assistant';
+
+export type PrdSectionStatus = 'empty' | 'in_progress' | 'complete';
+
+export interface PrdSection {
+  content: string;
+  status: PrdSectionStatus;
+}
+
+export interface PrdContent {
+  problemStatement?: PrdSection;
+  goalsAndMetrics?: PrdSection;
+  userStories?: PrdSection;
+  requirements?: PrdSection;
+  technicalConsiderations?: PrdSection;
+  risks?: PrdSection;
+  timeline?: PrdSection;
+}
+
+export interface PrdDocument {
+  id: string;
+  idea_id: string;
+  user_id: string;
+  content: PrdContent;
+  status: PrdStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PrdMessage {
+  id: string;
+  prd_id: string;
+  role: MessageRole;
+  content: string;
+  created_at: string;
+}
+
+export interface CreatePrdInput {
+  idea_id: string;
+  content?: PrdContent;
+}
+
+export interface UpdatePrdInput {
+  content?: PrdContent;
+  status?: PrdStatus;
+}
+
+export interface CreateMessageInput {
+  prd_id: string;
+  role: MessageRole;
+  content: string;
+}

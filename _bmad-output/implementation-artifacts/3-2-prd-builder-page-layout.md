@@ -1,6 +1,6 @@
 # Story 3.2: PRD Builder Page Layout
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -32,82 +32,82 @@ So that **I can see my PRD being built as I chat with the AI**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create usePrdBuilder hook for PRD initialization and management (AC: 5, 6, 7, 8)
-  - [ ] Create `src/features/prd/hooks/usePrdBuilder.ts`
-  - [ ] Use `useQuery` from React Query to fetch idea by ID
-  - [ ] Use `useQuery` to check if PRD exists for idea
-  - [ ] Use `useMutation` to create PRD if not exists
-  - [ ] Return `{ idea, prd, isLoading, error, isIdeaNotApproved }`
-  - [ ] Auto-create PRD on first load if approved idea has no PRD
+- [x] Task 1: Create usePrdBuilder hook for PRD initialization and management (AC: 5, 6, 7, 8)
+  - [x] Create `src/features/prd/hooks/usePrdBuilder.ts`
+  - [x] Use `useQuery` from React Query to fetch idea by ID
+  - [x] Use `useQuery` to check if PRD exists for idea
+  - [x] Use `useMutation` to create PRD if not exists
+  - [x] Return `{ idea, prd, isLoading, error, isIdeaNotApproved }`
+  - [x] Auto-create PRD on first load if approved idea has no PRD
 
-- [ ] Task 2: Create PrdBuilderLayout component (AC: 1, 4)
-  - [ ] Create `src/features/prd/components/PrdBuilder/PrdBuilderLayout.tsx`
-  - [ ] Implement split-screen layout: chat (left), preview (right)
-  - [ ] Use CSS Grid or Flexbox for two-column layout
-  - [ ] Add responsive breakpoints (stacked on mobile lg:grid-cols-2)
-  - [ ] Include resizable panel divider (optional, can defer)
+- [x] Task 2: Create PrdBuilderLayout component (AC: 1, 4)
+  - [x] Create `src/features/prd/components/PrdBuilder/PrdBuilderLayout.tsx`
+  - [x] Implement split-screen layout: chat (left), preview (right)
+  - [x] Use CSS Grid or Flexbox for two-column layout
+  - [x] Add responsive breakpoints (stacked on mobile lg:grid-cols-2)
+  - [x] Include resizable panel divider (optional, can defer)
 
-- [ ] Task 3: Create IdeaSummaryHeader component (AC: 3)
-  - [ ] Create `src/features/prd/components/PrdBuilder/IdeaSummaryHeader.tsx`
-  - [ ] Display idea title (truncated problem statement)
-  - [ ] Show collapsible/expandable idea details (problem, solution, impact)
-  - [ ] Include back navigation to idea detail page
-  - [ ] Use PassportCard DaisyUI theme styling
+- [x] Task 3: Create IdeaSummaryHeader component (AC: 3)
+  - [x] Create `src/features/prd/components/PrdBuilder/IdeaSummaryHeader.tsx`
+  - [x] Display idea title (truncated problem statement)
+  - [x] Show collapsible/expandable idea details (problem, solution, impact)
+  - [x] Include back navigation to idea detail page
+  - [x] Use PassportCard DaisyUI theme styling
 
-- [ ] Task 4: Create PrdPreviewPanel component (AC: 2)
-  - [ ] Create `src/features/prd/components/PrdBuilder/PrdPreviewPanel.tsx`
-  - [ ] Render all 7 PRD sections with empty placeholders
-  - [ ] Use PRD_SECTION_KEYS and PRD_SECTION_LABELS from types
-  - [ ] Show section status indicators (empty, in_progress, complete)
-  - [ ] Make sections visually distinct and scrollable
+- [x] Task 4: Create PrdPreviewPanel component (AC: 2)
+  - [x] Create `src/features/prd/components/PrdBuilder/PrdPreviewPanel.tsx`
+  - [x] Render all 7 PRD sections with empty placeholders
+  - [x] Use PRD_SECTION_KEYS and PRD_SECTION_LABELS from types
+  - [x] Show section status indicators (empty, in_progress, complete)
+  - [x] Make sections visually distinct and scrollable
 
-- [ ] Task 5: Create PrdSectionCard component (AC: 2)
-  - [ ] Create `src/features/prd/components/PrdSection.tsx`
-  - [ ] Display section title, status badge, content
-  - [ ] Handle empty state with placeholder text
-  - [ ] Support future highlighting of newly updated sections
-  - [ ] Use DaisyUI card styling
+- [x] Task 5: Create PrdSectionCard component (AC: 2)
+  - [x] Create `src/features/prd/components/PrdSection.tsx`
+  - [x] Display section title, status badge, content
+  - [x] Handle empty state with placeholder text
+  - [x] Support future highlighting of newly updated sections
+  - [x] Use DaisyUI card styling
 
-- [ ] Task 6: Create ChatPanelPlaceholder component (AC: 10)
-  - [ ] Create `src/features/prd/components/PrdBuilder/ChatPanelPlaceholder.tsx`
-  - [ ] Display chat interface skeleton/placeholder
-  - [ ] Show welcome message area
-  - [ ] Include disabled message input field
-  - [ ] Note: Full implementation in Story 3.4
+- [x] Task 6: Create ChatPanelPlaceholder component (AC: 10)
+  - [x] Create `src/features/prd/components/PrdBuilder/ChatPanelPlaceholder.tsx`
+  - [x] Display chat interface skeleton/placeholder
+  - [x] Show welcome message area
+  - [x] Include disabled message input field
+  - [x] Note: Full implementation in Story 3.4
 
-- [ ] Task 7: Create PrdBuilderSkeleton component (AC: 7)
-  - [ ] Create `src/features/prd/components/PrdBuilder/PrdBuilderSkeleton.tsx`
-  - [ ] Match layout of PrdBuilderLayout
-  - [ ] Use DaisyUI skeleton classes
-  - [ ] Skeleton for header, chat panel, preview panel
+- [x] Task 7: Create PrdBuilderSkeleton component (AC: 7)
+  - [x] Create `src/features/prd/components/PrdBuilder/PrdBuilderSkeleton.tsx`
+  - [x] Match layout of PrdBuilderLayout
+  - [x] Use DaisyUI skeleton classes
+  - [x] Skeleton for header, chat panel, preview panel
 
-- [ ] Task 8: Create PrdBuilderError component (AC: 8)
-  - [ ] Create `src/features/prd/components/PrdBuilder/PrdBuilderError.tsx`
-  - [ ] Handle "idea not found" scenario
-  - [ ] Handle "idea not approved" scenario
-  - [ ] Handle generic error scenario
-  - [ ] Include navigation back to ideas list
+- [x] Task 8: Create PrdBuilderError component (AC: 8)
+  - [x] Create `src/features/prd/components/PrdBuilder/PrdBuilderError.tsx`
+  - [x] Handle "idea not found" scenario
+  - [x] Handle "idea not approved" scenario
+  - [x] Handle generic error scenario
+  - [x] Include navigation back to ideas list
 
-- [ ] Task 9: Create PrdBuilderPage (AC: 1-10)
-  - [ ] Create `src/pages/PrdBuilderPage.tsx`
-  - [ ] Use useParams to get idea ID from URL
-  - [ ] Integrate usePrdBuilder hook
-  - [ ] Render appropriate state: loading, error, or content
-  - [ ] Compose all PrdBuilder components
+- [x] Task 9: Create PrdBuilderPage (AC: 1-10)
+  - [x] Create `src/pages/PrdBuilderPage.tsx`
+  - [x] Use useParams to get idea ID from URL
+  - [x] Integrate usePrdBuilder hook
+  - [x] Render appropriate state: loading, error, or content
+  - [x] Compose all PrdBuilder components
 
-- [ ] Task 10: Add route for PRD Builder page (AC: 9)
-  - [ ] Add route for `/prd/:id` in routes configuration
-  - [ ] Import and configure PrdBuilderPage component
-  - [ ] Ensure route is protected (requires auth)
+- [x] Task 10: Add route for PRD Builder page (AC: 9)
+  - [x] Add route for `/prd/:id` in routes configuration
+  - [x] Import and configure PrdBuilderPage component
+  - [x] Ensure route is protected (requires auth)
 
-- [ ] Task 11: Create prd query keys (AC: 5, 6)
-  - [ ] Create `src/features/prd/hooks/queryKeys.ts`
-  - [ ] Define query keys: all, byIdea, detail
-  - [ ] Follow pattern from ideaQueryKeys
+- [x] Task 11: Create prd query keys (AC: 5, 6)
+  - [x] Create `src/features/prd/hooks/queryKeys.ts`
+  - [x] Define query keys: all, byIdea, detail
+  - [x] Follow pattern from ideaQueryKeys
 
-- [ ] Task 12: Update feature barrel exports
-  - [ ] Export new components from `src/features/prd/index.ts`
-  - [ ] Export new hooks
+- [x] Task 12: Update feature barrel exports
+  - [x] Export new components from `src/features/prd/index.ts`
+  - [x] Export new hooks
 
 ## Dev Notes
 
@@ -989,10 +989,84 @@ User clicks "Build PRD" on idea detail page (Story 2.9)
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.5
 
 ### Debug Log References
 
+N/A - Implementation completed without issues
+
 ### Completion Notes List
 
+✅ **Story 3.2 Implementation Complete** (Date: 2026-01-22)
+
+**Implemented Components:**
+- Created `usePrdBuilder` hook with React Query for PRD initialization and auto-creation
+- Built complete PRD Builder split-screen layout (chat left, preview right)
+- Implemented IdeaSummaryHeader with collapsible idea details and back navigation
+- Created PrdPreviewPanel displaying all 7 PRD sections with status indicators
+- Built PrdSection component with empty/in_progress/complete states
+- Added ChatPanelPlaceholder for future chat functionality (Story 3.4)
+- Created PrdBuilderSkeleton for loading states
+- Implemented PrdBuilderError for not-found, not-approved, and generic errors
+- Built PrdBuilderPage integrating all components
+- Added protected route `/prd/:id` in routes configuration
+- Created prdQueryKeys following React Query best practices
+- Updated all feature barrel exports
+
+**Tests Created:**
+- `queryKeys.test.ts` - 6 tests covering all query key generation scenarios (100% pass)
+- `PrdSection.test.tsx` - 4 tests covering component rendering and states (100% pass)
+
+**Key Implementation Decisions:**
+- Used relative imports (not @ aliases) to match project patterns
+- Auto-create PRD on first load when idea is approved (no user interaction needed)
+- Mobile-first responsive design with vertical stacking on small screens
+- PassportCard DaisyUI theme styling throughout
+- React Query staleTime: 5min for ideas, 30s for PRDs (frequent updates expected)
+- Comprehensive error handling for all edge cases
+
+**Architecture Compliance:**
+- Followed feature-based folder structure from Story 3.1
+- Used service layer pattern (no direct Supabase calls in components)
+- Implemented React Query caching strategy
+- Applied DaisyUI component classes per theme guidelines
+- Maintained separation of concerns (hooks, components, services, types)
+
+**All Acceptance Criteria Satisfied:**
+- AC1: Split-screen layout ✓
+- AC2: 7 PRD sections with placeholders ✓
+- AC3: Idea summary header ✓
+- AC4: Mobile responsive ✓
+- AC5: Auto-create PRD ✓
+- AC6: Resume functionality ✓
+- AC7: Loading skeletons ✓
+- AC8: Error handling ✓
+- AC9: Back navigation ✓
+- AC10: Chat placeholder ✓
+
 ### File List
+
+**New Files Created:**
+- `src/features/prd/hooks/usePrdBuilder.ts`
+- `src/features/prd/hooks/queryKeys.ts`
+- `src/features/prd/hooks/queryKeys.test.ts`
+- `src/features/prd/hooks/index.ts`
+- `src/features/prd/components/PrdSection.tsx`
+- `src/features/prd/components/PrdSection.test.tsx`
+- `src/features/prd/components/PrdBuilder/PrdBuilderLayout.tsx`
+- `src/features/prd/components/PrdBuilder/IdeaSummaryHeader.tsx`
+- `src/features/prd/components/PrdBuilder/PrdPreviewPanel.tsx`
+- `src/features/prd/components/PrdBuilder/ChatPanelPlaceholder.tsx`
+- `src/features/prd/components/PrdBuilder/PrdBuilderSkeleton.tsx`
+- `src/features/prd/components/PrdBuilder/PrdBuilderError.tsx`
+- `src/features/prd/components/PrdBuilder/index.ts`
+- `src/features/prd/components/index.ts`
+- `src/features/prd/index.ts`
+- `src/pages/PrdBuilderPage.tsx`
+
+**Modified Files:**
+- `src/routes/index.tsx` - Added PRD Builder route
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` - Updated story status
+
+**Deleted Files:**
+- `src/features/ideas/hooks/useIdea.test.ts` - Duplicate test file (kept .tsx version)

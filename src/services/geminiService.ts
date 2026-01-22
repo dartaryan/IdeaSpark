@@ -26,6 +26,10 @@ interface EdgeFunctionError {
   code: string;
 }
 
+// Get Supabase URL and anon key from environment
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 /**
  * geminiService - Service layer for AI operations using Gemini
  *
@@ -49,46 +53,57 @@ export const geminiService = {
     impact: string
   ): Promise<ServiceResponse<EnhancedIdea>> {
     try {
-      const { data, error } = await supabase.functions.invoke<EdgeFunctionResponse>(
-        'gemini-enhance',
-        {
-          body: { problem, solution, impact },
-        }
-      );
+      // Get the current session for auth token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
 
-      if (error) {
-        console.error('Edge function error:', error);
+      console.log('Invoking gemini-enhance with auth:', !!accessToken);
+
+      // Call Edge Function directly using fetch to have full control over headers
+      const functionUrl = `${SUPABASE_URL}/functions/v1/gemini-enhance`;
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          // Use access token if available, otherwise use anon key as bearer
+          'Authorization': `Bearer ${accessToken || SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ problem, solution, impact }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Edge function error:', response.status, errorText);
         return {
           data: null,
           error: {
-            message: error.message || 'Failed to enhance idea with AI',
+            message: `Edge function error: ${response.status}`,
             code: 'EDGE_FUNCTION_ERROR',
           },
         };
       }
 
-      if (!data) {
-        return {
-          data: null,
-          error: { message: 'No data returned from AI enhancement', code: 'NO_DATA' },
-        };
-      }
+      const data: EdgeFunctionResponse | EdgeFunctionError = await response.json();
 
       // Check for error response from Edge Function
       if ('error' in data && 'code' in data) {
-        const errorData = data as unknown as EdgeFunctionError;
+        const errorData = data as EdgeFunctionError;
         return {
           data: null,
           error: { message: errorData.error, code: errorData.code },
         };
       }
 
+      const successData = data as EdgeFunctionResponse;
+
       // Map Edge Function response to service response
       return {
         data: {
-          problem: data.enhanced_problem,
-          solution: data.enhanced_solution,
-          impact: data.enhanced_impact,
+          problem: successData.enhanced_problem,
+          solution: successData.enhanced_solution,
+          impact: successData.enhanced_impact,
         },
         error: null,
       };

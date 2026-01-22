@@ -1,17 +1,48 @@
-// PRD feature types
-export interface PRD {
-  id: string
-  idea_id: string
-  content: Record<string, unknown>
-  status: 'in_progress' | 'completed'
-  created_at: string
-  updated_at: string
+// Re-export database types for feature-level access
+export type {
+  PrdDocument,
+  PrdMessage,
+  PrdContent,
+  PrdSection,
+  PrdStatus,
+  PrdSectionStatus,
+  MessageRole,
+  CreatePrdInput,
+  UpdatePrdInput,
+  CreateMessageInput,
+} from '../../types/database';
+
+// Feature-specific types
+export interface PrdWithIdea extends PrdDocument {
+  idea?: {
+    id: string;
+    title: string;
+    problem: string;
+    solution: string;
+    impact: string;
+  };
 }
 
-export interface PRDMessage {
-  id: string
-  prd_id: string
-  role: 'user' | 'assistant'
-  content: string
-  created_at: string
-}
+// PRD section keys for iteration
+export const PRD_SECTION_KEYS = [
+  'problemStatement',
+  'goalsAndMetrics',
+  'userStories',
+  'requirements',
+  'technicalConsiderations',
+  'risks',
+  'timeline',
+] as const;
+
+export type PrdSectionKey = typeof PRD_SECTION_KEYS[number];
+
+// PRD section display names
+export const PRD_SECTION_LABELS: Record<PrdSectionKey, string> = {
+  problemStatement: 'Problem Statement',
+  goalsAndMetrics: 'Goals & Metrics',
+  userStories: 'User Stories',
+  requirements: 'Requirements',
+  technicalConsiderations: 'Technical Considerations',
+  risks: 'Risks',
+  timeline: 'Timeline',
+};

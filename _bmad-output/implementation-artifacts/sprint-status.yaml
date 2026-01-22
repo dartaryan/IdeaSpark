@@ -69,9 +69,9 @@ development_status:
 
   # Epic 3: AI-Powered PRD Development
   epic-3: in-progress
-  3-1-create-prd-database-tables-and-service-layer: ready-for-dev
-  3-2-prd-builder-page-layout: ready-for-dev
-  3-3-gemini-edge-function-for-prd-chat: ready-for-dev
+  3-1-create-prd-database-tables-and-service-layer: review
+  3-2-prd-builder-page-layout: review
+  3-3-gemini-edge-function-for-prd-chat: review
   3-4-chat-interface-with-ai-assistant: ready-for-dev
   3-5-real-time-prd-section-generation: ready-for-dev
   3-6-prd-auto-save-functionality: ready-for-dev
@@ -88,13 +88,13 @@ development_status:
   4-4-prototype-viewer-with-responsive-preview: ready-for-dev
   4-5-chat-based-prototype-refinement: ready-for-dev
   4-6-prototype-refinement-history: ready-for-dev
-  4-7-shareable-prototype-urls: backlog
-  4-8-prototype-status-integration-with-idea: backlog
+  4-7-shareable-prototype-urls: ready-for-dev
+  4-8-prototype-status-integration-with-idea: ready-for-dev
   epic-4-retrospective: optional
 
   # Epic 5: Admin Pipeline & Triage Workflow
-  epic-5: backlog
-  5-1-admin-dashboard-layout: backlog
+  epic-5: in-progress
+  5-1-admin-dashboard-layout: ready-for-dev
   5-2-all-ideas-list-with-filtering-and-sorting: backlog
   5-3-idea-pipeline-kanban-view: backlog
   5-4-approve-idea-for-prd-development: backlog

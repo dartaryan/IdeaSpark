@@ -9,6 +9,7 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { MyIdeasPage } from '../pages/MyIdeasPage';
 import { IdeaDetailPage } from '../pages/IdeaDetailPage';
 import { NewIdeaPage } from '../pages/NewIdeaPage';
+import { PrdBuilderPage } from '../pages/PrdBuilderPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AnalyticsPage } from '../pages/AnalyticsPage';
 import { NotAuthorizedPage } from '../pages/NotAuthorizedPage';
@@ -68,6 +69,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.NEW_IDEA,
         element: <NewIdeaPage />,
+      },
+      {
+        path: ROUTES.PRD_BUILDER,
+        element: <PrdBuilderPage />,
       },
       // Admin routes - wrapped with AdminRoute for role check
       {
