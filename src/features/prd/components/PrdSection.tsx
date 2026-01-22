@@ -1,44 +1,40 @@
-import type { PrdSectionStatus } from '../types';
+import { SectionStatusBadge } from './SectionStatusBadge';
+import { PRD_SECTION_LABELS } from '../types';
+import type { PrdSectionKey, PrdSection as PrdSectionType } from '../types';
 
 interface PrdSectionProps {
-  title: string;
-  content: string;
-  status: PrdSectionStatus;
-  isHighlighted?: boolean;
+  sectionKey: PrdSectionKey;
+  section: PrdSectionType | undefined;
+  isHighlighted: boolean;
 }
 
-const statusConfig: Record<PrdSectionStatus, { badge: string; badgeClass: string }> = {
-  empty: { badge: 'Empty', badgeClass: 'badge-ghost' },
-  in_progress: { badge: 'In Progress', badgeClass: 'badge-warning' },
-  complete: { badge: 'Complete', badgeClass: 'badge-success' },
-};
-
-export function PrdSection({ title, content, status, isHighlighted }: PrdSectionProps) {
-  const { badge, badgeClass } = statusConfig[status];
+export function PrdSection({ sectionKey, section, isHighlighted }: PrdSectionProps) {
+  const label = PRD_SECTION_LABELS[sectionKey];
+  const status = section?.status ?? 'empty';
+  const content = section?.content ?? '';
 
   return (
-    <div
-      className={`card bg-base-100 border transition-all duration-300 ${
-        isHighlighted
-          ? 'border-primary ring-2 ring-primary/20'
-          : 'border-base-200'
-      }`}
+    <div 
+      className={`
+        card bg-base-200 transition-all duration-300
+        ${isHighlighted ? 'ring-2 ring-primary ring-offset-2 animate-pulse' : ''}
+      `}
     >
       <div className="card-body p-4">
-        {/* Header */}
+        {/* Section Header */}
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-medium text-base">{title}</h3>
-          <span className={`badge badge-sm ${badgeClass}`}>{badge}</span>
+          <h3 className="card-title text-base">{label}</h3>
+          <SectionStatusBadge status={status} />
         </div>
 
-        {/* Content */}
+        {/* Section Content */}
         {content ? (
           <div className="prose prose-sm max-w-none text-base-content/80">
             <p className="whitespace-pre-wrap">{content}</p>
           </div>
         ) : (
-          <p className="text-base-content/40 text-sm italic">
-            This section will be filled as you chat with the AI assistant.
+          <p className="text-base-content/40 italic text-sm">
+            This section will be populated as you discuss with the AI assistant...
           </p>
         )}
       </div>

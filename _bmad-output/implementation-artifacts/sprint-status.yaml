@@ -73,7 +73,7 @@ development_status:
   3-2-prd-builder-page-layout: review
   3-3-gemini-edge-function-for-prd-chat: review
   3-4-chat-interface-with-ai-assistant: review
-  3-5-real-time-prd-section-generation: ready-for-dev
+  3-5-real-time-prd-section-generation: review
   3-6-prd-auto-save-functionality: ready-for-dev
   3-7-prd-section-structure-and-content: ready-for-dev
   3-8-mark-prd-as-complete: ready-for-dev
@@ -97,8 +97,8 @@ development_status:
   5-1-admin-dashboard-layout: ready-for-dev
   5-2-all-ideas-list-with-filtering-and-sorting: ready-for-dev
   5-3-idea-pipeline-kanban-view: ready-for-dev
-  5-4-approve-idea-for-prd-development: backlog
-  5-5-reject-idea-with-feedback: backlog
+  5-4-approve-idea-for-prd-development: ready-for-dev
+  5-5-reject-idea-with-feedback: ready-for-dev
   5-6-view-any-users-idea-prd-and-prototype: backlog
   5-7-user-list-and-activity-overview: backlog
   5-8-real-time-dashboard-updates: backlog

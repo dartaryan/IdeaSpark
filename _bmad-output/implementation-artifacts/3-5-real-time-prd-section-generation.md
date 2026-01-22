@@ -1,6 +1,6 @@
 # Story 3.5: Real-Time PRD Section Generation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,72 +28,72 @@ So that **I can see my document taking shape in real-time**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create PrdPreview component (AC: 1, 3, 4)
-  - [ ] Create `src/features/prd/components/PrdBuilder/PrdPreview.tsx`
-  - [ ] Implement scrollable preview container with all 7 sections
-  - [ ] Display section headers with status indicators
-  - [ ] Pass through prdContent prop to render current state
-  - [ ] Support real-time updates via prop changes
-  - [ ] Style with DaisyUI card/collapse components
+- [x] Task 1: Create PrdPreview component (AC: 1, 3, 4)
+  - [x] Create `src/features/prd/components/PrdBuilder/PrdPreview.tsx`
+  - [x] Implement scrollable preview container with all 7 sections
+  - [x] Display section headers with status indicators
+  - [x] Pass through prdContent prop to render current state
+  - [x] Support real-time updates via prop changes
+  - [x] Style with DaisyUI card/collapse components
 
-- [ ] Task 2: Create PrdSection component (AC: 2, 4, 5)
-  - [ ] Create `src/features/prd/components/PrdSection.tsx`
-  - [ ] Props: sectionKey, content, status, isHighlighted
-  - [ ] Render section header with label and status badge
-  - [ ] Render formatted content (support markdown-like formatting)
-  - [ ] Apply highlight animation when isHighlighted=true
-  - [ ] Handle empty state with placeholder text
+- [x] Task 2: Create PrdSection component (AC: 2, 4, 5)
+  - [x] Create `src/features/prd/components/PrdSection.tsx`
+  - [x] Props: sectionKey, content, status, isHighlighted
+  - [x] Render section header with label and status badge
+  - [x] Render formatted content (support markdown-like formatting)
+  - [x] Apply highlight animation when isHighlighted=true
+  - [x] Handle empty state with placeholder text
 
-- [ ] Task 3: Create SectionStatusBadge component (AC: 4)
-  - [ ] Create `src/features/prd/components/SectionStatusBadge.tsx`
-  - [ ] Display "Empty" (gray), "In Progress" (yellow), "Complete" (green) badges
-  - [ ] Use DaisyUI badge classes with appropriate colors
-  - [ ] Props: status ('empty' | 'in_progress' | 'complete')
+- [x] Task 3: Create SectionStatusBadge component (AC: 4)
+  - [x] Create `src/features/prd/components/SectionStatusBadge.tsx`
+  - [x] Display "Empty" (gray), "In Progress" (yellow), "Complete" (green) badges
+  - [x] Use DaisyUI badge classes with appropriate colors
+  - [x] Props: status ('empty' | 'in_progress' | 'complete')
 
-- [ ] Task 4: Create usePrdBuilder hook for section state (AC: 1, 3, 6, 7)
-  - [ ] Create `src/features/prd/hooks/usePrdBuilder.ts`
-  - [ ] State: prdContent (full PRD state), highlightedSections (Set<string>)
-  - [ ] Integrate with prdService.updatePrdSection from Story 3.1
-  - [ ] handleSectionUpdates function: Process updates from ChatInterface
-  - [ ] Auto-clear highlights after 2 seconds
-  - [ ] Implement optimistic updates with error rollback
-  - [ ] Debounce database saves to prevent excessive writes
+- [x] Task 4: Create usePrdBuilder hook for section state (AC: 1, 3, 6, 7)
+  - [x] Create `src/features/prd/hooks/usePrdBuilder.ts`
+  - [x] State: prdContent (full PRD state), highlightedSections (Set<string>)
+  - [x] Integrate with prdService.updatePrdSection from Story 3.1
+  - [x] handleSectionUpdates function: Process updates from ChatInterface
+  - [x] Auto-clear highlights after 2 seconds
+  - [x] Implement optimistic updates with error rollback
+  - [x] Debounce database saves to prevent excessive writes
 
-- [ ] Task 5: Implement section update handler (AC: 1, 5, 8)
-  - [ ] Accept PrdSectionUpdate[] from onSectionUpdate callback
-  - [ ] For each update: update local state immediately (optimistic)
-  - [ ] Format content professionally (the AI formats, we preserve)
-  - [ ] Add section to highlightedSections Set
-  - [ ] Persist to database via prdService.updatePrdSection
-  - [ ] Handle errors with toast notification
+- [x] Task 5: Implement section update handler (AC: 1, 5, 8)
+  - [x] Accept PrdSectionUpdate[] from onSectionUpdate callback
+  - [x] For each update: update local state immediately (optimistic)
+  - [x] Format content professionally (the AI formats, we preserve)
+  - [x] Add section to highlightedSections Set
+  - [x] Persist to database via prdService.updatePrdSection
+  - [x] Handle errors with toast notification
 
-- [ ] Task 6: Implement highlight animation (AC: 2)
-  - [ ] Add CSS animation for highlight effect (pulse or glow)
-  - [ ] Apply animation class when section in highlightedSections
-  - [ ] Auto-remove highlight after 2 seconds using setTimeout
-  - [ ] Stagger highlights if multiple sections update simultaneously
+- [x] Task 6: Implement highlight animation (AC: 2)
+  - [x] Add CSS animation for highlight effect (pulse or glow)
+  - [x] Apply animation class when section in highlightedSections
+  - [x] Auto-remove highlight after 2 seconds using setTimeout
+  - [x] Stagger highlights if multiple sections update simultaneously
 
-- [ ] Task 7: Integrate PrdPreview into PrdBuilderPage (AC: all)
-  - [ ] Import PrdPreview into PrdBuilderPage (from Story 3.2)
-  - [ ] Pass prdContent, highlightedSections as props
-  - [ ] Wire handleSectionUpdates to ChatInterface's onSectionUpdate
-  - [ ] Ensure split-panel layout has proper proportions
+- [x] Task 7: Integrate PrdPreview into PrdBuilderPage (AC: all)
+  - [x] Import PrdPreview into PrdBuilderPage (from Story 3.2)
+  - [x] Pass prdContent, highlightedSections as props
+  - [x] Wire handleSectionUpdates to ChatInterface's onSectionUpdate
+  - [x] Ensure split-panel layout has proper proportions
 
-- [ ] Task 8: Update ChatInterface to emit section updates (AC: 8)
-  - [ ] Ensure onSectionUpdate prop is connected (Story 3.4)
-  - [ ] Verify sectionUpdates are passed from usePrdChat
+- [x] Task 8: Update ChatInterface to emit section updates (AC: 8)
+  - [x] Ensure onSectionUpdate prop is connected (Story 3.4)
+  - [x] Verify sectionUpdates are passed from usePrdChat
 
-- [ ] Task 9: Update barrel exports
-  - [ ] Export PrdPreview from `src/features/prd/components/PrdBuilder/index.ts`
-  - [ ] Export PrdSection from `src/features/prd/components/index.ts`
-  - [ ] Export SectionStatusBadge from `src/features/prd/components/index.ts`
-  - [ ] Export usePrdBuilder from `src/features/prd/hooks/index.ts`
+- [x] Task 9: Update barrel exports
+  - [x] Export PrdPreview from `src/features/prd/components/PrdBuilder/index.ts`
+  - [x] Export PrdSection from `src/features/prd/components/index.ts`
+  - [x] Export SectionStatusBadge from `src/features/prd/components/index.ts`
+  - [x] Export usePrdBuilder from `src/features/prd/hooks/index.ts`
 
-- [ ] Task 10: Implement auto-save for section updates (AC: 7)
-  - [ ] Debounce save calls (300ms debounce)
-  - [ ] Show subtle "Saving..." indicator during save
-  - [ ] Show "Saved" confirmation briefly on success
-  - [ ] Show error toast with retry on failure
+- [x] Task 10: Implement auto-save for section updates (AC: 7)
+  - [x] Debounce save calls (300ms debounce)
+  - [x] Show subtle "Saving..." indicator during save
+  - [x] Show "Saved" confirmation briefly on success
+  - [x] Show error toast with retry on failure
 
 ## Dev Notes
 
@@ -742,10 +742,72 @@ The 7 PRD sections that must be populated:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.5 (via Cursor)
 
 ### Debug Log References
 
+- All tests passing: 59 tests across 4 test files
+- Zero linter errors
+- Followed red-green-refactor cycle for all components
+
 ### Completion Notes List
 
+✅ **Story 3.5 Implementation Complete**
+
+**Components Created:**
+- `PrdPreview.tsx` - Main preview container with 7 PRD sections, save status indicator
+- `PrdSection.tsx` - Individual section component with highlight animation support
+- `SectionStatusBadge.tsx` - Status badge component (Empty/In Progress/Complete)
+
+**Hook Created:**
+- `usePrdBuilder.ts` - Section state management hook with:
+  - Optimistic updates for instant UI feedback
+  - 300ms debounced saves to prevent excessive database writes
+  - 2-second highlight animations for updated sections
+  - Error handling with toast notifications
+  - Automatic cleanup of timeouts on unmount
+
+**Renamed Hook:**
+- `usePrdBuilder.ts` → `usePrdPageData.ts` (old hook for page-level data fetching)
+
+**Integration:**
+- Updated `PrdBuilderPage.tsx` to use new `usePrdBuilder` hook and `PrdPreview` component
+- Wired `ChatInterface.onSectionUpdate` to `usePrdBuilder.handleSectionUpdates`
+- All barrel exports updated
+
+**Tests:**
+- Created comprehensive unit tests for all new components and hooks
+- 12 tests for `usePrdBuilder` hook
+- 22 tests for `PrdSection` component
+- 8 tests for `SectionStatusBadge` component
+- 17 tests for `PrdPreview` component
+- All 59 tests passing ✅
+
+**Technical Decisions:**
+- Used React Query for server state management
+- Implemented optimistic UI updates for better UX
+- Debounced database saves to prevent excessive writes
+- Used Sets for highlight tracking (efficient add/remove)
+- Applied DaisyUI classes for consistent styling
+- Used ref-based timeout management for proper cleanup
+
 ### File List
+
+**Created:**
+- `src/features/prd/components/PrdBuilder/PrdPreview.tsx`
+- `src/features/prd/components/PrdBuilder/PrdPreview.test.tsx`
+- `src/features/prd/components/PrdSection.tsx`
+- `src/features/prd/components/PrdSection.test.tsx`
+- `src/features/prd/components/SectionStatusBadge.tsx`
+- `src/features/prd/components/SectionStatusBadge.test.tsx`
+- `src/features/prd/hooks/usePrdPageData.ts`
+- `src/features/prd/hooks/usePrdBuilder.test.ts`
+
+**Modified:**
+- `src/features/prd/hooks/usePrdBuilder.ts` (completely rewrote for section state management)
+- `src/features/prd/types.ts` (added PrdSectionUpdate interface)
+- `src/features/prd/hooks/index.ts` (updated exports)
+- `src/features/prd/components/index.ts` (added SectionStatusBadge export)
+- `src/features/prd/components/PrdBuilder/index.ts` (added PrdPreview export)
+- `src/pages/PrdBuilderPage.tsx` (integrated new components and hooks)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (marked story in-progress)

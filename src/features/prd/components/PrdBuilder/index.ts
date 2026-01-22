@@ -7,3 +7,4 @@ export { PrdBuilderError } from './PrdBuilderError';
 export { ChatInterface } from './ChatInterface';
 export { MessageBubble } from './MessageBubble';
 export { TypingIndicator } from './TypingIndicator';
+export { PrdPreview } from './PrdPreview';

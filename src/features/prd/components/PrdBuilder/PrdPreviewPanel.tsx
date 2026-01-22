@@ -1,5 +1,5 @@
 import { PrdSection } from '../PrdSection';
-import { PRD_SECTION_KEYS, PRD_SECTION_LABELS } from '../../types';
+import { PRD_SECTION_KEYS } from '../../types';
 import type { PrdDocument } from '../../types';
 
 interface PrdPreviewPanelProps {
@@ -24,9 +24,9 @@ export function PrdPreviewPanel({ prd }: PrdPreviewPanelProps) {
           return (
             <PrdSection
               key={sectionKey}
-              title={PRD_SECTION_LABELS[sectionKey]}
-              content={section?.content || ''}
-              status={section?.status || 'empty'}
+              sectionKey={sectionKey}
+              section={section}
+              isHighlighted={false}
             />
           );
         })}

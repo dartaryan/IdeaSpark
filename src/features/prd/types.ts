@@ -46,3 +46,10 @@ export const PRD_SECTION_LABELS: Record<PrdSectionKey, string> = {
   risks: 'Risks',
   timeline: 'Timeline',
 };
+
+// PRD section update type (for AI chat responses)
+export interface PrdSectionUpdate {
+  sectionKey: keyof PrdContent;
+  content: string;
+  status: 'in_progress' | 'complete';
+}

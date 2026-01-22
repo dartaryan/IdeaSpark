@@ -1,12 +1,12 @@
 import { useParams } from 'react-router-dom';
+import { usePrdPageData } from '../features/prd/hooks/usePrdPageData';
 import { usePrdBuilder } from '../features/prd/hooks/usePrdBuilder';
 import { IdeaSummaryHeader } from '../features/prd/components/PrdBuilder/IdeaSummaryHeader';
 import { PrdBuilderLayout } from '../features/prd/components/PrdBuilder/PrdBuilderLayout';
-import { PrdPreviewPanel } from '../features/prd/components/PrdBuilder/PrdPreviewPanel';
+import { PrdPreview } from '../features/prd/components/PrdBuilder/PrdPreview';
 import { ChatInterface } from '../features/prd/components/PrdBuilder/ChatInterface';
 import { PrdBuilderSkeleton } from '../features/prd/components/PrdBuilder/PrdBuilderSkeleton';
 import { PrdBuilderError } from '../features/prd/components/PrdBuilder/PrdBuilderError';
-import type { PrdContent } from '../features/prd/types';
 
 export function PrdBuilderPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +18,7 @@ export function PrdBuilderPage() {
     isIdeaNotFound,
     isIdeaNotApproved,
     isCreatingPrd,
-  } = usePrdBuilder(id);
+  } = usePrdPageData(id);
 
   // Loading state
   if (isLoading || isCreatingPrd) {
@@ -43,6 +43,18 @@ export function PrdBuilderPage() {
   // Main content
   if (!idea || !prd) return null;
 
+  // Use usePrdBuilder hook for section state management
+  const {
+    prdContent,
+    highlightedSections,
+    isSaving,
+    lastSaved,
+    handleSectionUpdates,
+  } = usePrdBuilder({ 
+    prdId: prd.id, 
+    initialContent: prd.content 
+  });
+
   // Prepare idea context for ChatInterface
   const ideaContext = {
     id: idea.id,
@@ -53,23 +65,6 @@ export function PrdBuilderPage() {
     enhancedProblem: idea.enhanced_problem || undefined,
     enhancedSolution: idea.enhanced_solution || undefined,
     enhancedImpact: idea.enhanced_impact || undefined,
-  };
-
-  // Prepare PRD content for ChatInterface
-  const prdContent: PrdContent = {
-    problemStatement: prd.problem_statement || undefined,
-    goalsAndMetrics: prd.goals_and_metrics || undefined,
-    userStories: prd.user_stories || undefined,
-    requirements: prd.requirements || undefined,
-    technicalConsiderations: prd.technical_considerations || undefined,
-    risks: prd.risks || undefined,
-    timeline: prd.timeline || undefined,
-  };
-
-  // Handler for section updates (Story 3.5 will implement full functionality)
-  const handleSectionUpdates = () => {
-    // TODO: Story 3.5 will implement real-time PRD section updates
-    // For now, this is a placeholder to satisfy the interface
   };
 
   return (
@@ -85,7 +80,15 @@ export function PrdBuilderPage() {
               onSectionUpdate={handleSectionUpdates}
             />
           }
-          previewPanel={<PrdPreviewPanel prd={prd} />}
+          previewPanel={
+            <PrdPreview
+              prdContent={prdContent}
+              highlightedSections={highlightedSections}
+              ideaTitle={idea.title || idea.problem.substring(0, 50)}
+              isSaving={isSaving}
+              lastSaved={lastSaved}
+            />
+          }
         />
       </div>
     </div>
