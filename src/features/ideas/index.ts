@@ -4,11 +4,18 @@
 export { ideaService } from './services';
 
 // Hooks
-export { useEnhanceIdea, useSubmitIdea, ideaQueryKeys } from './hooks';
+export { useEnhanceIdea, useIdeas, useSubmitIdea, ideaQueryKeys } from './hooks';
 export type { WizardSubmitData } from './hooks';
 
-// Components
+// Components - Wizard
 export { IdeaWizard, StepIndicator, StepProblem } from './components/IdeaWizard';
+
+// Components - List View
+export { IdeaCard } from './components/IdeaCard';
+export { IdeaList, IdeaListSkeleton } from './components/IdeaList';
+export { IdeaStatusBadge } from './components/IdeaStatusBadge';
+export { IdeasEmptyState } from './components/IdeasEmptyState';
+export { IdeasErrorState } from './components/IdeasErrorState';
 
 // Schemas
 export {

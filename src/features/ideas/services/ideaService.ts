@@ -4,7 +4,37 @@ import type { ServiceResponse } from '../../../types/service';
 
 export const ideaService = {
   /**
+   * Get all ideas for the current user, sorted by newest first
+   * This is the primary method for the My Ideas list view
+   * RLS enforces user filtering
+   */
+  async getMyIdeas(): Promise<ServiceResponse<Idea[]>> {
+    try {
+      const { data, error } = await supabase
+        .from('ideas')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        return {
+          data: null,
+          error: { message: error.message, code: 'DB_ERROR' },
+        };
+      }
+
+      return { data: data ?? [], error: null };
+    } catch (error) {
+      console.error('getMyIdeas error:', error);
+      return {
+        data: null,
+        error: { message: 'Failed to fetch ideas', code: 'UNKNOWN_ERROR' },
+      };
+    }
+  },
+
+  /**
    * Get all ideas for the current user (RLS enforced)
+   * @deprecated Use getMyIdeas() instead
    */
   async getIdeas(): Promise<ServiceResponse<Idea[]>> {
     try {

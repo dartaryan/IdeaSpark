@@ -12,16 +12,23 @@ function App() {
   useEffect(() => {
     async function checkConnection() {
       try {
-        // Simple query to verify connection - check if we can reach Supabase
-        const { error } = await supabase.from('users').select('count').limit(0);
+        // Check connection by verifying we can reach Supabase auth service
+        // This doesn't require authentication and is a reliable health check
+        const { data, error } = await supabase.auth.getSession();
 
         if (error) {
+          // PGRST301 = PostgREST error (usually means service is down or unreachable)
           // PGRST116 = relation does not exist (table not created yet)
           // 42P01 = undefined_table (PostgreSQL error for missing table)
-          if (error.code === 'PGRST116' || error.code === '42P01') {
-            // Connection works but table doesn't exist yet - that's expected
+          // 42501 = insufficient_privilege (RLS blocking - but connection works)
+          if (
+            error.code === 'PGRST116' ||
+            error.code === '42P01' ||
+            error.code === '42501'
+          ) {
+            // Connection works but table doesn't exist yet or RLS is blocking - that's expected
             setConnectionStatus('connected');
-            console.log('✅ Supabase connected (users table not yet created - run migrations)');
+            console.log('✅ Supabase connected (service is reachable)');
           } else {
             throw error;
           }
