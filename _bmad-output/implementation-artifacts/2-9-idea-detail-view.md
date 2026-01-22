@@ -1,6 +1,6 @@
 # Story 2.9: Idea Detail View
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -36,66 +36,66 @@ So that **I can see what I submitted and its current status**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create useIdea hook for fetching single idea by ID (AC: 1, 8, 9)
-  - [ ] Create `src/features/ideas/hooks/useIdea.ts`
-  - [ ] Use `useQuery` from React Query
-  - [ ] Call `ideaService.getIdeaById(id)`
-  - [ ] Return `{ idea, isLoading, error, isNotFound }`
-  - [ ] Handle not found scenario (idea is null but no error)
+- [x] Task 1: Create useIdea hook for fetching single idea by ID (AC: 1, 8, 9)
+  - [x] Create `src/features/ideas/hooks/useIdea.ts`
+  - [x] Use `useQuery` from React Query
+  - [x] Call `ideaService.getIdeaById(id)`
+  - [x] Return `{ idea, isLoading, error, isNotFound }`
+  - [x] Handle not found scenario (idea is null but no error)
 
-- [ ] Task 2: Create ideaService.getIdeaById method (AC: 1)
-  - [ ] Add `getIdeaById` to `src/features/ideas/services/ideaService.ts`
-  - [ ] Query ideas table by ID with RLS filter
-  - [ ] Return ServiceResponse<Idea | null>
+- [x] Task 2: Create ideaService.getIdeaById method (AC: 1)
+  - [x] Add `getIdeaById` to `src/features/ideas/services/ideaService.ts`
+  - [x] Query ideas table by ID with RLS filter
+  - [x] Return ServiceResponse<Idea | null>
 
-- [ ] Task 3: Create IdeaDetailContent component (AC: 1, 2)
-  - [ ] Create `src/features/ideas/components/IdeaDetailContent.tsx`
-  - [ ] Display problem, solution, impact in structured sections
-  - [ ] Show both original and enhanced content if available
-  - [ ] Use DaisyUI card/collapse for content sections
+- [x] Task 3: Create IdeaDetailContent component (AC: 1, 2)
+  - [x] Create `src/features/ideas/components/IdeaDetailContent.tsx`
+  - [x] Display problem, solution, impact in structured sections
+  - [x] Show both original and enhanced content if available
+  - [x] Use DaisyUI card/collapse for content sections
 
-- [ ] Task 4: Create IdeaStatusInfo component (AC: 3, 4, 5)
-  - [ ] Create `src/features/ideas/components/IdeaStatusInfo.tsx`
-  - [ ] Display status badge prominently
-  - [ ] Show submission date formatted
-  - [ ] Display next step message based on status
+- [x] Task 4: Create IdeaStatusInfo component (AC: 3, 4, 5)
+  - [x] Create `src/features/ideas/components/IdeaStatusInfo.tsx`
+  - [x] Display status badge prominently
+  - [x] Show submission date formatted
+  - [x] Display next step message based on status
 
-- [ ] Task 5: Create IdeaDetailActions component (AC: 6, 7, 10)
-  - [ ] Create `src/features/ideas/components/IdeaDetailActions.tsx`
-  - [ ] Show "Build PRD" button when status is "approved"
-  - [ ] Include back navigation to My Ideas
-  - [ ] Navigate to PRD builder on button click
+- [x] Task 5: Create IdeaDetailActions component (AC: 6, 7, 10)
+  - [x] Create `src/features/ideas/components/IdeaDetailActions.tsx`
+  - [x] Show "Build PRD" button when status is "approved"
+  - [x] Include back navigation to My Ideas
+  - [x] Navigate to PRD builder on button click
 
-- [ ] Task 6: Create IdeaDetailSkeleton component (AC: 8)
-  - [ ] Create `src/features/ideas/components/IdeaDetailSkeleton.tsx`
-  - [ ] Match layout of IdeaDetailContent
-  - [ ] Use DaisyUI skeleton classes
+- [x] Task 6: Create IdeaDetailSkeleton component (AC: 8)
+  - [x] Create `src/features/ideas/components/IdeaDetailSkeleton.tsx`
+  - [x] Match layout of IdeaDetailContent
+  - [x] Use DaisyUI skeleton classes
 
-- [ ] Task 7: Create IdeaNotFound component (AC: 9)
-  - [ ] Create `src/features/ideas/components/IdeaNotFound.tsx`
-  - [ ] Display friendly "not found" message
-  - [ ] Include navigation back to My Ideas
+- [x] Task 7: Create IdeaNotFound component (AC: 9)
+  - [x] Create `src/features/ideas/components/IdeaNotFound.tsx`
+  - [x] Display friendly "not found" message
+  - [x] Include navigation back to My Ideas
 
-- [ ] Task 8: Create IdeaDetailPage (AC: 1-10)
-  - [ ] Create `src/pages/IdeaDetailPage.tsx`
-  - [ ] Use useParams to get idea ID from URL
-  - [ ] Integrate useIdea hook
-  - [ ] Render appropriate state: loading, not found, error, or content
-  - [ ] Compose IdeaDetailContent, IdeaStatusInfo, IdeaDetailActions
+- [x] Task 8: Create IdeaDetailPage (AC: 1-10)
+  - [x] Create `src/pages/IdeaDetailPage.tsx`
+  - [x] Use useParams to get idea ID from URL
+  - [x] Integrate useIdea hook
+  - [x] Render appropriate state: loading, not found, error, or content
+  - [x] Compose IdeaDetailContent, IdeaStatusInfo, IdeaDetailActions
 
-- [ ] Task 9: Update routing to include IdeaDetailPage
-  - [ ] Add route for `/ideas/:id` in routes configuration
-  - [ ] Import and configure IdeaDetailPage component
+- [x] Task 9: Update routing to include IdeaDetailPage
+  - [x] Add route for `/ideas/:id` in routes configuration
+  - [x] Import and configure IdeaDetailPage component
 
-- [ ] Task 10: Update feature barrel exports
-  - [ ] Export new components and hooks from `src/features/ideas/index.ts`
+- [x] Task 10: Update feature barrel exports
+  - [x] Export new components and hooks from `src/features/ideas/index.ts`
 
-- [ ] Task 11: Create unit tests (AC: 1-10)
-  - [ ] Create `src/features/ideas/hooks/useIdea.test.ts`
-  - [ ] Create `src/features/ideas/components/IdeaDetailContent.test.tsx`
-  - [ ] Create `src/features/ideas/components/IdeaStatusInfo.test.tsx`
-  - [ ] Test status-based next step messages
-  - [ ] Test Build PRD button visibility
+- [x] Task 11: Create unit tests (AC: 1-10)
+  - [x] Create `src/features/ideas/hooks/useIdea.test.tsx`
+  - [x] Create `src/features/ideas/components/IdeaDetailContent.test.tsx`
+  - [x] Create `src/features/ideas/components/IdeaStatusInfo.test.tsx`
+  - [x] Test status-based next step messages
+  - [x] Test Build PRD button visibility
 
 ## Dev Notes
 
@@ -857,10 +857,76 @@ User clicks IdeaCard in MyIdeasPage
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.5 (via Cursor)
 
 ### Debug Log References
 
+- All tests passed: 538 tests across 41 test files
+- No linting errors
+- Followed red-green-refactor cycle for useIdea hook
+- Database fields use snake_case (problem, solution, impact, enhanced_problem, etc.)
+- ideaService.getIdeaById already existed from previous story
+
 ### Completion Notes List
 
+**Story 2.9: Idea Detail View - COMPLETE**
+
+✅ **Task 1-2: Data Layer**
+- Created `useIdea` hook with comprehensive tests (15 tests, all passing)
+- Hook handles: loading, error, not-found, and success states
+- Leveraged existing `ideaService.getIdeaById` method
+- Query keys already existed in `useSubmitIdea.ts`
+
+✅ **Task 3-7: UI Components**
+- `IdeaDetailContent`: Displays problem/solution/impact with AI-enhanced versions
+- `IdeaStatusInfo`: Shows status badge, next steps, and timestamps (AC 3-5)
+- `IdeaDetailActions`: Build PRD button (approved only) + back navigation (AC 6-7, 10)
+- `IdeaDetailSkeleton`: Loading state matching final layout (AC 8)
+- `IdeaNotFound`: User-friendly not found state (AC 9)
+
+✅ **Task 8-10: Page & Routing**
+- Created `IdeaDetailPage` composing all components
+- Added route `/ideas/:id` to router configuration
+- Updated feature barrel exports for all new components/hooks
+
+✅ **Task 11: Testing**
+- `useIdea.test.tsx`: 15 tests covering all hook scenarios
+- `IdeaDetailContent.test.tsx`: 11 tests for content display and AI enhancements
+- `IdeaStatusInfo.test.tsx`: 13 tests for status messages and timestamps
+- `IdeaDetailActions.test.tsx`: 12 tests for button visibility and navigation
+- All tests passing, no regressions
+
+**Technical Decisions:**
+- Database fields are `problem`, `solution`, `impact` (not `problem_statement`, etc.)
+- Enhanced fields: `enhanced_problem`, `enhanced_solution`, `enhanced_impact`
+- Used existing `IdeaStatusBadge` component from Story 2.8 (reuse)
+- Two-column responsive layout: content (2/3) + sidebar (1/3) on desktop
+- Status next step messages per AC 5 requirements
+
+**Acceptance Criteria Coverage:**
+- AC 1-2: ✅ Full content display with original and enhanced versions
+- AC 3-5: ✅ Status badge, timestamps, next step messages
+- AC 6-7: ✅ Build PRD button (approved only) with navigation
+- AC 8: ✅ Skeleton loading state
+- AC 9: ✅ Error and not-found states
+- AC 10: ✅ Back to My Ideas navigation
+
 ### File List
+
+**New Files:**
+- src/features/ideas/hooks/useIdea.ts
+- src/features/ideas/hooks/useIdea.test.tsx
+- src/features/ideas/components/IdeaDetailContent.tsx
+- src/features/ideas/components/IdeaDetailContent.test.tsx
+- src/features/ideas/components/IdeaStatusInfo.tsx
+- src/features/ideas/components/IdeaStatusInfo.test.tsx
+- src/features/ideas/components/IdeaDetailActions.tsx
+- src/features/ideas/components/IdeaDetailActions.test.tsx
+- src/features/ideas/components/IdeaDetailSkeleton.tsx
+- src/features/ideas/components/IdeaNotFound.tsx
+- src/pages/IdeaDetailPage.tsx
+
+**Modified Files:**
+- src/features/ideas/hooks/index.ts (added useIdea export)
+- src/features/ideas/index.ts (added detail view component exports)
+- src/routes/index.tsx (added IDEA_DETAIL route)

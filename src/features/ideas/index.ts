@@ -4,7 +4,7 @@
 export { ideaService } from './services';
 
 // Hooks
-export { useEnhanceIdea, useIdeas, useSubmitIdea, ideaQueryKeys } from './hooks';
+export { useEnhanceIdea, useIdea, useIdeas, useSubmitIdea, ideaQueryKeys } from './hooks';
 export type { WizardSubmitData } from './hooks';
 
 // Components - Wizard
@@ -16,6 +16,13 @@ export { IdeaList, IdeaListSkeleton } from './components/IdeaList';
 export { IdeaStatusBadge } from './components/IdeaStatusBadge';
 export { IdeasEmptyState } from './components/IdeasEmptyState';
 export { IdeasErrorState } from './components/IdeasErrorState';
+
+// Components - Detail View
+export { IdeaDetailContent } from './components/IdeaDetailContent';
+export { IdeaStatusInfo } from './components/IdeaStatusInfo';
+export { IdeaDetailActions } from './components/IdeaDetailActions';
+export { IdeaDetailSkeleton } from './components/IdeaDetailSkeleton';
+export { IdeaNotFound } from './components/IdeaNotFound';
 
 // Schemas
 export {

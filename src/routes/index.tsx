@@ -7,6 +7,7 @@ import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../features/auth/pages/ResetPasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { MyIdeasPage } from '../pages/MyIdeasPage';
+import { IdeaDetailPage } from '../pages/IdeaDetailPage';
 import { NewIdeaPage } from '../pages/NewIdeaPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AnalyticsPage } from '../pages/AnalyticsPage';
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.IDEAS,
         element: <MyIdeasPage />,
+      },
+      {
+        path: ROUTES.IDEA_DETAIL,
+        element: <IdeaDetailPage />,
       },
       {
         path: ROUTES.NEW_IDEA,
