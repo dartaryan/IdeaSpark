@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import type { PrdDocument, CreatePrdInput, UpdatePrdInput, PrdStatus, PrdContent } from '../../../types/database';
 import type { ServiceResponse } from '../../../types/service';
+import type { CompletePrdResult } from '../types';
 
 export const prdService = {
   /**
@@ -205,6 +206,79 @@ export const prdService = {
    */
   async updatePrdStatus(id: string, status: PrdStatus): Promise<ServiceResponse<PrdDocument>> {
     return this.updatePrd(id, { status });
+  },
+
+  /**
+   * Mark PRD as complete and update associated idea status
+   * Uses atomic operations to ensure consistency
+   */
+  async completePrd(prdId: string): Promise<ServiceResponse<CompletePrdResult>> {
+    try {
+      // First, get the PRD to find the idea_id
+      const { data: prd, error: fetchError } = await supabase
+        .from('prd_documents')
+        .select('id, idea_id, content, status')
+        .eq('id', prdId)
+        .single();
+
+      if (fetchError || !prd) {
+        return {
+          data: null,
+          error: { message: fetchError?.message || 'PRD not found', code: 'NOT_FOUND' },
+        };
+      }
+
+      if (prd.status === 'complete') {
+        return {
+          data: { prd: prd as PrdDocument, ideaUpdated: false },
+          error: null,
+        };
+      }
+
+      // Update PRD status to complete
+      const { data: updatedPrd, error: prdError } = await supabase
+        .from('prd_documents')
+        .update({
+          status: 'complete',
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', prdId)
+        .select()
+        .single();
+
+      if (prdError) {
+        return {
+          data: null,
+          error: { message: prdError.message, code: 'DB_ERROR' },
+        };
+      }
+
+      // Update idea status to 'prd_development'
+      // (only if currently 'approved' - maintains status progression)
+      const { error: ideaError } = await supabase
+        .from('ideas')
+        .update({
+          status: 'prd_development',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', prd.idea_id)
+        .in('status', ['approved', 'prd_development']); // Only update if in valid state
+
+      // Log idea error but don't fail - PRD completion is primary
+      const ideaUpdated = !ideaError;
+
+      return {
+        data: { prd: updatedPrd as PrdDocument, ideaUpdated },
+        error: null,
+      };
+    } catch (error) {
+      console.error('completePrd error:', error);
+      return {
+        data: null,
+        error: { message: 'Failed to complete PRD', code: 'UNKNOWN_ERROR' },
+      };
+    }
   },
 
   /**

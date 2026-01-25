@@ -2,8 +2,9 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { prdService } from '../services';
 import { useAutoSave } from './useAutoSave';
+import { useCompletePrd } from './useCompletePrd';
 import { validateAllSections, isReadyToComplete } from '../utils/validatePrdCompletion';
-import type { PrdContent, PrdSectionUpdate, PrdCompletionValidation } from '../types';
+import type { PrdContent, PrdSectionUpdate, PrdCompletionValidation, PrdStatus } from '../types';
 import type { PrdSectionKey } from '../constants/prdSections';
 import type { SaveStatus } from './useAutoSave';
 import { useToast } from '../../../hooks/useToast';
@@ -11,6 +12,7 @@ import { useToast } from '../../../hooks/useToast';
 interface UsePrdBuilderOptions {
   prdId: string;
   initialContent?: PrdContent;
+  prdStatus?: PrdStatus;
 }
 
 export const prdBuilderQueryKeys = {
@@ -34,9 +36,19 @@ export interface UsePrdBuilderReturn {
   focusedSection: PrdSectionKey | null;
   focusOnSection: (sectionKey: PrdSectionKey) => void;
   clearFocusedSection: () => void;
+  // Completion flow (Story 3.8)
+  isComplete: boolean;
+  showValidationModal: boolean;
+  showConfirmModal: boolean;
+  attemptMarkComplete: () => void;
+  confirmComplete: () => Promise<any>;
+  closeValidationModal: () => void;
+  closeConfirmModal: () => void;
+  isCompletingPrd: boolean;
+  completePrdError: Error | null;
 }
 
-export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): UsePrdBuilderReturn {
+export function usePrdBuilder({ prdId, initialContent, prdStatus }: UsePrdBuilderOptions): UsePrdBuilderReturn {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -46,6 +58,13 @@ export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): 
   
   // Section focus tracking (Story 3.7)
   const [focusedSection, setFocusedSection] = useState<PrdSectionKey | null>(null);
+
+  // Completion modal states (Story 3.8)
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  
+  // Completion mutation (Story 3.8)
+  const completePrdMutation = useCompletePrd();
 
   // Refs for highlight timeouts
   const highlightTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -150,7 +169,11 @@ export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): 
   // Handle save error with toast
   useEffect(() => {
     if (saveError) {
-      toast({ type: 'error', message: `Auto-save failed: ${saveError}` });
+      toast({ 
+        title: 'Auto-save failed', 
+        description: saveError,
+        variant: 'error',
+      });
     }
   }, [saveError, toast]);
 
@@ -174,6 +197,38 @@ export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): 
     setFocusedSection(null);
   }, []);
 
+  // Completion flow (Story 3.8)
+  const isComplete = prdStatus === 'complete';
+
+  // Attempt to mark complete - shows validation or confirm modal
+  const attemptMarkComplete = useCallback(() => {
+    if (isComplete) return;
+
+    if (!canMarkComplete) {
+      setShowValidationModal(true);
+    } else {
+      setShowConfirmModal(true);
+    }
+  }, [isComplete, canMarkComplete]);
+
+  // Actually mark complete (after confirmation)
+  const confirmComplete = useCallback(async () => {
+    const result = await completePrdMutation.mutateAsync(prdId);
+    if (result.data) {
+      setShowConfirmModal(false);
+      // Success is handled by toast in the calling component
+    }
+    return result;
+  }, [prdId, completePrdMutation]);
+
+  const closeValidationModal = useCallback(() => {
+    setShowValidationModal(false);
+  }, []);
+
+  const closeConfirmModal = useCallback(() => {
+    setShowConfirmModal(false);
+  }, []);
+
   return {
     prdContent,
     highlightedSections,
@@ -191,5 +246,15 @@ export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): 
     focusedSection,
     focusOnSection,
     clearFocusedSection,
+    // Completion flow (Story 3.8)
+    isComplete,
+    showValidationModal,
+    showConfirmModal,
+    attemptMarkComplete,
+    confirmComplete,
+    closeValidationModal,
+    closeConfirmModal,
+    isCompletingPrd: completePrdMutation.isPending,
+    completePrdError: completePrdMutation.error,
   };
 }

@@ -493,6 +493,179 @@ describe('prdService', () => {
     });
   });
 
+  describe('completePrd', () => {
+    it('should successfully complete PRD and update idea status', async () => {
+      const completedPrd = {
+        ...mockPrd,
+        status: 'complete' as const,
+        completed_at: '2026-01-25T10:00:00Z',
+      };
+
+      // Mock first call to get PRD
+      const mockFromSelect = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({
+          data: mockPrd,
+          error: null,
+        }),
+      };
+
+      // Mock second call to update PRD
+      const mockFromUpdate = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({
+          data: completedPrd,
+          error: null,
+        }),
+      };
+
+      // Mock third call to update idea
+      const mockFromIdeaUpdate = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValueOnce({
+          data: null,
+          error: null,
+        }),
+      };
+
+      vi.mocked(supabase.from)
+        .mockReturnValueOnce(mockFromSelect as never)
+        .mockReturnValueOnce(mockFromUpdate as never)
+        .mockReturnValueOnce(mockFromIdeaUpdate as never);
+
+      const result = await prdService.completePrd('prd-123');
+
+      expect(result.data?.prd.status).toBe('complete');
+      expect(result.data?.prd.completed_at).toBeDefined();
+      expect(result.data?.ideaUpdated).toBe(true);
+      expect(result.error).toBeNull();
+    });
+
+    it('should return existing PRD if already complete', async () => {
+      const completedPrd = {
+        ...mockPrd,
+        status: 'complete' as const,
+        completed_at: '2026-01-25T10:00:00Z',
+      };
+
+      const mockFrom = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: completedPrd,
+          error: null,
+        }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFrom as never);
+
+      const result = await prdService.completePrd('prd-123');
+
+      expect(result.data?.prd.status).toBe('complete');
+      expect(result.data?.ideaUpdated).toBe(false);
+      expect(result.error).toBeNull();
+    });
+
+    it('should return error when PRD not found', async () => {
+      const mockFrom = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Not found', code: 'PGRST116' },
+        }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFrom as never);
+
+      const result = await prdService.completePrd('invalid-id');
+
+      expect(result.data).toBeNull();
+      expect(result.error).not.toBeNull();
+      expect(result.error?.code).toBe('NOT_FOUND');
+    });
+
+    it('should handle PRD update failure', async () => {
+      const mockFromSelect = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({
+          data: mockPrd,
+          error: null,
+        }),
+      };
+
+      const mockFromUpdate = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({
+          data: null,
+          error: { message: 'Update failed', code: 'DB_ERROR' },
+        }),
+      };
+
+      vi.mocked(supabase.from)
+        .mockReturnValueOnce(mockFromSelect as never)
+        .mockReturnValueOnce(mockFromUpdate as never);
+
+      const result = await prdService.completePrd('prd-123');
+
+      expect(result.data).toBeNull();
+      expect(result.error).not.toBeNull();
+      expect(result.error?.code).toBe('DB_ERROR');
+    });
+
+    it('should complete PRD even if idea update fails', async () => {
+      const completedPrd = {
+        ...mockPrd,
+        status: 'complete' as const,
+        completed_at: '2026-01-25T10:00:00Z',
+      };
+
+      const mockFromSelect = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({
+          data: mockPrd,
+          error: null,
+        }),
+      };
+
+      const mockFromUpdate = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({
+          data: completedPrd,
+          error: null,
+        }),
+      };
+
+      const mockFromIdeaUpdate = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValueOnce({
+          data: null,
+          error: { message: 'Idea update failed' },
+        }),
+      };
+
+      vi.mocked(supabase.from)
+        .mockReturnValueOnce(mockFromSelect as never)
+        .mockReturnValueOnce(mockFromUpdate as never)
+        .mockReturnValueOnce(mockFromIdeaUpdate as never);
+
+      const result = await prdService.completePrd('prd-123');
+
+      expect(result.data?.prd.status).toBe('complete');
+      expect(result.data?.ideaUpdated).toBe(false);
+      expect(result.error).toBeNull();
+    });
+  });
+
   describe('error handling', () => {
     it('should handle invalid inputs gracefully', async () => {
       const mockFrom = {

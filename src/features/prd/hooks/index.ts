@@ -3,3 +3,4 @@ export { usePrdBuilder, prdBuilderQueryKeys, type UsePrdBuilderReturn } from './
 export { prdQueryKeys } from './queryKeys';
 export { usePrdChat, type UsePrdChatReturn } from './usePrdChat';
 export { useAutoSave, type UseAutoSaveOptions, type UseAutoSaveReturn, type SaveStatus } from './useAutoSave';
+export { useCompletePrd } from './useCompletePrd';

@@ -76,7 +76,7 @@ development_status:
   3-5-real-time-prd-section-generation: review
   3-6-prd-auto-save-functionality: review
   3-7-prd-section-structure-and-content: review
-  3-8-mark-prd-as-complete: ready-for-dev
+  3-8-mark-prd-as-complete: review
   3-9-view-completed-prd: ready-for-dev
   epic-3-retrospective: optional
 
@@ -105,9 +105,9 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Analytics & Innovation Metrics
-  epic-6: backlog
-  6-1-analytics-dashboard-layout: backlog
-  6-2-total-ideas-submitted-metric: backlog
+  epic-6: in-progress
+  6-1-analytics-dashboard-layout: ready-for-dev
+  6-2-total-ideas-submitted-metric: ready-for-dev
   6-3-pipeline-stage-breakdown-chart: backlog
   6-4-completion-rates-metrics: backlog
   6-5-time-to-decision-metrics: backlog

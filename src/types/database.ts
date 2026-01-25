@@ -177,6 +177,7 @@ export interface PrdDocument {
   status: PrdStatus;
   created_at: string;
   updated_at: string;
+  completed_at?: string;
 }
 
 export interface PrdMessage {

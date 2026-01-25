@@ -47,3 +47,9 @@ export interface PrdCompletionValidation {
   sectionResults: SectionValidationResult[];
   incompleteRequired: SectionValidationResult[];
 }
+
+// Completion flow types
+export interface CompletePrdResult {
+  prd: PrdDocument;
+  ideaUpdated: boolean;
+}
