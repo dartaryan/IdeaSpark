@@ -75,7 +75,7 @@ development_status:
   3-4-chat-interface-with-ai-assistant: review
   3-5-real-time-prd-section-generation: review
   3-6-prd-auto-save-functionality: review
-  3-7-prd-section-structure-and-content: ready-for-dev
+  3-7-prd-section-structure-and-content: review
   3-8-mark-prd-as-complete: ready-for-dev
   3-9-view-completed-prd: ready-for-dev
   epic-3-retrospective: optional
@@ -101,7 +101,7 @@ development_status:
   5-5-reject-idea-with-feedback: ready-for-dev
   5-6-view-any-users-idea-prd-and-prototype: ready-for-dev
   5-7-user-list-and-activity-overview: ready-for-dev
-  5-8-real-time-dashboard-updates: backlog
+  5-8-real-time-dashboard-updates: ready-for-dev
   epic-5-retrospective: optional
 
   # Epic 6: Analytics & Innovation Metrics

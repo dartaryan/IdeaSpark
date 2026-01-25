@@ -448,4 +448,247 @@ describe('usePrdBuilder with auto-save', () => {
       expect(result.current.saveError).toBe('Network error');
     });
   });
+
+  describe('Section completion tracking (Story 3.7)', () => {
+    it('should provide completionValidation computed property', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {
+          problemStatement: { content: 'Problem statement', status: 'in_progress' as const },
+        },
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.completionValidation).toBeDefined();
+      expect(result.current.completionValidation.isReady).toBe(false);
+      expect(result.current.completionValidation.totalRequired).toBe(6);
+    });
+
+    it('should provide canMarkComplete flag', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.canMarkComplete).toBe(false);
+    });
+
+    it('should update completionValidation when content changes', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.completionValidation.completedCount).toBe(0);
+
+      // Update content
+      act(() => {
+        result.current.setPrdContent({
+          problemStatement: {
+            content: 'This is a comprehensive problem statement with enough detail to meet the minimum requirements for validation.',
+            status: 'complete',
+          },
+        });
+      });
+
+      await waitFor(() => {
+        expect(result.current.completionValidation.completedCount).toBe(1);
+      });
+    });
+
+    it('should provide focusOnSection function', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.focusOnSection).toBeDefined();
+      expect(typeof result.current.focusOnSection).toBe('function');
+    });
+
+    it('should set focusedSection when focusOnSection is called', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.focusedSection).toBeNull();
+
+      act(() => {
+        result.current.focusOnSection('problemStatement');
+      });
+
+      await waitFor(() => {
+        expect(result.current.focusedSection).toBe('problemStatement');
+      });
+    });
+
+    it('should clear focusedSection when clearFocusedSection is called', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Set focused section
+      act(() => {
+        result.current.focusOnSection('problemStatement');
+      });
+
+      await waitFor(() => {
+        expect(result.current.focusedSection).toBe('problemStatement');
+      });
+
+      // Clear focused section
+      act(() => {
+        result.current.clearFocusedSection();
+      });
+
+      await waitFor(() => {
+        expect(result.current.focusedSection).toBeNull();
+      });
+    });
+
+    it('should switch focusedSection when different section is focused', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Focus on first section
+      act(() => {
+        result.current.focusOnSection('problemStatement');
+      });
+
+      await waitFor(() => {
+        expect(result.current.focusedSection).toBe('problemStatement');
+      });
+
+      // Focus on different section
+      act(() => {
+        result.current.focusOnSection('goalsAndMetrics');
+      });
+
+      await waitFor(() => {
+        expect(result.current.focusedSection).toBe('goalsAndMetrics');
+      });
+    });
+  });
 });

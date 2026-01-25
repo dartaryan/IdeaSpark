@@ -1,8 +1,10 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { prdService } from '../services';
 import { useAutoSave } from './useAutoSave';
-import type { PrdContent, PrdSectionUpdate } from '../types';
+import { validateAllSections, isReadyToComplete } from '../utils/validatePrdCompletion';
+import type { PrdContent, PrdSectionUpdate, PrdCompletionValidation } from '../types';
+import type { PrdSectionKey } from '../constants/prdSections';
 import type { SaveStatus } from './useAutoSave';
 import { useToast } from '../../../hooks/useToast';
 
@@ -26,6 +28,12 @@ export interface UsePrdBuilderReturn {
   setPrdContent: (content: PrdContent) => void;
   triggerSave: () => Promise<void>;
   clearSaveError: () => void;
+  // Section completion tracking (Story 3.7)
+  completionValidation: PrdCompletionValidation;
+  canMarkComplete: boolean;
+  focusedSection: PrdSectionKey | null;
+  focusOnSection: (sectionKey: PrdSectionKey) => void;
+  clearFocusedSection: () => void;
 }
 
 export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): UsePrdBuilderReturn {
@@ -35,6 +43,9 @@ export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): 
   // Local state for optimistic updates
   const [prdContent, setPrdContent] = useState<PrdContent>(initialContent ?? {});
   const [highlightedSections, setHighlightedSections] = useState<Set<string>>(new Set());
+  
+  // Section focus tracking (Story 3.7)
+  const [focusedSection, setFocusedSection] = useState<PrdSectionKey | null>(null);
 
   // Refs for highlight timeouts
   const highlightTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -143,6 +154,26 @@ export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): 
     }
   }, [saveError, toast]);
 
+  // Section completion validation (Story 3.7)
+  const completionValidation = useMemo<PrdCompletionValidation>(
+    () => validateAllSections(prdContent),
+    [prdContent]
+  );
+
+  const canMarkComplete = useMemo(
+    () => isReadyToComplete(prdContent),
+    [prdContent]
+  );
+
+  // Focus on specific section (Story 3.7)
+  const focusOnSection = useCallback((sectionKey: PrdSectionKey) => {
+    setFocusedSection(sectionKey);
+  }, []);
+
+  const clearFocusedSection = useCallback(() => {
+    setFocusedSection(null);
+  }, []);
+
   return {
     prdContent,
     highlightedSections,
@@ -154,5 +185,11 @@ export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): 
     setPrdContent,
     triggerSave, // Manual save capability (AC6)
     clearSaveError,
+    // Section completion tracking (Story 3.7)
+    completionValidation,
+    canMarkComplete,
+    focusedSection,
+    focusOnSection,
+    clearFocusedSection,
   };
 }

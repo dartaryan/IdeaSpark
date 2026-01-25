@@ -36,6 +36,17 @@ vi.mock('../features/prd/hooks/usePrdBuilder', () => ({
     setPrdContent: vi.fn(),
     triggerSave: vi.fn(),
     clearSaveError: vi.fn(),
+    completionValidation: {
+      isReady: false,
+      completedCount: 0,
+      totalRequired: 6,
+      sectionResults: [],
+      incompleteRequired: [],
+    },
+    canMarkComplete: false,
+    focusedSection: null,
+    focusOnSection: vi.fn(),
+    clearFocusedSection: vi.fn(),
   })),
   prdBuilderQueryKeys: {
     prd: (id: string) => ['prd', id] as const,

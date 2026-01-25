@@ -23,33 +23,27 @@ export interface PrdWithIdea extends PrdDocument {
   };
 }
 
-// PRD section keys for iteration
-export const PRD_SECTION_KEYS = [
-  'problemStatement',
-  'goalsAndMetrics',
-  'userStories',
-  'requirements',
-  'technicalConsiderations',
-  'risks',
-  'timeline',
-] as const;
-
-export type PrdSectionKey = typeof PRD_SECTION_KEYS[number];
-
-// PRD section display names
-export const PRD_SECTION_LABELS: Record<PrdSectionKey, string> = {
-  problemStatement: 'Problem Statement',
-  goalsAndMetrics: 'Goals & Metrics',
-  userStories: 'User Stories',
-  requirements: 'Requirements',
-  technicalConsiderations: 'Technical Considerations',
-  risks: 'Risks',
-  timeline: 'Timeline',
-};
+// Re-export section key type from constants for consistency
+export type { PrdSectionKey } from './constants/prdSections';
 
 // PRD section update type (for AI chat responses)
 export interface PrdSectionUpdate {
   sectionKey: keyof PrdContent;
   content: string;
   status: 'in_progress' | 'complete';
+}
+
+// Validation types
+export interface SectionValidationResult {
+  key: keyof PrdContent;
+  isValid: boolean;
+  issues: string[];
+}
+
+export interface PrdCompletionValidation {
+  isReady: boolean;
+  completedCount: number;
+  totalRequired: number;
+  sectionResults: SectionValidationResult[];
+  incompleteRequired: SectionValidationResult[];
 }
