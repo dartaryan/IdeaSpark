@@ -77,14 +77,14 @@ development_status:
   3-6-prd-auto-save-functionality: review
   3-7-prd-section-structure-and-content: review
   3-8-mark-prd-as-complete: review
-  3-9-view-completed-prd: ready-for-dev
+  3-9-view-completed-prd: review
   epic-3-retrospective: optional
 
   # Epic 4: Prototype Generation & Refinement
   epic-4: in-progress
-  4-1-create-prototypes-database-table-and-service-layer: ready-for-dev
+  4-1-create-prototypes-database-table-and-service-layer: review
   4-2-open-lovable-edge-function-for-prototype-generation: review
-  4-3-trigger-prototype-generation-from-completed-prd: ready-for-dev
+  4-3-trigger-prototype-generation-from-completed-prd: review
   4-4-prototype-viewer-with-responsive-preview: ready-for-dev
   4-5-chat-based-prototype-refinement: ready-for-dev
   4-6-prototype-refinement-history: ready-for-dev
@@ -108,9 +108,9 @@ development_status:
   epic-6: in-progress
   6-1-analytics-dashboard-layout: ready-for-dev
   6-2-total-ideas-submitted-metric: ready-for-dev
-  6-3-pipeline-stage-breakdown-chart: backlog
-  6-4-completion-rates-metrics: backlog
-  6-5-time-to-decision-metrics: backlog
-  6-6-user-activity-overview: backlog
-  6-7-date-range-filtering-for-analytics: backlog
+  6-3-pipeline-stage-breakdown-chart: ready-for-dev
+  6-4-completion-rates-metrics: ready-for-dev
+  6-5-time-to-decision-metrics: ready-for-dev
+  6-6-user-activity-overview: ready-for-dev
+  6-7-date-range-filtering-for-analytics: ready-for-dev
   epic-6-retrospective: optional

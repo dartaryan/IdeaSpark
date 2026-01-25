@@ -1,7 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import type { PrdDocument, CreatePrdInput, UpdatePrdInput, PrdStatus, PrdContent } from '../../../types/database';
 import type { ServiceResponse } from '../../../types/service';
-import type { CompletePrdResult } from '../types';
+import type { CompletePrdResult, PrdViewData, IdeaSummary } from '../types';
 
 export const prdService = {
   /**
@@ -60,6 +60,55 @@ export const prdService = {
       return { data: data as PrdDocument, error: null };
     } catch (error) {
       console.error('getPrdById error:', error);
+      return {
+        data: null,
+        error: { message: 'Failed to fetch PRD', code: 'UNKNOWN_ERROR' },
+      };
+    }
+  },
+
+  /**
+   * Get PRD by ID with associated idea data (for viewing completed PRDs)
+   */
+  async getPrdWithIdea(prdId: string): Promise<ServiceResponse<PrdViewData>> {
+    try {
+      // Fetch PRD document
+      const { data: prd, error: prdError } = await supabase
+        .from('prd_documents')
+        .select('*')
+        .eq('id', prdId)
+        .single();
+
+      if (prdError || !prd) {
+        return {
+          data: null,
+          error: { message: 'PRD not found', code: 'NOT_FOUND' },
+        };
+      }
+
+      // Fetch associated idea
+      const { data: idea, error: ideaError } = await supabase
+        .from('ideas')
+        .select('id, title, problem, solution, impact, enhanced_problem, enhanced_solution, enhanced_impact, status, created_at')
+        .eq('id', prd.idea_id)
+        .single();
+
+      if (ideaError || !idea) {
+        return {
+          data: null,
+          error: { message: 'Associated idea not found', code: 'NOT_FOUND' },
+        };
+      }
+
+      return {
+        data: {
+          prd: prd as PrdDocument,
+          idea: idea as IdeaSummary,
+        },
+        error: null,
+      };
+    } catch (error) {
+      console.error('getPrdWithIdea error:', error);
       return {
         data: null,
         error: { message: 'Failed to fetch PRD', code: 'UNKNOWN_ERROR' },

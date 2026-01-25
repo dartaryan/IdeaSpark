@@ -7,3 +7,8 @@ export { CompletionValidationModal } from './CompletionValidationModal';
 export { ConfirmCompletionModal } from './ConfirmCompletionModal';
 export { GeneratePrototypeButton } from './GeneratePrototypeButton';
 export { CompletedPrdHeader } from './CompletedPrdHeader';
+export { PrdDocumentView } from './PrdDocumentView';
+export { PrdViewerHeader } from './PrdViewerHeader';
+export { PrdIdeaSummary } from './PrdIdeaSummary';
+export { PrdSectionViewer } from './PrdSectionViewer';
+export { PrdTableOfContents } from './PrdTableOfContents';

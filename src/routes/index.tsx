@@ -10,6 +10,7 @@ import { MyIdeasPage } from '../pages/MyIdeasPage';
 import { IdeaDetailPage } from '../pages/IdeaDetailPage';
 import { NewIdeaPage } from '../pages/NewIdeaPage';
 import { PrdBuilderPage } from '../pages/PrdBuilderPage';
+import { PrdViewPage } from '../pages/PrdViewPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AnalyticsPage } from '../pages/AnalyticsPage';
 import { NotAuthorizedPage } from '../pages/NotAuthorizedPage';
@@ -73,6 +74,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.PRD_BUILDER,
         element: <PrdBuilderPage />,
+      },
+      {
+        path: '/prd/:prdId',
+        element: <PrdViewPage />,
       },
       // Admin routes - wrapped with AdminRoute for role check
       {

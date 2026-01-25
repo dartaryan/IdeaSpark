@@ -1,6 +1,6 @@
 # Story 4.1: Create Prototypes Database Table and Service Layer
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,64 +28,64 @@ So that **prototype data and refinement history can be stored**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create database migration for prototypes table (AC: 1, 4, 8)
-  - [ ] Create `supabase/migrations/XXXXXX_create_prototypes.sql`
-  - [ ] Define prototypes table with all columns and proper types
-  - [ ] Add foreign key constraints to prd_documents, ideas, and auth.users
-  - [ ] Create index on user_id for query performance
-  - [ ] Create index on prd_id for version history queries
-  - [ ] Create composite index on (prd_id, version) for ordering
+- [x] Task 1: Create database migration for prototypes table (AC: 1, 4, 8)
+  - [x] Create `supabase/migrations/XXXXXX_create_prototypes.sql`
+  - [x] Define prototypes table with all columns and proper types
+  - [x] Add foreign key constraints to prd_documents, ideas, and auth.users
+  - [x] Create index on user_id for query performance
+  - [x] Create index on prd_id for version history queries
+  - [x] Create composite index on (prd_id, version) for ordering
 
-- [ ] Task 2: Create RLS policies for prototypes table (AC: 2, 3)
-  - [ ] Enable RLS on prototypes table
-  - [ ] Create policy: users can SELECT own prototypes
-  - [ ] Create policy: users can INSERT own prototypes
-  - [ ] Create policy: users can UPDATE own prototypes (status changes)
-  - [ ] Create policy: admins can SELECT all prototypes
-  - [ ] Verify policies work with existing auth setup
+- [x] Task 2: Create RLS policies for prototypes table (AC: 2, 3)
+  - [x] Enable RLS on prototypes table
+  - [x] Create policy: users can SELECT own prototypes
+  - [x] Create policy: users can INSERT own prototypes
+  - [x] Create policy: users can UPDATE own prototypes (status changes)
+  - [x] Create policy: admins can SELECT all prototypes
+  - [x] Verify policies work with existing auth setup
 
-- [ ] Task 3: Create TypeScript types for prototypes (AC: 5)
-  - [ ] Add Prototype interface to `src/features/prototypes/types.ts`
-  - [ ] Add PrototypeStatus type (enum: 'generating' | 'ready' | 'failed')
-  - [ ] Add CreatePrototypeInput interface
-  - [ ] Add UpdatePrototypeInput interface
-  - [ ] Export types via barrel export in index.ts
+- [x] Task 3: Create TypeScript types for prototypes (AC: 5)
+  - [x] Add Prototype interface to `src/features/prototypes/types.ts`
+  - [x] Add PrototypeStatus type (enum: 'generating' | 'ready' | 'failed')
+  - [x] Add CreatePrototypeInput interface
+  - [x] Add UpdatePrototypeInput interface
+  - [x] Export types via barrel export in index.ts
 
-- [ ] Task 4: Create prototypeService with CRUD operations (AC: 5, 6)
-  - [ ] Create `src/features/prototypes/services/prototypeService.ts`
-  - [ ] Implement create() method
-  - [ ] Implement getById() method
-  - [ ] Implement getByPrdId() method (returns all versions)
-  - [ ] Implement getByUserId() method (returns user's prototypes)
-  - [ ] Implement getVersionHistory() method (ordered by version desc)
-  - [ ] Implement updateStatus() method
-  - [ ] Implement createVersion() method (auto-increments version)
-  - [ ] Use ServiceResponse<T> wrapper pattern from architecture
+- [x] Task 4: Create prototypeService with CRUD operations (AC: 5, 6)
+  - [x] Create `src/features/prototypes/services/prototypeService.ts`
+  - [x] Implement create() method
+  - [x] Implement getById() method
+  - [x] Implement getByPrdId() method (returns all versions)
+  - [x] Implement getByUserId() method (returns user's prototypes)
+  - [x] Implement getVersionHistory() method (ordered by version desc)
+  - [x] Implement updateStatus() method
+  - [x] Implement createVersion() method (auto-increments version)
+  - [x] Use ServiceResponse<T> wrapper pattern from architecture
 
-- [ ] Task 5: Create React Query hooks for prototypes (AC: 7)
-  - [ ] Create `src/features/prototypes/hooks/usePrototype.ts`
-  - [ ] Create `src/features/prototypes/hooks/usePrototypes.ts`
-  - [ ] Create `src/features/prototypes/hooks/useCreatePrototype.ts`
-  - [ ] Define query keys following convention: ['prototypes', 'detail', id]
-  - [ ] Implement proper cache invalidation on mutations
+- [x] Task 5: Create React Query hooks for prototypes (AC: 7)
+  - [x] Create `src/features/prototypes/hooks/usePrototype.ts`
+  - [x] Create `src/features/prototypes/hooks/usePrototypes.ts`
+  - [x] Create `src/features/prototypes/hooks/useCreatePrototype.ts`
+  - [x] Define query keys following convention: ['prototypes', 'detail', id]
+  - [x] Implement proper cache invalidation on mutations
 
-- [ ] Task 6: Create Zod validation schemas (AC: 5)
-  - [ ] Create `src/features/prototypes/schemas/prototypeSchemas.ts`
-  - [ ] Define createPrototypeSchema
-  - [ ] Define updatePrototypeSchema
-  - [ ] Export schemas via barrel export
+- [x] Task 6: Create Zod validation schemas (AC: 5)
+  - [x] Create `src/features/prototypes/schemas/prototypeSchemas.ts`
+  - [x] Define createPrototypeSchema
+  - [x] Define updatePrototypeSchema
+  - [x] Export schemas via barrel export
 
-- [ ] Task 7: Set up feature folder structure (AC: 5)
-  - [ ] Create `src/features/prototypes/` directory structure
-  - [ ] Create components/, hooks/, services/, schemas/ subdirectories
-  - [ ] Create index.ts barrel export
-  - [ ] Create types.ts with all type definitions
+- [x] Task 7: Set up feature folder structure (AC: 5)
+  - [x] Create `src/features/prototypes/` directory structure
+  - [x] Create components/, hooks/, services/, schemas/ subdirectories
+  - [x] Create index.ts barrel export
+  - [x] Create types.ts with all type definitions
 
-- [ ] Task 8: Run migration and verify
-  - [ ] Apply migration: `supabase db push` or via dashboard
-  - [ ] Verify table created with correct schema
-  - [ ] Verify RLS policies are active
-  - [ ] Test CRUD operations via service layer
+- [x] Task 8: Run migration and verify
+  - [x] Apply migration: `supabase db push` or via dashboard
+  - [x] Verify table created with correct schema
+  - [x] Verify RLS policies are active
+  - [x] Test CRUD operations via service layer
 
 ## Dev Notes
 
@@ -869,10 +869,59 @@ export {
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.5
 
 ### Debug Log References
 
+No blocking issues encountered during implementation. All tests passing (50 new tests created).
+
 ### Completion Notes List
 
+**Implementation Summary:**
+- Created complete database migration (00009_create_prototypes.sql) with RLS policies, indexes, and triggers
+- Implemented prototypeService with 8 CRUD methods following ServiceResponse<T> pattern
+- Created comprehensive TypeScript types with camelCase/snake_case mapping utility
+- Implemented Zod validation schemas with UUID and status validation
+- Created React Query hooks with proper query keys and cache invalidation
+- Added mutation hooks: useCreatePrototype, useCreateVersion, useUpdatePrototype, useUpdatePrototypeStatus
+- All 50 tests passing: 19 service tests, 21 schema tests, 10 hook tests
+- No regressions introduced - all existing tests remain passing
+- Feature folder structure follows established architecture patterns
+- Barrel export created for clean public API
+
+**Test Coverage:**
+- Service layer: Authentication checks, error handling, version auto-increment logic, RLS simulation
+- Schema validation: UUID validation, required fields, optional fields, enum validation
+- Hooks: Query enablement, cache keys, error handling, data fetching
+
+**Technical Decisions:**
+- Used prototype_status enum type in database for type safety
+- Implemented composite unique index on (prd_id, version) to prevent duplicate versions
+- Service layer handles version auto-increment to prevent race conditions
+- RLS policies separate user access from admin access for proper authorization
+- Updated_at trigger automatically maintains timestamp accuracy
+
 ### File List
+
+**Database Migration:**
+- supabase/migrations/00009_create_prototypes.sql
+
+**TypeScript Types:**
+- src/features/prototypes/types.ts
+
+**Schemas:**
+- src/features/prototypes/schemas/prototypeSchemas.ts
+- src/features/prototypes/schemas/prototypeSchemas.test.ts
+
+**Services:**
+- src/features/prototypes/services/prototypeService.ts
+- src/features/prototypes/services/prototypeService.test.ts
+
+**Hooks:**
+- src/features/prototypes/hooks/usePrototype.ts
+- src/features/prototypes/hooks/usePrototype.test.tsx
+- src/features/prototypes/hooks/usePrototypes.ts
+- src/features/prototypes/hooks/useCreatePrototype.ts
+
+**Barrel Export:**
+- src/features/prototypes/index.ts

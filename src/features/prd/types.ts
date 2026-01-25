@@ -53,3 +53,22 @@ export interface CompletePrdResult {
   prd: PrdDocument;
   ideaUpdated: boolean;
 }
+
+// View mode types (for Story 3.9)
+export interface IdeaSummary {
+  id: string;
+  title: string;
+  problem: string;
+  solution: string;
+  impact: string;
+  enhanced_problem?: string | null;
+  enhanced_solution?: string | null;
+  enhanced_impact?: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface PrdViewData {
+  prd: PrdDocument;
+  idea: IdeaSummary;
+}

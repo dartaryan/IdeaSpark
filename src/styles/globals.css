@@ -66,3 +66,45 @@
 .animate-fade-in {
   animation: fade-in 0.3s ease-in;
 }
+
+/* Print-friendly styles for PRD viewing (Story 3.9) */
+@media print {
+  /* Hide non-printable elements */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print\:block {
+    display: block !important;
+  }
+
+  /* Reset backgrounds for print */
+  body {
+    background: white !important;
+  }
+
+  /* Ensure sections don't break awkwardly */
+  .print\:break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  /* Adjust margins for print */
+  .print\:mb-4 {
+    margin-bottom: 1rem !important;
+  }
+
+  /* Typography adjustments */
+  h1,
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+
+  /* Remove decorative elements */
+  .badge,
+  .btn {
+    border: 1px solid #ccc !important;
+    background: transparent !important;
+  }
+}

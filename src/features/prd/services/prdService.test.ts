@@ -666,6 +666,107 @@ describe('prdService', () => {
     });
   });
 
+  describe('getPrdWithIdea', () => {
+    const mockIdea = {
+      id: 'idea-123',
+      title: 'Test Idea',
+      problem: 'Test problem',
+      solution: 'Test solution',
+      impact: 'Test impact',
+      enhanced_problem: 'Enhanced problem',
+      enhanced_solution: 'Enhanced solution',
+      enhanced_impact: 'Enhanced impact',
+      status: 'prd_development' as const,
+      created_at: '2026-01-22T10:00:00Z',
+    };
+
+    it('should return PRD with associated idea data', async () => {
+      // Mock PRD fetch
+      const mockPrdFrom = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({ data: mockPrd, error: null }),
+      };
+
+      // Mock idea fetch
+      const mockIdeaFrom = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({ data: mockIdea, error: null }),
+      };
+
+      vi.mocked(supabase.from)
+        .mockReturnValueOnce(mockPrdFrom as never)
+        .mockReturnValueOnce(mockIdeaFrom as never);
+
+      const result = await prdService.getPrdWithIdea('prd-123');
+
+      expect(supabase.from).toHaveBeenCalledWith('prd_documents');
+      expect(supabase.from).toHaveBeenCalledWith('ideas');
+      expect(result.data?.prd).toEqual(mockPrd);
+      expect(result.data?.idea).toEqual(mockIdea);
+      expect(result.error).toBeNull();
+    });
+
+    it('should return error when PRD not found', async () => {
+      const mockFrom = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: null,
+          error: { code: 'PGRST116', message: 'Not found' },
+        }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFrom as never);
+
+      const result = await prdService.getPrdWithIdea('invalid-id');
+
+      expect(result.data).toBeNull();
+      expect(result.error).not.toBeNull();
+      expect(result.error?.message).toContain('PRD not found');
+    });
+
+    it('should return error when idea not found', async () => {
+      // Mock PRD fetch (successful)
+      const mockPrdFrom = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({ data: mockPrd, error: null }),
+      };
+
+      // Mock idea fetch (not found)
+      const mockIdeaFrom = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValueOnce({
+          data: null,
+          error: { code: 'PGRST116', message: 'Not found' },
+        }),
+      };
+
+      vi.mocked(supabase.from)
+        .mockReturnValueOnce(mockPrdFrom as never)
+        .mockReturnValueOnce(mockIdeaFrom as never);
+
+      const result = await prdService.getPrdWithIdea('prd-123');
+
+      expect(result.data).toBeNull();
+      expect(result.error).not.toBeNull();
+      expect(result.error?.message).toContain('Associated idea not found');
+    });
+
+    it('should handle unexpected errors', async () => {
+      vi.mocked(supabase.from).mockImplementation(() => {
+        throw new Error('Unexpected error');
+      });
+
+      const result = await prdService.getPrdWithIdea('prd-123');
+
+      expect(result.data).toBeNull();
+      expect(result.error?.code).toBe('UNKNOWN_ERROR');
+    });
+  });
+
   describe('error handling', () => {
     it('should handle invalid inputs gracefully', async () => {
       const mockFrom = {
