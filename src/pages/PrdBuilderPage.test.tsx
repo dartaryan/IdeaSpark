@@ -23,6 +23,25 @@ vi.mock('../features/prd/services/prdService', () => ({
   },
 }));
 
+// Mock usePrdBuilder hook
+vi.mock('../features/prd/hooks/usePrdBuilder', () => ({
+  usePrdBuilder: vi.fn(() => ({
+    prdContent: {},
+    highlightedSections: new Set(),
+    saveStatus: 'idle' as const,
+    lastSaved: null,
+    saveError: null,
+    isLoading: false,
+    handleSectionUpdates: vi.fn(),
+    setPrdContent: vi.fn(),
+    triggerSave: vi.fn(),
+    clearSaveError: vi.fn(),
+  })),
+  prdBuilderQueryKeys: {
+    prd: (id: string) => ['prd', id] as const,
+  },
+}));
+
 const mockIdeaService = vi.mocked(ideaService);
 const mockPrdService = vi.mocked(prdService);
 

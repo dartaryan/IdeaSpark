@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { prdService } from '../services';
-import type { PrdContent, PrdSectionStatus, PrdSectionUpdate } from '../types';
+import { useAutoSave } from './useAutoSave';
+import type { PrdContent, PrdSectionUpdate } from '../types';
+import type { SaveStatus } from './useAutoSave';
 import { useToast } from '../../../hooks/useToast';
 
 interface UsePrdBuilderOptions {
@@ -16,26 +18,26 @@ export const prdBuilderQueryKeys = {
 export interface UsePrdBuilderReturn {
   prdContent: PrdContent;
   highlightedSections: Set<string>;
-  isSaving: boolean;
+  saveStatus: SaveStatus;
   lastSaved: Date | null;
+  saveError: string | null;
   isLoading: boolean;
   handleSectionUpdates: (updates: PrdSectionUpdate[]) => Promise<void>;
   setPrdContent: (content: PrdContent) => void;
+  triggerSave: () => Promise<void>;
+  clearSaveError: () => void;
 }
 
 export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): UsePrdBuilderReturn {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   // Local state for optimistic updates
   const [prdContent, setPrdContent] = useState<PrdContent>(initialContent ?? {});
   const [highlightedSections, setHighlightedSections] = useState<Set<string>>(new Set());
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  
-  // Refs for debouncing and highlight timeouts
-  const saveTimeoutRef = useRef<number | null>(null);
-  const highlightTimeoutsRef = useRef<Map<string, number>>(new Map());
+
+  // Refs for highlight timeouts
+  const highlightTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Load PRD data on mount
   const { data: prdData, isLoading } = useQuery({
@@ -48,123 +50,109 @@ export function usePrdBuilder({ prdId, initialContent }: UsePrdBuilderOptions): 
     enabled: !!prdId,
   });
 
-  // Sync fetched data to local state
+  // Sync fetched data to local state (for restoration - AC3)
   useEffect(() => {
     if (prdData?.content) {
       setPrdContent(prdData.content);
     }
   }, [prdData]);
 
-  // Mutation for saving section updates
-  const saveMutation = useMutation({
-    mutationFn: async ({ 
-      sectionKey, 
-      sectionData 
-    }: { 
-      sectionKey: keyof PrdContent; 
-      sectionData: { content: string; status: PrdSectionStatus } 
-    }) => {
-      const result = await prdService.updatePrdSection(prdId, sectionKey, sectionData);
-      if (result.error) throw new Error(result.error.message);
-      return result.data;
-    },
-    onSuccess: () => {
-      setLastSaved(new Date());
+  // Save function for auto-save
+  const savePrdContent = useCallback(
+    async (content: PrdContent) => {
+      const result = await prdService.updatePrd(prdId, { content });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      // Invalidate query to sync cache
       queryClient.invalidateQueries({ queryKey: prdBuilderQueryKeys.prd(prdId) });
     },
-    onError: (error) => {
-      toast({ 
-        title: 'Failed to save', 
-        description: error.message,
-        variant: 'error'
-      });
-    },
+    [prdId, queryClient]
+  );
+
+  // Auto-save hook integration (AC1, AC2, AC5, AC7)
+  const {
+    saveStatus,
+    lastSaved,
+    error: saveError,
+    triggerSave,
+    clearError: clearSaveError,
+  } = useAutoSave({
+    data: prdContent,
+    saveFunction: savePrdContent,
+    debounceMs: 1000, // Save within 1 second per AC1
+    savedDisplayMs: 3000, // Show "Saved" for 3 seconds per AC2
+    enabled: !!prdId,
   });
 
   // Clear highlights after timeout
   const scheduleHighlightClear = useCallback((sectionKey: string) => {
-    // Clear any existing timeout for this section
     const existingTimeout = highlightTimeoutsRef.current.get(sectionKey);
     if (existingTimeout) {
       clearTimeout(existingTimeout);
     }
 
-    // Set new timeout
     const timeout = setTimeout(() => {
-      setHighlightedSections(prev => {
+      setHighlightedSections((prev) => {
         const next = new Set(prev);
         next.delete(sectionKey);
         return next;
       });
       highlightTimeoutsRef.current.delete(sectionKey);
-    }, 2000); // 2 second highlight duration
+    }, 2000);
 
     highlightTimeoutsRef.current.set(sectionKey, timeout);
   }, []);
 
-  // Debounced save function
-  const debouncedSave = useCallback((
-    sectionKey: keyof PrdContent,
-    sectionData: { content: string; status: PrdSectionStatus }
-  ) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
+  // Handle section updates from AI (triggers auto-save automatically via state change)
+  const handleSectionUpdates = useCallback(
+    async (updates: PrdSectionUpdate[]) => {
+      if (!updates || updates.length === 0) return;
 
-    setIsSaving(true);
-    
-    saveTimeoutRef.current = setTimeout(() => {
-      saveMutation.mutate({ sectionKey, sectionData });
-      setIsSaving(false);
-    }, 300); // 300ms debounce
-  }, [saveMutation]);
+      for (const update of updates) {
+        const { sectionKey, content, status } = update;
 
-  // Handle section updates from AI
-  const handleSectionUpdates = useCallback(async (updates: PrdSectionUpdate[]) => {
-    if (!updates || updates.length === 0) return;
+        // Optimistic update to local state (will trigger auto-save)
+        setPrdContent((prev) => ({
+          ...prev,
+          [sectionKey]: {
+            content,
+            status,
+          },
+        }));
 
-    // Process each update
-    for (const update of updates) {
-      const { sectionKey, content, status } = update;
-      const key = sectionKey as string;
-
-      // Optimistic update to local state
-      setPrdContent(prev => ({
-        ...prev,
-        [sectionKey]: {
-          content,
-          status,
-        },
-      }));
-
-      // Add to highlighted sections
-      setHighlightedSections(prev => new Set([...prev, key]));
-      
-      // Schedule highlight removal
-      scheduleHighlightClear(key);
-
-      // Debounced save to database
-      debouncedSave(sectionKey as keyof PrdContent, { content, status });
-    }
-  }, [scheduleHighlightClear, debouncedSave]);
+        // Add to highlighted sections
+        setHighlightedSections((prev) => new Set([...prev, sectionKey]));
+        scheduleHighlightClear(sectionKey);
+      }
+    },
+    [scheduleHighlightClear]
+  );
 
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      highlightTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      highlightTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
     };
   }, []);
+
+  // Handle save error with toast
+  useEffect(() => {
+    if (saveError) {
+      toast({ type: 'error', message: `Auto-save failed: ${saveError}` });
+    }
+  }, [saveError, toast]);
 
   return {
     prdContent,
     highlightedSections,
-    isSaving,
+    saveStatus,
     lastSaved,
+    saveError,
     isLoading,
     handleSectionUpdates,
     setPrdContent,
+    triggerSave, // Manual save capability (AC6)
+    clearSaveError,
   };
 }

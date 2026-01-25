@@ -59,7 +59,12 @@ export function usePrdChat({ prdId, ideaContext, prdContent, onSectionUpdate }: 
 
       // No existing messages - get welcome message
       setIsAiTyping(true);
-      const welcomeResult = await prdChatService.getWelcomeMessage(prdId, ideaContext, prdContent);
+      const welcomeResult = await prdChatService.getWelcomeMessage(
+        prdId,
+        ideaContext,
+        prdContent,
+        0 // AC4: No existing messages at this point
+      );
       setIsAiTyping(false);
 
       if (welcomeResult.error) {

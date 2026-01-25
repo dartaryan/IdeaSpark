@@ -1,128 +1,70 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createElement } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { usePrdBuilder } from './usePrdBuilder';
-import { prdService } from '../services/prdService';
-import type { PrdContent, PrdSectionUpdate } from '../types';
+import { prdService } from '../services';
+import type { PrdContent } from '../types';
 
 // Mock the services
-vi.mock('../services/prdService');
-
-// Mock useToast
-vi.mock('@/hooks/useToast', () => ({
-  useToast: () => ({
-    toast: vi.fn(),
-  }),
+vi.mock('../services', () => ({
+  prdService: {
+    getPrdById: vi.fn(),
+    updatePrd: vi.fn(),
+  },
 }));
 
-describe('usePrdBuilder', () => {
-  let queryClient: QueryClient;
-  const mockPrdId = 'test-prd-id';
+// Mock useToast
+vi.mock('../../../hooks/useToast', () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
 
-  const mockPrdDocument = {
-    id: mockPrdId,
-    idea_id: 'test-idea-id',
-    user_id: 'test-user-id',
-    content: {
-      problemStatement: { content: 'Initial problem', status: 'in_progress' as const },
-      goalsAndMetrics: { content: '', status: 'empty' as const },
-      userStories: { content: '', status: 'empty' as const },
-      requirements: { content: '', status: 'empty' as const },
-      technicalConsiderations: { content: '', status: 'empty' as const },
-      risks: { content: '', status: 'empty' as const },
-      timeline: { content: '', status: 'empty' as const },
-    },
-    status: 'draft' as const,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+// Mock useAutoSave
+vi.mock('./useAutoSave', () => ({
+  useAutoSave: vi.fn((options) => ({
+    saveStatus: 'idle',
+    lastSaved: null,
+    error: null,
+    triggerSave: vi.fn(),
+    clearError: vi.fn(),
+  })),
+}));
+
+import { useAutoSave } from './useAutoSave';
+
+describe('usePrdBuilder with auto-save', () => {
+  let queryClient: QueryClient;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
         mutations: { retry: false },
       },
     });
-
-    // Setup default mocks
-    vi.mocked(prdService.getPrdById).mockResolvedValue({
-      data: mockPrdDocument,
-      error: null,
-    });
-
-    vi.mocked(prdService.updatePrdSection).mockResolvedValue({
-      data: mockPrdDocument,
-      error: null,
-    });
-
-    // Clear all timers before each test
-    vi.clearAllTimers();
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) =>
     createElement(QueryClientProvider, { client: queryClient }, children);
 
-  describe('Initialization', () => {
-    it('should load PRD content on mount', async () => {
-      const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
-        { wrapper }
-      );
-
-      expect(result.current.isLoading).toBe(true);
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(result.current.prdContent).toEqual(mockPrdDocument.content);
-      expect(prdService.getPrdById).toHaveBeenCalledWith(mockPrdId);
-    });
-
-    it('should use initialContent if provided', () => {
-      const initialContent: PrdContent = {
-        problemStatement: { content: 'Test problem', status: 'complete' },
-        goalsAndMetrics: { content: 'Test goals', status: 'in_progress' },
+  describe('AC1: Auto-save integration', () => {
+    it('should integrate useAutoSave hook for PRD content saves', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: { overview: { content: 'Initial content', status: 'in_progress' as const } },
       };
 
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
       const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId, initialContent }),
-        { wrapper }
-      );
-
-      expect(result.current.prdContent).toEqual(initialContent);
-    });
-
-    it('should initialize with empty highlighted sections', () => {
-      const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
-        { wrapper }
-      );
-
-      expect(result.current.highlightedSections).toEqual(new Set());
-    });
-
-    it('should initialize saving states', () => {
-      const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
-        { wrapper }
-      );
-
-      expect(result.current.isSaving).toBe(false);
-      expect(result.current.lastSaved).toBe(null);
-    });
-  });
-
-  describe('Section Updates', () => {
-    it('should handle single section update optimistically', async () => {
-      const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
         { wrapper }
       );
 
@@ -130,28 +72,37 @@ describe('usePrdBuilder', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const updates: PrdSectionUpdate[] = [
-        {
-          sectionKey: 'problemStatement',
-          content: 'Updated problem statement',
-          status: 'complete',
+      // Verify useAutoSave was called with correct parameters
+      expect(useAutoSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.any(Object),
+          saveFunction: expect.any(Function),
+          debounceMs: 1000,
+          savedDisplayMs: 3000,
+          enabled: true,
+        })
+      );
+    });
+
+    it('should pass PRD content to useAutoSave', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {
+          overview: { content: 'Test overview', status: 'in_progress' as const },
+          features: { content: 'Test features', status: 'complete' as const },
         },
-      ];
+      };
 
-      await act(async () => {
-        await result.current.handleSectionUpdates(updates);
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
       });
 
-      // Check optimistic update
-      expect(result.current.prdContent.problemStatement).toEqual({
-        content: 'Updated problem statement',
-        status: 'complete',
-      });
-    });
-
-    it('should handle multiple section updates', async () => {
       const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
         { wrapper }
       );
 
@@ -159,44 +110,38 @@ describe('usePrdBuilder', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const updates: PrdSectionUpdate[] = [
-        { sectionKey: 'problemStatement', content: 'Problem', status: 'complete' },
-        { sectionKey: 'goalsAndMetrics', content: 'Goals', status: 'in_progress' },
-      ];
-
-      await act(async () => {
-        await result.current.handleSectionUpdates(updates);
-      });
-
-      expect(result.current.prdContent.problemStatement?.content).toBe('Problem');
-      expect(result.current.prdContent.goalsAndMetrics?.content).toBe('Goals');
-    });
-
-    it('should ignore empty updates array', async () => {
-      const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
-        { wrapper }
-      );
-
       await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
+        expect(result.current.prdContent).toEqual(mockPrd.content);
       });
 
-      const initialContent = result.current.prdContent;
-
-      await act(async () => {
-        await result.current.handleSectionUpdates([]);
-      });
-
-      expect(result.current.prdContent).toEqual(initialContent);
-      expect(prdService.updatePrdSection).not.toHaveBeenCalled();
+      // Verify the data passed to useAutoSave matches current content
+      const autoSaveCall = vi.mocked(useAutoSave).mock.calls[
+        vi.mocked(useAutoSave).mock.calls.length - 1
+      ][0];
+      expect(autoSaveCall.data).toEqual(mockPrd.content);
     });
   });
 
-  describe('Highlight Animation', () => {
-    it('should add section to highlighted set on update', async () => {
+  describe('AC3: PRD restoration on page load', () => {
+    it('should load complete PRD content via getPrdById', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {
+          overview: { content: 'Overview content', status: 'complete' as const },
+          goals: { content: 'Goals content', status: 'in_progress' as const },
+        },
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
       const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
         { wrapper }
       );
 
@@ -204,45 +149,60 @@ describe('usePrdBuilder', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const updates: PrdSectionUpdate[] = [
-        { sectionKey: 'problemStatement', content: 'Test', status: 'in_progress' },
-      ];
-
-      await act(async () => {
-        await result.current.handleSectionUpdates(updates);
-      });
-
-      expect(result.current.highlightedSections.has('problemStatement')).toBe(true);
+      expect(prdService.getPrdById).toHaveBeenCalledWith('prd-1');
+      expect(result.current.prdContent).toEqual(mockPrd.content);
     });
 
-    it('should highlight multiple sections simultaneously', async () => {
+    it('should restore prdContent to state after loading', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {
+          overview: { content: 'Restored content', status: 'complete' as const },
+        },
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
       const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
         { wrapper }
       );
+
+      // Initial state should be empty
+      expect(result.current.prdContent).toEqual({});
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const updates: PrdSectionUpdate[] = [
-        { sectionKey: 'problemStatement', content: 'Test 1', status: 'in_progress' },
-        { sectionKey: 'goalsAndMetrics', content: 'Test 2', status: 'in_progress' },
-      ];
-
-      await act(async () => {
-        await result.current.handleSectionUpdates(updates);
-      });
-
-      expect(result.current.highlightedSections.has('problemStatement')).toBe(true);
-      expect(result.current.highlightedSections.has('goalsAndMetrics')).toBe(true);
+      // After loading, should be restored
+      expect(result.current.prdContent).toEqual(mockPrd.content);
     });
   });
 
-  describe('Save Functionality', () => {
-    it('should set isSaving flag during save', async () => {
+  describe('AC7: Section updates trigger auto-save', () => {
+    it('should update prdContent when handleSectionUpdates is called', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
       const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
         { wrapper }
       );
 
@@ -250,70 +210,242 @@ describe('usePrdBuilder', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.isSaving).toBe(false);
-
+      // Trigger section update
       await act(async () => {
         await result.current.handleSectionUpdates([
-          { sectionKey: 'problemStatement', content: 'Test', status: 'in_progress' },
+          {
+            sectionKey: 'overview',
+            content: 'New overview content',
+            status: 'in_progress',
+          },
         ]);
       });
 
-      expect(result.current.isSaving).toBe(true);
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should preserve local state on save failure', async () => {
-      vi.mocked(prdService.updatePrdSection).mockResolvedValue({
-        data: null,
-        error: { message: 'Network error', code: 'NETWORK_ERROR' },
-      });
-
-      const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
-        { wrapper }
-      );
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      const updates: PrdSectionUpdate[] = [
-        { sectionKey: 'problemStatement', content: 'Updated content', status: 'complete' },
-      ];
-
-      await act(async () => {
-        await result.current.handleSectionUpdates(updates);
-      });
-
-      // Local state should preserve the update
-      expect(result.current.prdContent.problemStatement).toEqual({
-        content: 'Updated content',
-        status: 'complete',
+      // prdContent should be updated
+      expect(result.current.prdContent.overview).toEqual({
+        content: 'New overview content',
+        status: 'in_progress',
       });
     });
-  });
 
-  describe('Manual State Updates', () => {
-    it('should allow manual prdContent updates via setPrdContent', async () => {
-      const { result } = renderHook(
-        () => usePrdBuilder({ prdId: mockPrdId }),
-        { wrapper }
-      );
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      const newContent: PrdContent = {
-        problemStatement: { content: 'Manual update', status: 'complete' },
+    it('should add section to highlighted sections on update', async () => {
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
       };
 
-      act(() => {
-        result.current.setPrdContent(newContent);
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
       });
 
-      expect(result.current.prdContent).toEqual(newContent);
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Initially no highlighted sections
+      expect(result.current.highlightedSections.size).toBe(0);
+
+      // Trigger section update
+      await act(async () => {
+        await result.current.handleSectionUpdates([
+          {
+            sectionKey: 'goals',
+            content: 'Goals content',
+            status: 'in_progress',
+          },
+        ]);
+      });
+
+      // Section should be highlighted
+      expect(result.current.highlightedSections.has('goals')).toBe(true);
+    });
+  });
+
+  describe('Manual save capability', () => {
+    it('should expose triggerSave from useAutoSave', async () => {
+      const mockTriggerSave = vi.fn();
+      vi.mocked(useAutoSave).mockReturnValue({
+        saveStatus: 'idle',
+        lastSaved: null,
+        error: null,
+        triggerSave: mockTriggerSave,
+        clearError: vi.fn(),
+      });
+
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.triggerSave).toBeDefined();
+      expect(typeof result.current.triggerSave).toBe('function');
+    });
+
+    it('should expose clearSaveError from useAutoSave', async () => {
+      const mockClearError = vi.fn();
+      vi.mocked(useAutoSave).mockReturnValue({
+        saveStatus: 'error',
+        lastSaved: null,
+        error: 'Save failed',
+        triggerSave: vi.fn(),
+        clearError: mockClearError,
+      });
+
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.clearSaveError).toBeDefined();
+      expect(typeof result.current.clearSaveError).toBe('function');
+    });
+  });
+
+  describe('Return values', () => {
+    it('should return saveStatus from useAutoSave', async () => {
+      vi.mocked(useAutoSave).mockReturnValue({
+        saveStatus: 'saved',
+        lastSaved: new Date(),
+        error: null,
+        triggerSave: vi.fn(),
+        clearError: vi.fn(),
+      });
+
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.saveStatus).toBe('saved');
+    });
+
+    it('should return lastSaved from useAutoSave', async () => {
+      const mockLastSaved = new Date('2024-01-15T10:30:00');
+      vi.mocked(useAutoSave).mockReturnValue({
+        saveStatus: 'idle',
+        lastSaved: mockLastSaved,
+        error: null,
+        triggerSave: vi.fn(),
+        clearError: vi.fn(),
+      });
+
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.lastSaved).toBe(mockLastSaved);
+    });
+
+    it('should return saveError from useAutoSave', async () => {
+      vi.mocked(useAutoSave).mockReturnValue({
+        saveStatus: 'error',
+        lastSaved: null,
+        error: 'Network error',
+        triggerSave: vi.fn(),
+        clearError: vi.fn(),
+      });
+
+      const mockPrd = {
+        id: 'prd-1',
+        content: {},
+      };
+
+      vi.mocked(prdService.getPrdById).mockResolvedValue({
+        data: mockPrd,
+        error: null,
+      });
+
+      const { result } = renderHook(
+        () =>
+          usePrdBuilder({
+            prdId: 'prd-1',
+          }),
+        { wrapper }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.saveError).toBe('Network error');
     });
   });
 });

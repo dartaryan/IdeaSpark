@@ -22,6 +22,11 @@ describe('usePrdChat', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Mock formatMessageHistory to return formatted messages
+    vi.mocked(prdChatService.formatMessageHistory).mockImplementation((messages: PrdMessage[]) =>
+      messages.map(({ role, content }) => ({ role, content }))
+    );
   });
 
   describe('Initialization', () => {
@@ -99,7 +104,8 @@ describe('usePrdChat', () => {
       expect(prdChatService.getWelcomeMessage).toHaveBeenCalledWith(
         mockPrdId,
         mockIdeaContext,
-        mockPrdContent
+        mockPrdContent,
+        0 // AC4: existingMessageCount is 0 for new PRD
       );
       expect(prdMessageService.addMessage).toHaveBeenCalledWith(
         mockPrdId,

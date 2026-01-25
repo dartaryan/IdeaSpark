@@ -7,6 +7,7 @@ import { PrdPreview } from '../features/prd/components/PrdBuilder/PrdPreview';
 import { ChatInterface } from '../features/prd/components/PrdBuilder/ChatInterface';
 import { PrdBuilderSkeleton } from '../features/prd/components/PrdBuilder/PrdBuilderSkeleton';
 import { PrdBuilderError } from '../features/prd/components/PrdBuilder/PrdBuilderError';
+import { SaveIndicator } from '../features/prd/components';
 
 export function PrdBuilderPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,16 +44,19 @@ export function PrdBuilderPage() {
   // Main content
   if (!idea || !prd) return null;
 
-  // Use usePrdBuilder hook for section state management
+  // Use usePrdBuilder hook for section state management with auto-save
   const {
     prdContent,
     highlightedSections,
-    isSaving,
+    saveStatus,
     lastSaved,
+    saveError,
     handleSectionUpdates,
-  } = usePrdBuilder({ 
-    prdId: prd.id, 
-    initialContent: prd.content 
+    triggerSave,
+    clearSaveError,
+  } = usePrdBuilder({
+    prdId: prd.id,
+    initialContent: prd.content,
   });
 
   // Prepare idea context for ChatInterface
@@ -69,7 +73,18 @@ export function PrdBuilderPage() {
 
   return (
     <div className="h-full">
-      <IdeaSummaryHeader idea={idea} />
+      <div className="border-b border-base-300 bg-base-100">
+        <div className="flex items-center justify-between px-4 py-2">
+          <IdeaSummaryHeader idea={idea} />
+          <SaveIndicator
+            saveStatus={saveStatus}
+            lastSaved={lastSaved}
+            error={saveError}
+            onManualSave={triggerSave}
+            onRetry={triggerSave}
+          />
+        </div>
+      </div>
       <div className="p-4">
         <PrdBuilderLayout
           chatPanel={
@@ -85,7 +100,7 @@ export function PrdBuilderPage() {
               prdContent={prdContent}
               highlightedSections={highlightedSections}
               ideaTitle={idea.title || idea.problem.substring(0, 50)}
-              isSaving={isSaving}
+              isSaving={saveStatus === 'saving'}
               lastSaved={lastSaved}
             />
           }

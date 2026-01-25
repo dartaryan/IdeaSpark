@@ -67,6 +67,9 @@ describe('prdChatService', () => {
         body: {
           prdId: 'prd-123',
           isInitial: true,
+          isReturning: false, // AC4: New field
+          completedSections: [], // AC4: Empty for new PRD
+          inProgressSections: [], // AC4: Empty for new PRD
           ideaContext: mockIdeaContext,
           prdContent: mockPrdContent,
           messageHistory: [],
@@ -87,6 +90,9 @@ describe('prdChatService', () => {
       expect(supabase.functions.invoke).toHaveBeenCalledWith('gemini-prd-chat', {
         body: expect.objectContaining({
           prdContent: {},
+          isReturning: false,
+          completedSections: [],
+          inProgressSections: [],
         }),
       });
     });

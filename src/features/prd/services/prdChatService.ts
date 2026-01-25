@@ -32,17 +32,34 @@ interface EdgeFunctionError {
 export const prdChatService = {
   /**
    * Get welcome message for a new PRD conversation
+   * AC4: Detects returning users and provides contextual continuation
    */
   async getWelcomeMessage(
     prdId: string,
     ideaContext: IdeaContext,
-    prdContent: PrdContent = {}
+    prdContent: PrdContent = {},
+    existingMessageCount: number = 0
   ): Promise<ServiceResponse<ChatResponse>> {
     try {
+      // Detect if this is a returning user (AC4)
+      const isReturning = existingMessageCount > 0;
+
+      // Build completion context for returning users
+      const completedSections = Object.entries(prdContent)
+        .filter(([_, section]) => section?.status === 'complete')
+        .map(([key]) => key);
+
+      const inProgressSections = Object.entries(prdContent)
+        .filter(([_, section]) => section?.status === 'in_progress')
+        .map(([key]) => key);
+
       const { data, error } = await supabase.functions.invoke<ChatResponse>('gemini-prd-chat', {
         body: {
           prdId,
           isInitial: true,
+          isReturning, // AC4: Flag for returning user
+          completedSections, // AC4: What's been completed
+          inProgressSections, // AC4: What's in progress
           ideaContext,
           prdContent,
           messageHistory: [],
