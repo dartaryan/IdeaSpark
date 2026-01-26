@@ -5,7 +5,7 @@ import { PrototypeFrame } from '../features/prototypes/components/PrototypeFrame
 import { DeviceSelector, DEVICE_PRESETS, type DevicePreset } from '../features/prototypes/components/DeviceSelector';
 import { PrototypeMetadata } from '../features/prototypes/components/PrototypeMetadata';
 import { RefinementChat } from '../features/prototypes/components/RefinementChat';
-import { RefinementHistoryItem } from '../features/prototypes/components/RefinementHistoryItem';
+import { VersionHistoryPanel } from '../features/prototypes/components/VersionHistoryPanel';
 import { AlertCircle } from 'lucide-react';
 
 export function PrototypeViewerPage() {
@@ -221,22 +221,12 @@ export function PrototypeViewerPage() {
             />
 
             {/* Version History */}
-            {versionHistory && versionHistory.length > 1 && (
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                  <h3 className="card-title text-lg">Version History</h3>
-                  <div className="space-y-2">
-                    {versionHistory.map((versionPrototype) => (
-                      <RefinementHistoryItem
-                        key={versionPrototype.id}
-                        prototype={versionPrototype}
-                        isActive={versionPrototype.id === displayPrototype.id}
-                        onClick={() => setActivePrototypeId(versionPrototype.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
+            {prototype.prdId && (
+              <VersionHistoryPanel
+                prdId={prototype.prdId}
+                activeVersionId={activePrototypeId || prototype.id}
+                onVersionSelect={(versionId) => setActivePrototypeId(versionId)}
+              />
             )}
           </div>
         </div>

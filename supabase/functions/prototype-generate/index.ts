@@ -37,6 +37,18 @@ interface RefineResponse {
   version: number;
 }
 
+interface RestoreRequest {
+  restoreFromId: string;
+}
+
+interface RestoreResponse {
+  id: string;
+  version: number;
+  status: 'ready';
+  url: string | null;
+  code: string | null;
+}
+
 interface ErrorResponse {
   error: string;
   code: string;
@@ -243,6 +255,96 @@ Generate the complete refined React code.
 }
 
 /**
+ * Handle version restoration
+ * Creates a new version copying code/url from selected version
+ */
+async function handleRestoration(
+  supabase: any,
+  user: any,
+  body: RestoreRequest
+): Promise<Response> {
+  // Get the prototype to restore from
+  const { data: sourcePrototype, error: fetchError } = await supabase
+    .from('prototypes')
+    .select('*, prd_documents!inner(*)')
+    .eq('id', body.restoreFromId)
+    .eq('status', 'ready')  // Only restore from successful versions
+    .single();
+
+  if (fetchError || !sourcePrototype) {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Prototype version not found or not ready', 
+        code: 'NOT_FOUND' 
+      } as ErrorResponse),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Verify ownership
+  if (sourcePrototype.user_id !== user.id) {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Not authorized', 
+        code: 'AUTH_ERROR' 
+      } as ErrorResponse),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Get current max version for this PRD
+  const { data: maxVersionData } = await supabase
+    .from('prototypes')
+    .select('version')
+    .eq('prd_id', sourcePrototype.prd_id)
+    .order('version', { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextVersion = maxVersionData ? maxVersionData.version + 1 : 1;
+
+  // Create new prototype version copying from source
+  const { data: newPrototype, error: createError } = await supabase
+    .from('prototypes')
+    .insert({
+      prd_id: sourcePrototype.prd_id,
+      idea_id: sourcePrototype.idea_id,
+      user_id: user.id,
+      code: sourcePrototype.code,
+      url: sourcePrototype.url,
+      status: 'ready',
+      version: nextVersion,
+      refinement_prompt: `Restored from v${sourcePrototype.version}`,
+    })
+    .select()
+    .single();
+
+  if (createError) {
+    console.error('Failed to create restored version:', createError);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Failed to create restored version', 
+        code: 'DB_ERROR' 
+      } as ErrorResponse),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const response: RestoreResponse = {
+    id: newPrototype.id,
+    version: nextVersion,
+    status: 'ready',
+    url: newPrototype.url,
+    code: newPrototype.code,
+  };
+
+  return new Response(
+    JSON.stringify(response),
+    { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+/**
  * Handle refinement request
  */
 async function handleRefinement(
@@ -422,6 +524,11 @@ serve(async (req: Request) => {
 
     // Parse request body
     const body = await req.json();
+
+    // Check if this is a restoration request
+    if (body.restoreFromId) {
+      return handleRestoration(supabase, user, body as RestoreRequest);
+    }
 
     // Check if this is a refinement request
     if (body.prototypeId && body.refinementPrompt) {

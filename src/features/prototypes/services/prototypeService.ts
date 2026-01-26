@@ -261,4 +261,66 @@ export const prototypeService = {
       return { data: null, error: { message: 'Failed to create version', code: 'UNKNOWN_ERROR' } };
     }
   },
+
+  /**
+   * Restore a previous prototype version
+   * Creates a new version copying the code/url from the selected version
+   *
+   * @param prototypeId - The prototype version ID to restore
+   * @returns New prototype data
+   */
+  async restore(prototypeId: string): Promise<ServiceResponse<Prototype>> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      const response = await supabase.functions.invoke('prototype-generate', {
+        body: { restoreFromId: prototypeId },
+      });
+
+      if (response.error) {
+        console.error('Prototype restoration error:', response.error);
+        return {
+          data: null,
+          error: {
+            message: response.error.message || 'Failed to restore version',
+            code: 'API_ERROR',
+          },
+        };
+      }
+
+      // Convert response to Prototype format
+      const restoredData = response.data;
+      const prototype: Prototype = {
+        id: restoredData.id,
+        prdId: '', // Will be filled from actual data
+        ideaId: '', // Will be filled from actual data
+        userId: session.user.id,
+        url: restoredData.url,
+        code: restoredData.code,
+        version: restoredData.version,
+        refinementPrompt: `Restored from v${restoredData.version - 1}`,
+        status: restoredData.status,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      return { data: prototype, error: null };
+    } catch (error) {
+      console.error('Restore prototype error:', error);
+      return {
+        data: null,
+        error: { 
+          message: 'Failed to restore version', 
+          code: 'UNKNOWN_ERROR' 
+        },
+      };
+    }
+  },
 };
