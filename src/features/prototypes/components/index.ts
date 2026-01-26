@@ -8,3 +8,4 @@ export { PrototypeMetadata } from './PrototypeMetadata';
 export { RefinementChat } from './RefinementChat';
 export { RefinementHistoryItem } from './RefinementHistoryItem';
 export { VersionHistoryPanel } from './VersionHistoryPanel';
+export { ShareButton } from './ShareButton';

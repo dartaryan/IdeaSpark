@@ -14,6 +14,11 @@ export interface Prototype {
   status: PrototypeStatus;
   createdAt: string;
   updatedAt: string;
+  // Sharing fields
+  shareId: string;
+  isPublic: boolean;
+  sharedAt: string | null;
+  viewCount: number;
 }
 
 // Database row format (snake_case)
@@ -29,6 +34,11 @@ export interface PrototypeRow {
   status: PrototypeStatus;
   created_at: string;
   updated_at: string;
+  // Sharing fields
+  share_id: string;
+  is_public: boolean;
+  shared_at: string | null;
+  view_count: number;
 }
 
 export interface CreatePrototypeInput {
@@ -53,6 +63,16 @@ export interface UpdatePrototypeInput {
   status?: PrototypeStatus;
 }
 
+// Public prototype type (subset of fields exposed publicly)
+export interface PublicPrototype {
+  id: string;
+  url: string | null;
+  version: number;
+  status: PrototypeStatus;
+  createdAt: string;
+  shareId: string;
+}
+
 // Helper to convert DB row to app format
 export function mapPrototypeRow(row: PrototypeRow): Prototype {
   return {
@@ -67,5 +87,9 @@ export function mapPrototypeRow(row: PrototypeRow): Prototype {
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    shareId: row.share_id,
+    isPublic: row.is_public,
+    sharedAt: row.shared_at,
+    viewCount: row.view_count,
   };
 }

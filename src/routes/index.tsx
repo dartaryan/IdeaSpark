@@ -15,6 +15,7 @@ import { PrototypeViewerPage } from '../pages/PrototypeViewerPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AnalyticsPage } from '../pages/AnalyticsPage';
 import { NotAuthorizedPage } from '../pages/NotAuthorizedPage';
+import { PublicPrototypeViewer } from '../features/prototypes/pages';
 import { AuthenticatedLayout } from '../components/layouts/AuthenticatedLayout';
 import { AdminRoute } from './AdminRoute';
 import { ROUTES } from './routeConstants';
@@ -42,6 +43,11 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.RESET_PASSWORD,
     element: <ResetPasswordPage />,
+  },
+  // Public prototype sharing (no auth required)
+  {
+    path: '/share/prototype/:shareId',
+    element: <PublicPrototypeViewer />,
   },
 
   // Error routes

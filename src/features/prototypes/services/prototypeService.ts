@@ -309,6 +309,10 @@ export const prototypeService = {
         status: restoredData.status,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        shareId: restoredData.share_id || '',
+        isPublic: restoredData.is_public || false,
+        sharedAt: restoredData.shared_at || null,
+        viewCount: restoredData.view_count || 0,
       };
 
       return { data: prototype, error: null };
@@ -318,6 +322,172 @@ export const prototypeService = {
         data: null,
         error: { 
           message: 'Failed to restore version', 
+          code: 'UNKNOWN_ERROR' 
+        },
+      };
+    }
+  },
+
+  /**
+   * Generate a shareable public link for a prototype
+   * Updates the prototype to be publicly accessible
+   *
+   * @param prototypeId - The prototype ID to share
+   * @returns Shareable URL
+   */
+  async generateShareLink(prototypeId: string): Promise<ServiceResponse<string>> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      // Generate unique share_id and update prototype
+      const { data: prototype, error } = await supabase
+        .from('prototypes')
+        .update({
+          is_public: true,
+          shared_at: new Date().toISOString(),
+        })
+        .eq('id', prototypeId)
+        .eq('user_id', session.user.id) // Ensure ownership
+        .select('share_id')
+        .single();
+
+      if (error) {
+        console.error('Generate share link error:', error);
+        return {
+          data: null,
+          error: { 
+            message: 'Failed to generate share link', 
+            code: 'DB_ERROR' 
+          },
+        };
+      }
+
+      // Construct full shareable URL
+      const shareUrl = `${window.location.origin}/share/prototype/${prototype.share_id}`;
+
+      return { data: shareUrl, error: null };
+    } catch (error) {
+      console.error('Generate share link error:', error);
+      return {
+        data: null,
+        error: { 
+          message: 'Failed to generate share link', 
+          code: 'UNKNOWN_ERROR' 
+        },
+      };
+    }
+  },
+
+  /**
+   * Get a public prototype by share_id (no authentication required)
+   * Used by public prototype viewer
+   *
+   * @param shareId - The share_id from the URL
+   * @returns Public prototype data
+   */
+  async getPublicPrototype(shareId: string): Promise<ServiceResponse<any>> {
+    try {
+      const { data, error } = await supabase
+        .from('prototypes')
+        .select('id, url, version, status, created_at, share_id')
+        .eq('share_id', shareId)
+        .eq('is_public', true)
+        .eq('status', 'ready') // Only show successful prototypes
+        .single();
+
+      if (error) {
+        console.error('Get public prototype error:', error);
+        return {
+          data: null,
+          error: { 
+            message: 'Prototype not found or not public', 
+            code: 'NOT_FOUND' 
+          },
+        };
+      }
+
+      // Increment view count (fire and forget)
+      // Use setTimeout to avoid blocking and make it truly async
+      setTimeout(() => {
+        try {
+          supabase
+            .from('prototypes')
+            .update({ view_count: (data.view_count || 0) + 1 })
+            .eq('id', data.id)
+            .then(() => {})
+            .catch((err) => console.warn('Failed to increment view count:', err));
+        } catch (err) {
+          console.warn('Failed to increment view count:', err);
+        }
+      }, 0);
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Get public prototype error:', error);
+      return {
+        data: null,
+        error: { 
+          message: 'Failed to load prototype', 
+          code: 'UNKNOWN_ERROR' 
+        },
+      };
+    }
+  },
+
+  /**
+   * Get the share URL for a prototype (if already shared)
+   *
+   * @param prototypeId - The prototype ID
+   * @returns Share URL or null if not shared
+   */
+  async getShareUrl(prototypeId: string): Promise<ServiceResponse<string | null>> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      const { data, error } = await supabase
+        .from('prototypes')
+        .select('share_id, is_public')
+        .eq('id', prototypeId)
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('Get share URL error:', error);
+        return {
+          data: null,
+          error: { 
+            message: 'Failed to get share URL', 
+            code: 'DB_ERROR' 
+          },
+        };
+      }
+
+      if (!data.is_public) {
+        return { data: null, error: null }; // Not shared yet
+      }
+
+      const shareUrl = `${window.location.origin}/share/prototype/${data.share_id}`;
+      return { data: shareUrl, error: null };
+    } catch (error) {
+      console.error('Get share URL error:', error);
+      return {
+        data: null,
+        error: { 
+          message: 'Failed to get share URL', 
           code: 'UNKNOWN_ERROR' 
         },
       };

@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePrototype, useLatestPrototype, useVersionHistory } from '../features/prototypes/hooks/usePrototype';
+import { usePrototype, useVersionHistory } from '../features/prototypes/hooks/usePrototype';
 import { PrototypeFrame } from '../features/prototypes/components/PrototypeFrame';
 import { DeviceSelector, DEVICE_PRESETS, type DevicePreset } from '../features/prototypes/components/DeviceSelector';
 import { PrototypeMetadata } from '../features/prototypes/components/PrototypeMetadata';
 import { RefinementChat } from '../features/prototypes/components/RefinementChat';
 import { VersionHistoryPanel } from '../features/prototypes/components/VersionHistoryPanel';
+import { ShareButton } from '../features/prototypes/components/ShareButton';
 import { AlertCircle } from 'lucide-react';
 
 export function PrototypeViewerPage() {
@@ -180,10 +181,16 @@ export function PrototypeViewerPage() {
             {/* Viewer Controls (AC 2) */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <h2 className="text-lg font-semibold">Preview</h2>
-              <DeviceSelector
-                selectedDevice={selectedDevice}
-                onDeviceChange={setSelectedDevice}
-              />
+              <div className="flex items-center gap-2 flex-wrap">
+                <DeviceSelector
+                  selectedDevice={selectedDevice}
+                  onDeviceChange={setSelectedDevice}
+                />
+                <ShareButton
+                  prototypeId={displayPrototype.id}
+                  prdId={displayPrototype.prdId}
+                />
+              </div>
             </div>
 
             {/* Prototype Frame (AC 1, 3, 4) */}
