@@ -2,7 +2,7 @@
 
 import { render, screen, fireEvent } from '@testing-library/react';
 import { RefinementHistoryItem } from './RefinementHistoryItem';
-import { Prototype } from '../types';
+import type { Prototype } from '../types';
 import { describe, it, expect, vi } from 'vitest';
 
 describe('RefinementHistoryItem', () => {

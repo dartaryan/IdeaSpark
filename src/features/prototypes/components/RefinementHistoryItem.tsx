@@ -1,6 +1,6 @@
 // src/features/prototypes/components/RefinementHistoryItem.tsx
 
-import { Prototype } from '../types';
+import type { Prototype } from '../types';
 
 interface RefinementHistoryItemProps {
   prototype: Prototype;
