@@ -89,6 +89,60 @@ export const openLovableService = {
   },
 
   /**
+   * Refine an existing prototype
+   * Returns immediately with new prototype ID for polling
+   *
+   * @param prototypeId - The current prototype ID
+   * @param refinementPrompt - User's refinement request
+   * @returns New prototype ID and initial status
+   */
+  async refine(
+    prototypeId: string,
+    refinementPrompt: string
+  ): Promise<ServiceResponse<GeneratePrototypeResponse>> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      const response = await supabase.functions.invoke('prototype-generate', {
+        body: { prototypeId, refinementPrompt },
+      });
+
+      if (response.error) {
+        console.error('Prototype refinement error:', response.error);
+        return {
+          data: null,
+          error: {
+            message: response.error.message || 'Failed to start refinement',
+            code: 'API_ERROR',
+          },
+        };
+      }
+
+      // Map response to match expected format
+      return { 
+        data: {
+          prototypeId: response.data.newPrototypeId,
+          status: response.data.status,
+        }, 
+        error: null 
+      };
+    } catch (error) {
+      console.error('Refine prototype error:', error);
+      return {
+        data: null,
+        error: { message: 'Failed to refine prototype', code: 'UNKNOWN_ERROR' },
+      };
+    }
+  },
+
+  /**
    * Poll prototype status
    * Returns current status and data when ready
    *

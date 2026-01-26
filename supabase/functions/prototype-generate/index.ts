@@ -19,11 +19,22 @@ interface GenerateRequest {
   };
 }
 
+interface RefineRequest {
+  prototypeId: string;
+  refinementPrompt: string;
+}
+
 interface GenerateResponse {
   prototypeId: string;
   status: 'generating' | 'ready' | 'failed';
   url?: string;
   code?: string;
+}
+
+interface RefineResponse {
+  newPrototypeId: string;
+  status: 'generating' | 'ready' | 'failed';
+  version: number;
 }
 
 interface ErrorResponse {
@@ -104,13 +115,17 @@ async function withRetry<T>(
  * Call Open-Lovable API with timeout
  */
 async function generateWithOpenLovable(
-  prdContent: GenerateRequest['prdContent']
+  promptOrContent: string | GenerateRequest['prdContent'],
+  options?: { isRefinement?: boolean }
 ): Promise<{ code: string; url: string }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), GENERATION_TIMEOUT_MS);
 
   try {
-    const prompt = buildGenerationPrompt(prdContent);
+    // Build prompt based on input type
+    const prompt = typeof promptOrContent === 'string' 
+      ? promptOrContent 
+      : buildGenerationPrompt(promptOrContent);
 
     const response = await fetch(`${OPEN_LOVABLE_API_URL}/api/generate`, {
       method: 'POST',
@@ -193,6 +208,176 @@ Return the complete React code ready to render.
 `;
 }
 
+/**
+ * Build refinement prompt with context
+ */
+function buildRefinementPrompt(
+  prdContent: any,
+  currentCode: string,
+  refinementRequest: string
+): string {
+  return `
+${PASSPORTCARD_THEME_PROMPT}
+
+You are refining an existing React prototype. The user wants to make changes.
+
+## Original PRD Context
+${prdContent.problemStatement || prdContent.problem_statement || ''}
+${prdContent.userStories || prdContent.user_stories || ''}
+
+## Current Prototype Code
+${currentCode}
+
+## User's Refinement Request
+${refinementRequest}
+
+CRITICAL REQUIREMENTS:
+1. Make ONLY the changes requested by the user
+2. Maintain ALL PassportCard branding (#E10514 red, 20px radius, Montserrat/Rubik fonts)
+3. Keep all existing functionality unless explicitly asked to change
+4. Ensure the refined prototype is fully functional
+5. Maintain responsive design
+
+Generate the complete refined React code.
+`;
+}
+
+/**
+ * Handle refinement request
+ */
+async function handleRefinement(
+  supabase: any,
+  user: any,
+  body: RefineRequest
+): Promise<Response> {
+  // Get current prototype with PRD content
+  const { data: currentPrototype, error: fetchError } = await supabase
+    .from('prototypes')
+    .select('*, prd_documents!inner(content)')
+    .eq('id', body.prototypeId)
+    .single();
+
+  if (fetchError || !currentPrototype) {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Prototype not found', 
+        code: 'NOT_FOUND' 
+      } as ErrorResponse),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Verify ownership
+  if (currentPrototype.user_id !== user.id) {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Not authorized', 
+        code: 'AUTH_ERROR' 
+      } as ErrorResponse),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Get current max version for this PRD
+  const { data: maxVersionData } = await supabase
+    .from('prototypes')
+    .select('version')
+    .eq('prd_id', currentPrototype.prd_id)
+    .order('version', { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextVersion = maxVersionData ? maxVersionData.version + 1 : 1;
+
+  // Create new prototype version with 'generating' status
+  const { data: newPrototype, error: createError } = await supabase
+    .from('prototypes')
+    .insert({
+      prd_id: currentPrototype.prd_id,
+      idea_id: currentPrototype.idea_id,
+      user_id: user.id,
+      status: 'generating',
+      version: nextVersion,
+      refinement_prompt: body.refinementPrompt,
+    })
+    .select()
+    .single();
+
+  if (createError) {
+    console.error('Failed to create refinement version:', createError);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Failed to create refinement version', 
+        code: 'DB_ERROR' 
+      } as ErrorResponse),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Start refinement generation in background
+  refinePrototypeAsync(
+    supabase,
+    newPrototype.id,
+    currentPrototype.prd_documents.content,
+    currentPrototype.code,
+    body.refinementPrompt
+  );
+
+  const response: RefineResponse = {
+    newPrototypeId: newPrototype.id,
+    status: 'generating',
+    version: nextVersion,
+  };
+
+  return new Response(
+    JSON.stringify(response),
+    { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+/**
+ * Background refinement task
+ */
+async function refinePrototypeAsync(
+  supabase: any,
+  prototypeId: string,
+  prdContent: any,
+  currentCode: string,
+  refinementPrompt: string
+) {
+  try {
+    const prompt = buildRefinementPrompt(prdContent, currentCode, refinementPrompt);
+
+    // Generate with retry logic
+    const result = await withRetry(() => 
+      generateWithOpenLovable(prompt, { isRefinement: true })
+    );
+
+    // Update prototype with success
+    await supabase
+      .from('prototypes')
+      .update({
+        code: result.code,
+        url: result.url,
+        status: 'ready',
+      })
+      .eq('id', prototypeId);
+
+    console.log(`Prototype ${prototypeId} refined successfully`);
+
+  } catch (error) {
+    console.error(`Prototype ${prototypeId} refinement failed:`, error);
+
+    // Update prototype with failure
+    await supabase
+      .from('prototypes')
+      .update({
+        status: 'failed',
+      })
+      .eq('id', prototypeId);
+  }
+}
+
 serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -235,10 +420,18 @@ serve(async (req: Request) => {
       );
     }
 
-    // Parse and validate request
-    const body: GenerateRequest = await req.json();
+    // Parse request body
+    const body = await req.json();
 
-    if (!body.prdId || !body.ideaId || !body.prdContent) {
+    // Check if this is a refinement request
+    if (body.prototypeId && body.refinementPrompt) {
+      return handleRefinement(supabase, user, body as RefineRequest);
+    }
+
+    // Otherwise, handle as initial generation request
+    const generateBody = body as GenerateRequest;
+
+    if (!generateBody.prdId || !generateBody.ideaId || !generateBody.prdContent) {
       return new Response(
         JSON.stringify({
           error: 'Missing required fields: prdId, ideaId, prdContent',
@@ -252,8 +445,8 @@ serve(async (req: Request) => {
     const { data: prototype, error: createError } = await supabase
       .from('prototypes')
       .insert({
-        prd_id: body.prdId,
-        idea_id: body.ideaId,
+        prd_id: generateBody.prdId,
+        idea_id: generateBody.ideaId,
         user_id: user.id,
         status: 'generating',
         version: 1,
@@ -276,7 +469,7 @@ serve(async (req: Request) => {
     };
 
     // Start generation in background (don't await)
-    generatePrototypeAsync(supabase, prototype.id, body.prdContent);
+    generatePrototypeAsync(supabase, prototype.id, generateBody.prdContent);
 
     return new Response(
       JSON.stringify(response),

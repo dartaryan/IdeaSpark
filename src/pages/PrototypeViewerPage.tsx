@@ -1,17 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePrototype } from '../features/prototypes/hooks/usePrototype';
+import { usePrototype, useLatestPrototype, useVersionHistory } from '../features/prototypes/hooks/usePrototype';
 import { PrototypeFrame } from '../features/prototypes/components/PrototypeFrame';
 import { DeviceSelector, DEVICE_PRESETS, type DevicePreset } from '../features/prototypes/components/DeviceSelector';
 import { PrototypeMetadata } from '../features/prototypes/components/PrototypeMetadata';
+import { RefinementChat } from '../features/prototypes/components/RefinementChat';
+import { RefinementHistoryItem } from '../features/prototypes/components/RefinementHistoryItem';
 import { AlertCircle } from 'lucide-react';
 
 export function PrototypeViewerPage() {
   const { prototypeId } = useParams<{ prototypeId: string }>();
   const navigate = useNavigate();
   const [selectedDevice, setSelectedDevice] = useState<DevicePreset>(DEVICE_PRESETS[0]); // Default to desktop
+  const [activePrototypeId, setActivePrototypeId] = useState<string | null>(null);
 
   const { data: prototype, isLoading, error } = usePrototype(prototypeId!);
+  
+  // Get version history if we have a prototype with prdId
+  const { data: versionHistory } = useVersionHistory(prototype?.prdId || '');
 
   // Loading State (AC 6)
   if (isLoading) {
@@ -139,51 +145,99 @@ export function PrototypeViewerPage() {
     );
   }
 
+  // Determine which prototype to display (active selection or current)
+  const currentPrototype = activePrototypeId
+    ? versionHistory?.find((p) => p.id === activePrototypeId)
+    : prototype;
+
+  // Use current prototype if active not found
+  const displayPrototype = currentPrototype || prototype;
+
+  // Handler for refinement completion
+  const handleRefinementComplete = (newPrototypeId: string) => {
+    setActivePrototypeId(newPrototypeId);
+    // The query will auto-invalidate and refetch
+  };
+
   // Success State (AC 1, 5)
   return (
     <div className="min-h-screen bg-base-200">
       {/* Metadata Header (AC 5) */}
       <PrototypeMetadata
-        prototypeId={prototype.id}
-        version={prototype.version}
-        createdAt={prototype.createdAt}
-        ideaId={prototype.ideaId}
+        prototypeId={displayPrototype.id}
+        version={displayPrototype.version}
+        createdAt={displayPrototype.createdAt}
+        ideaId={displayPrototype.ideaId}
         ideaTitle="My Idea" // TODO: Fetch from idea
-        prdId={prototype.prdId}
+        prdId={displayPrototype.prdId}
       />
 
-      {/* Viewer Controls (AC 2) */}
+      {/* Main Content */}
       <div className="container mx-auto max-w-7xl px-4 py-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h2 className="text-lg font-semibold">Preview</h2>
-          <DeviceSelector
-            selectedDevice={selectedDevice}
-            onDeviceChange={setSelectedDevice}
-          />
-        </div>
-
-        {/* Prototype Frame (AC 1, 3, 4) */}
-        <PrototypeFrame
-          url={prototype.url}
-          device={selectedDevice}
-          className="mb-8"
-        />
-
-        {/* Info Card */}
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h3 className="card-title text-lg">About This Prototype</h3>
-            <p className="text-base-content/70">
-              This prototype was automatically generated from your PRD using Open-Lovable. 
-              It features PassportCard branding with the signature #E10514 red color.
-            </p>
-            <div className="divider"></div>
-            <div className="flex flex-wrap gap-2">
-              <div className="badge badge-primary">Version {prototype.version}</div>
-              <div className="badge badge-outline">React + TypeScript</div>
-              <div className="badge badge-outline">DaisyUI + Tailwind</div>
-              <div className="badge badge-outline">PassportCard Theme</div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Prototype Preview - 2 columns on desktop */}
+          <div className="lg:col-span-2">
+            {/* Viewer Controls (AC 2) */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <h2 className="text-lg font-semibold">Preview</h2>
+              <DeviceSelector
+                selectedDevice={selectedDevice}
+                onDeviceChange={setSelectedDevice}
+              />
             </div>
+
+            {/* Prototype Frame (AC 1, 3, 4) */}
+            <PrototypeFrame
+              url={displayPrototype.url!}
+              device={selectedDevice}
+              className="mb-6"
+            />
+
+            {/* Info Card */}
+            <div className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <h3 className="card-title text-lg">About This Prototype</h3>
+                <p className="text-base-content/70">
+                  This prototype was automatically generated from your PRD using Open-Lovable. 
+                  It features PassportCard branding with the signature #E10514 red color.
+                </p>
+                <div className="divider"></div>
+                <div className="flex flex-wrap gap-2">
+                  <div className="badge badge-primary">Version {displayPrototype.version}</div>
+                  <div className="badge badge-outline">React + TypeScript</div>
+                  <div className="badge badge-outline">DaisyUI + Tailwind</div>
+                  <div className="badge badge-outline">PassportCard Theme</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Refinement Chat & History - 1 column on desktop */}
+          <div className="space-y-6">
+            {/* Refinement Chat */}
+            <RefinementChat
+              prototypeId={prototype.id}
+              onRefinementComplete={handleRefinementComplete}
+            />
+
+            {/* Version History */}
+            {versionHistory && versionHistory.length > 1 && (
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body">
+                  <h3 className="card-title text-lg">Version History</h3>
+                  <div className="space-y-2">
+                    {versionHistory.map((versionPrototype) => (
+                      <RefinementHistoryItem
+                        key={versionPrototype.id}
+                        prototype={versionPrototype}
+                        isActive={versionPrototype.id === displayPrototype.id}
+                        onClick={() => setActivePrototypeId(versionPrototype.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

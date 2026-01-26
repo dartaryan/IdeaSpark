@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../test/test-utils';
 import { PrototypeViewerPage } from './PrototypeViewerPage';
-import { usePrototype } from '../features/prototypes/hooks/usePrototype';
+import { usePrototype, useVersionHistory } from '../features/prototypes/hooks/usePrototype';
 import type { Prototype } from '../features/prototypes/types';
 
-// Mock the usePrototype hook
+// Mock the prototype hooks
 vi.mock('../features/prototypes/hooks/usePrototype');
 
 // Mock useParams and useNavigate
@@ -38,6 +38,14 @@ vi.mock('../features/prototypes/components/PrototypeMetadata', () => ({
   PrototypeMetadata: () => <div data-testid="prototype-metadata">Metadata</div>,
 }));
 
+vi.mock('../features/prototypes/components/RefinementChat', () => ({
+  RefinementChat: () => <div data-testid="refinement-chat">Refinement Chat</div>,
+}));
+
+vi.mock('../features/prototypes/components/RefinementHistoryItem', () => ({
+  RefinementHistoryItem: () => <div data-testid="refinement-history-item">History Item</div>,
+}));
+
 const mockPrototype: Prototype = {
   id: 'proto-1',
   prdId: 'prd-1',
@@ -55,6 +63,14 @@ const mockPrototype: Prototype = {
 describe('PrototypeViewerPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock useVersionHistory to return empty array by default
+    vi.mocked(useVersionHistory).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+      isError: false,
+      refetch: vi.fn(),
+    } as any);
   });
 
   const renderPage = (prototypeId: string = 'proto-1') => {
