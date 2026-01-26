@@ -24,5 +24,5 @@ export type {
   PrdWithIdea,
   PrdSectionUpdate,
 } from './types';
-export { PRD_SECTION_KEYS, PRD_SECTION_LABELS } from './types';
+export { PRD_SECTION_KEYS, PRD_SECTION_LABELS } from './constants';
 export type { PrdSectionKey } from './types';

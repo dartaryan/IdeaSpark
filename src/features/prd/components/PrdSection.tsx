@@ -1,5 +1,5 @@
 import { SectionStatusBadge } from './SectionStatusBadge';
-import { PRD_SECTION_LABELS } from '../types';
+import { PRD_SECTION_LABELS } from '../constants';
 import type { PrdSectionKey, PrdSection as PrdSectionType } from '../types';
 
 interface PrdSectionProps {

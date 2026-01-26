@@ -1,5 +1,5 @@
 import { PrdSection } from '../PrdSection';
-import { PRD_SECTION_KEYS } from '../../types';
+import { PRD_SECTION_KEYS } from '../../constants';
 import type { PrdDocument } from '../../types';
 
 interface PrdPreviewPanelProps {

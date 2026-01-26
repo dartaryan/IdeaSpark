@@ -126,6 +126,15 @@ export const PRD_SECTIONS: PrdSectionDefinition[] = [
 
 export const REQUIRED_SECTIONS = PRD_SECTIONS.filter(s => s.required);
 
+// Create a lookup map for section labels (titles)
+export const PRD_SECTION_LABELS: Record<PrdSectionKey, string> = PRD_SECTIONS.reduce(
+  (acc, section) => {
+    acc[section.key] = section.title;
+    return acc;
+  },
+  {} as Record<PrdSectionKey, string>
+);
+
 export function getSectionByKey(key: PrdSectionKey): PrdSectionDefinition | undefined {
   return PRD_SECTIONS.find(s => s.key === key);
 }
