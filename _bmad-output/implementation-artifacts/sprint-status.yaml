@@ -85,7 +85,7 @@ development_status:
   4-1-create-prototypes-database-table-and-service-layer: review
   4-2-open-lovable-edge-function-for-prototype-generation: review
   4-3-trigger-prototype-generation-from-completed-prd: review
-  4-4-prototype-viewer-with-responsive-preview: ready-for-dev
+  4-4-prototype-viewer-with-responsive-preview: review
   4-5-chat-based-prototype-refinement: ready-for-dev
   4-6-prototype-refinement-history: ready-for-dev
   4-7-shareable-prototype-urls: ready-for-dev

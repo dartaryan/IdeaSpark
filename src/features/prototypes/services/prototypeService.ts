@@ -2,15 +2,15 @@
 
 import { supabase } from '../../../lib/supabase';
 import type { ServiceResponse } from '../../../types/service';
-import { 
+import type { 
   Prototype, 
   PrototypeRow, 
   CreatePrototypeInput, 
   CreateVersionInput,
   UpdatePrototypeInput,
-  PrototypeStatus,
-  mapPrototypeRow 
+  PrototypeStatus 
 } from '../types';
+import { mapPrototypeRow } from '../types';
 
 export const prototypeService = {
   /**
