@@ -184,4 +184,193 @@ describe('adminService', () => {
       expect(mockFrom.select).toHaveBeenCalledWith('status');
     });
   });
+
+  describe('approveIdea() - Task 1: Approve idea for PRD development', () => {
+    describe('Subtask 1.1-1.4: Update idea status to approved with timestamp', () => {
+      it('should approve a submitted idea and update status_updated_at', async () => {
+        const ideaId = 'idea-123';
+        const mockApprovedIdea = {
+          id: ideaId,
+          user_id: 'user-456',
+          title: 'Test Idea',
+          problem: 'Test problem',
+          solution: 'Test solution',
+          impact: 'Test impact',
+          status: 'approved',
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-27T10:00:00Z',
+          status_updated_at: '2026-01-27T10:00:00Z',
+        };
+
+        const mockUpdate = vi.fn().mockReturnThis();
+        const mockEq = vi.fn().mockReturnThis();
+        const mockSelect = vi.fn().mockReturnThis();
+        const mockSingle = vi.fn().mockResolvedValue({ data: mockApprovedIdea, error: null });
+
+        const mockFrom = {
+          update: mockUpdate,
+          eq: mockEq,
+          select: mockSelect,
+          single: mockSingle,
+        };
+
+        vi.mocked(supabase.from).mockReturnValue(mockFrom as never);
+
+        const result = await adminService.approveIdea(ideaId);
+
+        expect(supabase.from).toHaveBeenCalledWith('ideas');
+        expect(mockUpdate).toHaveBeenCalledWith(
+          expect.objectContaining({
+            status: 'approved',
+            status_updated_at: expect.any(String),
+          })
+        );
+        expect(mockEq).toHaveBeenCalledWith('id', ideaId);
+        expect(mockEq).toHaveBeenCalledWith('status', 'submitted');
+        expect(mockSelect).toHaveBeenCalled();
+        expect(mockSingle).toHaveBeenCalled();
+        expect(result.data).toEqual(mockApprovedIdea);
+        expect(result.error).toBeNull();
+      });
+
+      it('should return updated idea with approved status', async () => {
+        const ideaId = 'idea-789';
+        const mockApprovedIdea = {
+          id: ideaId,
+          status: 'approved',
+          status_updated_at: new Date().toISOString(),
+        };
+
+        const mockChain = {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: mockApprovedIdea, error: null }),
+        };
+
+        vi.mocked(supabase.from).mockReturnValue(mockChain as never);
+
+        const result = await adminService.approveIdea(ideaId);
+
+        expect(result.data?.status).toBe('approved');
+        expect(result.data?.status_updated_at).toBeDefined();
+        expect(result.error).toBeNull();
+      });
+    });
+
+    describe('Subtask 1.5: Handle database errors gracefully', () => {
+      it('should return error when database update fails', async () => {
+        const ideaId = 'idea-error';
+        const mockChain = {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: 'Database connection failed', code: 'DB_ERROR' },
+          }),
+        };
+
+        vi.mocked(supabase.from).mockReturnValue(mockChain as never);
+
+        const result = await adminService.approveIdea(ideaId);
+
+        expect(result.data).toBeNull();
+        expect(result.error).toEqual({
+          message: 'Database connection failed',
+          code: 'DB_ERROR',
+        });
+      });
+
+      it('should handle unexpected errors gracefully', async () => {
+        const ideaId = 'idea-unexpected';
+        const mockChain = {
+          update: vi.fn().mockRejectedValue(new Error('Unexpected error')),
+        };
+
+        vi.mocked(supabase.from).mockReturnValue(mockChain as never);
+
+        const result = await adminService.approveIdea(ideaId);
+
+        expect(result.data).toBeNull();
+        expect(result.error?.message).toBe('Failed to approve idea');
+        expect(result.error?.code).toBe('UNKNOWN_ERROR');
+      });
+
+      it('should handle case where idea is not in submitted status', async () => {
+        const ideaId = 'idea-not-submitted';
+        const mockChain = {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: 'No rows found', code: 'PGRST116' },
+          }),
+        };
+
+        vi.mocked(supabase.from).mockReturnValue(mockChain as never);
+
+        const result = await adminService.approveIdea(ideaId);
+
+        expect(result.data).toBeNull();
+        expect(result.error).toBeDefined();
+      });
+    });
+
+    describe('Edge cases', () => {
+      it('should only approve ideas with status=submitted', async () => {
+        const ideaId = 'idea-check-status';
+        const mockChain = {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { id: ideaId, status: 'approved' },
+            error: null,
+          }),
+        };
+
+        vi.mocked(supabase.from).mockReturnValue(mockChain as never);
+
+        await adminService.approveIdea(ideaId);
+
+        // Verify that eq was called with status='submitted' condition
+        expect(mockChain.eq).toHaveBeenCalledWith('status', 'submitted');
+      });
+
+      it('should include current timestamp in status_updated_at', async () => {
+        const ideaId = 'idea-timestamp';
+        let capturedUpdate: any;
+        
+        const mockChain = {
+          update: vi.fn().mockImplementation((data) => {
+            capturedUpdate = data;
+            return mockChain;
+          }),
+          eq: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { id: ideaId, status: 'approved' },
+            error: null,
+          }),
+        };
+
+        vi.mocked(supabase.from).mockReturnValue(mockChain as never);
+
+        const beforeTime = Date.now();
+        await adminService.approveIdea(ideaId);
+        const afterTime = Date.now();
+
+        expect(capturedUpdate).toBeDefined();
+        expect(capturedUpdate.status).toBe('approved');
+        expect(capturedUpdate.status_updated_at).toBeDefined();
+        
+        // Convert ISO string to timestamp for comparison
+        const timestamp = new Date(capturedUpdate.status_updated_at).getTime();
+        expect(timestamp).toBeGreaterThanOrEqual(beforeTime);
+        expect(timestamp).toBeLessThanOrEqual(afterTime);
+      });
+    });
+  });
 });

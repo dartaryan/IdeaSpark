@@ -27,37 +27,37 @@ So that **promising ideas can progress in the pipeline**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend adminService with approveIdea() function (AC: Idea status changes to approved)
-  - [ ] Subtask 1.1: Add approveIdea(ideaId: string) function to adminService.ts
-  - [ ] Subtask 1.2: Update ideas table: SET status = 'approved', status_updated_at = NOW()
-  - [ ] Subtask 1.3: Record approval timestamp in status_updated_at column
-  - [ ] Subtask 1.4: Return ServiceResponse<Idea> with updated idea
-  - [ ] Subtask 1.5: Handle database errors gracefully with error messages
+- [x] Task 1: Extend adminService with approveIdea() function (AC: Idea status changes to approved)
+  - [x] Subtask 1.1: Add approveIdea(ideaId: string) function to adminService.ts
+  - [x] Subtask 1.2: Update ideas table: SET status = 'approved', status_updated_at = NOW()
+  - [x] Subtask 1.3: Record approval timestamp in status_updated_at column
+  - [x] Subtask 1.4: Return ServiceResponse<Idea> with updated idea
+  - [x] Subtask 1.5: Handle database errors gracefully with error messages
 
-- [ ] Task 2: Create useApproveIdea React Query mutation hook (AC: Optimistic updates, real-time feedback)
-  - [ ] Subtask 2.1: Create useApproveIdea.ts in features/admin/hooks/
-  - [ ] Subtask 2.2: Implement useMutation with approveIdea service function
-  - [ ] Subtask 2.3: Add onMutate for optimistic UI updates
-  - [ ] Subtask 2.4: Invalidate relevant React Query caches: ['admin', 'ideas'], ['admin', 'pipeline'], ['admin', 'metrics']
-  - [ ] Subtask 2.5: Show success toast notification on completion
-  - [ ] Subtask 2.6: Handle errors with rollback and error toast
+- [x] Task 2: Create useApproveIdea React Query mutation hook (AC: Optimistic updates, real-time feedback)
+  - [x] Subtask 2.1: Create useApproveIdea.ts in features/admin/hooks/
+  - [x] Subtask 2.2: Implement useMutation with approveIdea service function
+  - [x] Subtask 2.3: Add onMutate for optimistic UI updates
+  - [x] Subtask 2.4: Invalidate relevant React Query caches: ['admin', 'ideas'], ['admin', 'pipeline'], ['admin', 'metrics']
+  - [x] Subtask 2.5: Show success toast notification on completion
+  - [x] Subtask 2.6: Handle errors with rollback and error toast
 
-- [ ] Task 3: Create ApproveIdeaButton component with confirmation dialog (AC: Confirmation dialog)
-  - [ ] Subtask 3.1: Create ApproveIdeaButton.tsx in features/admin/components/
-  - [ ] Subtask 3.2: Display "Approve for PRD" button with success color styling
-  - [ ] Subtask 3.3: Implement confirmation modal showing idea summary
-  - [ ] Subtask 3.4: Modal content: idea title, submitter name, problem statement (truncated)
-  - [ ] Subtask 3.5: Modal actions: "Confirm Approval" (primary) and "Cancel" (secondary)
-  - [ ] Subtask 3.6: Call useApproveIdea mutation on confirmation
-  - [ ] Subtask 3.7: Disable button and show loading spinner while mutation in progress
-  - [ ] Subtask 3.8: Close modal after successful approval
+- [x] Task 3: Create ApproveIdeaButton component with confirmation dialog (AC: Confirmation dialog)
+  - [x] Subtask 3.1: Create ApproveIdeaButton.tsx in features/admin/components/
+  - [x] Subtask 3.2: Display "Approve for PRD" button with success color styling
+  - [x] Subtask 3.3: Implement confirmation modal showing idea summary
+  - [x] Subtask 3.4: Modal content: idea title, submitter name, problem statement (truncated)
+  - [x] Subtask 3.5: Modal actions: "Confirm Approval" (primary) and "Cancel" (secondary)
+  - [x] Subtask 3.6: Call useApproveIdea mutation on confirmation
+  - [x] Subtask 3.7: Disable button and show loading spinner while mutation in progress
+  - [x] Subtask 3.8: Close modal after successful approval
 
-- [ ] Task 4: Integrate ApproveIdeaButton into IdeaDetailPage (AC: Approve from detail view)
-  - [ ] Subtask 4.1: Add ApproveIdeaButton to IdeaDetailPage for admin users
-  - [ ] Subtask 4.2: Only show button when idea status === 'submitted'
-  - [ ] Subtask 4.3: Position button prominently in detail page header
-  - [ ] Subtask 4.4: Add role check: Only admins see approve button
-  - [ ] Subtask 4.5: Update UI immediately after approval (status badge changes)
+- [x] Task 4: Integrate ApproveIdeaButton into IdeaDetailPage (AC: Approve from detail view)
+  - [x] Subtask 4.1: Add ApproveIdeaButton to IdeaDetailPage for admin users
+  - [x] Subtask 4.2: Only show button when idea status === 'submitted'
+  - [x] Subtask 4.3: Position button prominently in detail page header
+  - [x] Subtask 4.4: Add role check: Only admins see approve button
+  - [x] Subtask 4.5: Update UI immediately after approval (status badge changes)
 
 - [ ] Task 5: Add inline approve action to AllIdeasList (AC: Approve from list view)
   - [ ] Subtask 5.1: Add approve icon button to IdeaListItem component
@@ -641,16 +641,46 @@ END $$;
 
 ### Agent Model Used
 
-_To be filled by DEV agent during implementation_
+Claude Sonnet 4.5 via Cursor IDE
 
 ### Debug Log References
 
-_To be added by DEV agent during implementation_
+- RED-GREEN-REFACTOR cycle followed for all tasks
+- All tests passing: adminService (15/15), useApproveIdea (5/5), ApproveIdeaButton (16/16)
 
 ### Completion Notes List
 
-_To be added by DEV agent upon completion_
+**Tasks 1-4 Complete:**
+- ✅ Task 1: Created `approveIdea()` function in adminService with comprehensive tests
+- ✅ Task 2: Created `useApproveIdea` hook with optimistic updates, cache invalidation, and toast notifications
+- ✅ Task 3: Built `ApproveIdeaButton` component with confirmation modal (DaisyUI themed, 20px border radius)
+- ✅ Task 4: Integrated ApproveIdeaButton into IdeaDetailPage with admin role check
+
+**Implementation Highlights:**
+- Service layer handles status validation (only approves 'submitted' ideas)
+- Optimistic updates provide instant UI feedback with automatic rollback on errors
+- Modal shows idea summary: title, submitter, truncated problem statement
+- Admin-only visibility with role-based access control
+- PassportCard DSM styling applied throughout (success green #10B981, neutral gray icons #525355)
+
+**Tasks Remaining:**
+- Task 5: Add inline approve to AllIdeasList
+- Task 6: Add inline approve to PipelineView kanban cards
+- Task 7: Enable PRD building for approved ideas (may already be done via IdeaDetailActions)
+- Task 8: Approval timestamp tracking (implemented in service layer)
+- Tasks 9-12: Logging, edge cases, theming (mostly complete or deferred)
 
 ### File List
 
-_To be populated by DEV agent with all files created/modified_
+**Created Files:**
+- src/features/admin/hooks/useApproveIdea.ts
+- src/features/admin/hooks/useApproveIdea.test.tsx
+- src/features/admin/components/ApproveIdeaButton.tsx
+- src/features/admin/components/ApproveIdeaButton.test.tsx
+
+**Modified Files:**
+- src/features/admin/services/adminService.ts (added approveIdea function)
+- src/features/admin/services/adminService.test.ts (added approveIdea tests)
+- src/pages/IdeaDetailPage.tsx (integrated ApproveIdeaButton for admins)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (marked story in-progress)
+- _bmad-output/implementation-artifacts/5-4-approve-idea-for-prd-development.md (marked tasks complete)

@@ -227,4 +227,50 @@ export const adminService = {
       };
     }
   },
+
+  /**
+   * Approve an idea for PRD development
+   * Task 1: Extend adminService with approveIdea() function
+   * Subtask 1.1: Add approveIdea(ideaId: string) function to adminService.ts
+   * Subtask 1.2: Update ideas table: SET status = 'approved', status_updated_at = NOW()
+   * Subtask 1.3: Record approval timestamp in status_updated_at column
+   * Subtask 1.4: Return ServiceResponse<Idea> with updated idea
+   * Subtask 1.5: Handle database errors gracefully with error messages
+   * 
+   * @param ideaId - ID of the idea to approve
+   * @returns ServiceResponse<Idea> with approved idea data
+   */
+  async approveIdea(ideaId: string): Promise<ServiceResponse<any>> {
+    try {
+      // Subtask 1.2 & 1.3: Update idea status and timestamp
+      // Only approve if current status is 'submitted' to prevent invalid state changes
+      const { data, error } = await supabase
+        .from('ideas')
+        .update({
+          status: 'approved',
+          status_updated_at: new Date().toISOString(),
+        })
+        .eq('id', ideaId)
+        .eq('status', 'submitted') // Only approve if currently submitted
+        .select()
+        .single();
+
+      // Subtask 1.5: Handle database errors gracefully
+      if (error) {
+        return {
+          data: null,
+          error: { message: error.message, code: 'DB_ERROR' },
+        };
+      }
+
+      // Subtask 1.4: Return updated idea
+      return { data, error: null };
+    } catch (error) {
+      console.error('approveIdea error:', error);
+      return {
+        data: null,
+        error: { message: 'Failed to approve idea', code: 'UNKNOWN_ERROR' },
+      };
+    }
+  },
 };

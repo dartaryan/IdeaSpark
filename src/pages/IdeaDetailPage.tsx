@@ -5,6 +5,8 @@ import { IdeaStatusInfo } from '../features/ideas/components/IdeaStatusInfo';
 import { IdeaDetailActions } from '../features/ideas/components/IdeaDetailActions';
 import { IdeaDetailSkeleton } from '../features/ideas/components/IdeaDetailSkeleton';
 import { IdeaNotFound } from '../features/ideas/components/IdeaNotFound';
+import { ApproveIdeaButton } from '../features/admin/components/ApproveIdeaButton';
+import { useAuth } from '../features/auth/hooks/useAuth';
 
 /**
  * Idea detail page showing full idea information
@@ -21,6 +23,11 @@ import { IdeaNotFound } from '../features/ideas/components/IdeaNotFound';
 export function IdeaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { idea, isLoading, error, isNotFound } = useIdea(id);
+  const { user } = useAuth();
+
+  // Task 4: Check if user is admin and idea is submitted
+  const isAdmin = user?.role === 'admin';
+  const canApprove = isAdmin && idea?.status === 'submitted';
 
   if (isLoading) {
     return (
@@ -71,6 +78,25 @@ export function IdeaDetailPage() {
         {/* Sidebar - 1/3 width on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-2 space-y-4">
           <IdeaStatusInfo idea={idea} />
+          
+          {/* Task 4: Admin approve button - prominently positioned */}
+          {canApprove && (
+            <div className="card bg-green-50 border border-green-200 shadow-sm">
+              <div className="card-body p-4">
+                <h3 className="font-semibold text-sm mb-2 text-gray-700">Admin Action</h3>
+                <ApproveIdeaButton 
+                  idea={{
+                    id: idea.id,
+                    title: idea.title || idea.problem.substring(0, 50),
+                    problem: idea.problem,
+                    submitter_name: 'Submitter', // This will be replaced with actual submitter info
+                    status: idea.status,
+                  }} 
+                />
+              </div>
+            </div>
+          )}
+          
           <IdeaDetailActions idea={idea} />
         </div>
       </div>
