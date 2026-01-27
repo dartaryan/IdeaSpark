@@ -13,6 +13,8 @@ import { PrdBuilderPage } from '../pages/PrdBuilderPage';
 import { PrdViewPage } from '../pages/PrdViewPage';
 import { PrototypeViewerPage } from '../pages/PrototypeViewerPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
+import { AllIdeasPage } from '../pages/AllIdeasPage';
+import { PipelinePage } from '../pages/PipelinePage';
 import { AnalyticsPage } from '../pages/AnalyticsPage';
 import { NotAuthorizedPage } from '../pages/NotAuthorizedPage';
 import { PublicPrototypeViewer } from '../features/prototypes/pages';
@@ -96,6 +98,22 @@ export const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <AdminDashboardPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: ROUTES.ADMIN_IDEAS,
+        element: (
+          <AdminRoute>
+            <AllIdeasPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: ROUTES.ADMIN_PIPELINE,
+        element: (
+          <AdminRoute>
+            <PipelinePage />
           </AdminRoute>
         ),
       },

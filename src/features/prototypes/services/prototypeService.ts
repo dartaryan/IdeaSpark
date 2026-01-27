@@ -493,4 +493,92 @@ export const prototypeService = {
       };
     }
   },
+
+  /**
+   * Get the latest prototype for an idea (Task 8 - Story 4.8)
+   * Used to check if an idea has a prototype and link to it
+   *
+   * @param ideaId - The idea ID
+   * @returns Latest prototype for the idea, or null if none exists
+   */
+  async getByIdeaId(ideaId: string): Promise<ServiceResponse<Prototype | null>> {
+    try {
+      const { data, error } = await supabase
+        .from('prototypes')
+        .select('*')
+        .eq('idea_id', ideaId)
+        .eq('status', 'ready') // Only return successful prototypes
+        .order('version', { ascending: false })
+        .limit(1)
+        .maybeSingle(); // Returns null if no rows, doesn't throw on 0 results
+
+      if (error) {
+        console.error('Get prototype by idea error:', error);
+        return {
+          data: null,
+          error: { 
+            message: 'Failed to get prototype', 
+            code: 'DB_ERROR' 
+          },
+        };
+      }
+
+      if (!data) {
+        return { data: null, error: null }; // No prototype yet - not an error
+      }
+
+      return { data: mapPrototypeRow(data as PrototypeRow), error: null };
+    } catch (error) {
+      console.error('Get prototype by idea error:', error);
+      return {
+        data: null,
+        error: { 
+          message: 'Failed to get prototype', 
+          code: 'UNKNOWN_ERROR' 
+        },
+      };
+    }
+  },
+
+  /**
+   * Get all prototypes for an idea (all versions) (Task 8 - Story 4.8)
+   * Used for showing complete prototype history for an idea
+   *
+   * @param ideaId - The idea ID
+   * @returns All prototypes for the idea
+   */
+  async getAllByIdeaId(ideaId: string): Promise<ServiceResponse<Prototype[]>> {
+    try {
+      const { data, error } = await supabase
+        .from('prototypes')
+        .select('*')
+        .eq('idea_id', ideaId)
+        .order('version', { ascending: false });
+
+      if (error) {
+        console.error('Get all prototypes by idea error:', error);
+        return {
+          data: null,
+          error: { 
+            message: 'Failed to get prototypes', 
+            code: 'DB_ERROR' 
+          },
+        };
+      }
+
+      return { 
+        data: (data as PrototypeRow[]).map(mapPrototypeRow), 
+        error: null 
+      };
+    } catch (error) {
+      console.error('Get all prototypes by idea error:', error);
+      return {
+        data: null,
+        error: { 
+          message: 'Failed to get prototypes', 
+          code: 'UNKNOWN_ERROR' 
+        },
+      };
+    }
+  },
 };

@@ -21,6 +21,7 @@ export const ROUTES = {
   // Admin routes
   ADMIN_DASHBOARD: '/admin',
   ADMIN_IDEAS: '/admin/ideas',
+  ADMIN_PIPELINE: '/admin/pipeline',
   ADMIN_USERS: '/admin/users',
   ADMIN_ANALYTICS: '/admin/analytics',
 

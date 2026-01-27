@@ -1,6 +1,6 @@
 # Story 5.1: Admin Dashboard Layout
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,55 +20,55 @@ So that **I can see the entire innovation pipeline at a glance**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create AdminRoute component with role-based access check (AC: Regular users redirected)
-  - [ ] Subtask 1.1: Implement AdminRoute wrapper component using useAuth hook
-  - [ ] Subtask 1.2: Add role check for "admin" user
-  - [ ] Subtask 1.3: Redirect non-admin users to dashboard with error toast
-  - [ ] Subtask 1.4: Test with both admin and regular user accounts
+- [x] Task 1: Create AdminRoute component with role-based access check (AC: Regular users redirected)
+  - [x] Subtask 1.1: Implement AdminRoute wrapper component using useAuth hook
+  - [x] Subtask 1.2: Add role check for "admin" user
+  - [x] Subtask 1.3: Redirect non-admin users to dashboard with error toast
+  - [x] Subtask 1.4: Test with both admin and regular user accounts
 
-- [ ] Task 2: Create AdminDashboard page component with layout structure (AC: Dashboard layout)
-  - [ ] Subtask 2.1: Create AdminDashboard.tsx in features/admin/components/
-  - [ ] Subtask 2.2: Implement grid layout for metric cards (4 cards across on desktop)
-  - [ ] Subtask 2.3: Add responsive breakpoints (stack on mobile)
-  - [ ] Subtask 2.4: Add page header with "Admin Dashboard" title
+- [x] Task 2: Create AdminDashboard page component with layout structure (AC: Dashboard layout)
+  - [x] Subtask 2.1: Create AdminDashboard.tsx in features/admin/components/
+  - [x] Subtask 2.2: Implement grid layout for metric cards (4 cards across on desktop)
+  - [x] Subtask 2.3: Add responsive breakpoints (stack on mobile)
+  - [x] Subtask 2.4: Add page header with "Admin Dashboard" title
 
-- [ ] Task 3: Create metric count cards for each pipeline stage (AC: Count cards for each stage)
-  - [ ] Subtask 3.1: Create MetricCard component in features/admin/components/
-  - [ ] Subtask 3.2: Implement cards for: Submitted, Approved, PRD Development, Prototype Complete
-  - [ ] Subtask 3.3: Add semantic colors (gray=submitted, blue=approved, yellow=prd, green=prototype)
-  - [ ] Subtask 3.4: Add Heroicons to each card (no emojis, use neutral gray #525355)
-  - [ ] Subtask 3.5: Display count prominently with label below
+- [x] Task 3: Create metric count cards for each pipeline stage (AC: Count cards for each stage)
+  - [x] Subtask 3.1: Create MetricCard component in features/admin/components/
+  - [x] Subtask 3.2: Implement cards for: Submitted, Approved, PRD Development, Prototype Complete
+  - [x] Subtask 3.3: Add semantic colors (gray=submitted, blue=approved, yellow=prd, green=prototype)
+  - [x] Subtask 3.4: Add Heroicons to each card (no emojis, use neutral gray #525355)
+  - [x] Subtask 3.5: Display count prominently with label below
 
-- [ ] Task 4: Create adminService to fetch pipeline metrics (AC: Summary of ideas by status)
-  - [ ] Subtask 4.1: Create adminService.ts in features/admin/services/
-  - [ ] Subtask 4.2: Implement getMetrics() function to query ideas table grouped by status
-  - [ ] Subtask 4.3: Add Supabase RLS policy allowing admins to query all ideas
-  - [ ] Subtask 4.4: Return counts for each status enum value
+- [x] Task 4: Create adminService to fetch pipeline metrics (AC: Summary of ideas by status)
+  - [x] Subtask 4.1: Create adminService.ts in features/admin/services/
+  - [x] Subtask 4.2: Implement getMetrics() function to query ideas table grouped by status
+  - [x] Subtask 4.3: Add Supabase RLS policy allowing admins to query all ideas
+  - [x] Subtask 4.4: Return counts for each status enum value
 
-- [ ] Task 5: Create useAdminMetrics hook with React Query (AC: Real-time data updates)
-  - [ ] Subtask 5.1: Create useAdminMetrics.ts in features/admin/hooks/
-  - [ ] Subtask 5.2: Implement React Query with refetch interval (30 seconds)
-  - [ ] Subtask 5.3: Add loading and error states
-  - [ ] Subtask 5.4: Cache metrics with ['admin', 'metrics'] query key
+- [x] Task 5: Create useAdminMetrics hook with React Query (AC: Real-time data updates)
+  - [x] Subtask 5.1: Create useAdminMetrics.ts in features/admin/hooks/
+  - [x] Subtask 5.2: Implement React Query with refetch interval (30 seconds)
+  - [x] Subtask 5.3: Add loading and error states
+  - [x] Subtask 5.4: Cache metrics with ['admin', 'metrics'] query key
 
-- [ ] Task 6: Create RecentSubmissions list component (AC: Recent submissions requiring attention)
-  - [ ] Subtask 6.1: Create RecentSubmissions.tsx component
-  - [ ] Subtask 6.2: Fetch last 10 ideas with status="submitted" ordered by created_at DESC
-  - [ ] Subtask 6.3: Display as list with: idea title (first 50 chars), submitter name, submission date
-  - [ ] Subtask 6.4: Add "View" link to each item navigating to idea detail
-  - [ ] Subtask 6.5: Show empty state if no recent submissions
+- [x] Task 6: Create RecentSubmissions list component (AC: Recent submissions requiring attention)
+  - [x] Subtask 6.1: Create RecentSubmissions.tsx component
+  - [x] Subtask 6.2: Fetch last 10 ideas with status="submitted" ordered by created_at DESC
+  - [x] Subtask 6.3: Display as list with: idea title (first 50 chars), submitter name, submission date
+  - [x] Subtask 6.4: Add "View" link to each item navigating to idea detail
+  - [x] Subtask 6.5: Show empty state if no recent submissions
 
-- [ ] Task 7: Integrate PassportCard DaisyUI theme throughout (AC: PassportCard branding consistently)
-  - [ ] Subtask 7.1: Use DaisyUI card component with 20px border radius
-  - [ ] Subtask 7.2: Apply primary red (#E10514) for active elements
-  - [ ] Subtask 7.3: Use neutral gray (#525355) for icons (NEVER black #000000)
-  - [ ] Subtask 7.4: Apply Montserrat font for headings, Rubik for body
-  - [ ] Subtask 7.5: Use DSM shadows and spacing tokens
+- [x] Task 7: Integrate PassportCard DaisyUI theme throughout (AC: PassportCard branding consistently)
+  - [x] Subtask 7.1: Use DaisyUI card component with 20px border radius
+  - [x] Subtask 7.2: Apply primary red (#E10514) for active elements
+  - [x] Subtask 7.3: Use neutral gray (#525355) for icons (NEVER black #000000)
+  - [x] Subtask 7.4: Apply Montserrat font for headings, Rubik for body
+  - [x] Subtask 7.5: Use DSM shadows and spacing tokens
 
-- [ ] Task 8: Add route definition for /admin/dashboard (AC: Navigate to Admin Dashboard)
-  - [ ] Subtask 8.1: Add route in routes/index.tsx wrapped with AdminRoute
-  - [ ] Subtask 8.2: Update navigation menu to show "Admin Dashboard" link for admin users
-  - [ ] Subtask 8.3: Add navigation menu item only visible when user role === "admin"
+- [x] Task 8: Add route definition for /admin/dashboard (AC: Navigate to Admin Dashboard)
+  - [x] Subtask 8.1: Add route in routes/index.tsx wrapped with AdminRoute
+  - [x] Subtask 8.2: Update navigation menu to show "Admin Dashboard" link for admin users
+  - [x] Subtask 8.3: Add navigation menu item only visible when user role === "admin"
 
 ## Dev Notes
 
@@ -333,16 +333,56 @@ async function fetchMetrics() {
 
 ### Agent Model Used
 
-_To be filled by DEV agent during implementation_
+Claude Sonnet 4.5
 
 ### Debug Log References
 
-_To be added by DEV agent during implementation_
+No significant debugging required - implementation followed red-green-refactor cycle successfully.
 
 ### Completion Notes List
 
-_To be added by DEV agent upon completion_
+✅ **Task 1**: AdminRoute component already implemented with comprehensive role-based access control and tests (7/7 passing)
+
+✅ **Task 2**: Created AdminDashboard page component with responsive grid layout (4 columns desktop, 2 tablet, 1 mobile) and proper page header (9/9 tests passing)
+
+✅ **Task 3**: Implemented MetricCard reusable component with semantic colors (gray/blue/yellow/green), Heroicons with neutral gray (#525355), and PassportCard DSM compliance (13/13 tests passing)
+
+✅ **Task 4**: Created adminService with getMetrics() function querying ideas table. RLS policy already exists in migration 00004 allowing admin-only access (8/8 tests passing)
+
+✅ **Task 5**: Implemented useAdminMetrics React Query hook with 30-second refetch interval, caching with ['admin', 'metrics'] key, and proper loading/error states (8/8 tests passing)
+
+✅ **Task 6**: Created RecentSubmissions component displaying last 10 submitted ideas with title (50 chars max), submitter name, submission date, View links, and empty state handling (11/11 tests passing)
+
+✅ **Task 7**: PassportCard design system applied throughout - 20px border radius, neutral gray icons, Montserrat/Rubik fonts, DaisyUI components
+
+✅ **Task 8**: Route configuration already in place (routes/index.tsx) with AdminRoute wrapper. Navigation menu in Sidebar already configured to show "Admin Dashboard" link for admin users only (2/2 integration tests passing)
+
+**Total Tests: 58/58 passing**
 
 ### File List
 
-_To be populated by DEV agent with all files created/modified_
+**Created:**
+- src/features/admin/components/AdminDashboard.tsx
+- src/features/admin/components/AdminDashboard.test.tsx
+- src/features/admin/components/MetricCard.tsx
+- src/features/admin/components/MetricCard.test.tsx
+- src/features/admin/components/RecentSubmissions.tsx
+- src/features/admin/components/RecentSubmissions.test.tsx
+- src/features/admin/hooks/useAdminMetrics.ts
+- src/features/admin/hooks/useAdminMetrics.test.tsx
+- src/features/admin/hooks/useRecentSubmissions.ts
+- src/features/admin/services/adminService.ts
+- src/features/admin/services/adminService.test.ts
+- src/features/admin/types.ts
+- src/features/admin/index.ts
+- src/features/admin/integration.test.tsx
+
+**Modified:**
+- src/pages/AdminDashboardPage.tsx (updated to use AdminDashboard component)
+
+**Pre-existing (leveraged):**
+- src/routes/AdminRoute.tsx (already implemented with tests)
+- src/routes/AdminRoute.test.tsx (already passing)
+- src/routes/index.tsx (admin routes already configured)
+- src/components/layouts/Sidebar.tsx (admin menu items already configured)
+- supabase/migrations/00004_create_ideas_rls_policies.sql (admin RLS policy already exists)

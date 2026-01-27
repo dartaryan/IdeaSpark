@@ -89,14 +89,14 @@ development_status:
   4-5-chat-based-prototype-refinement: review
   4-6-prototype-refinement-history: review
   4-7-shareable-prototype-urls: review
-  4-8-prototype-status-integration-with-idea: ready-for-dev
+  4-8-prototype-status-integration-with-idea: review
   epic-4-retrospective: optional
 
   # Epic 5: Admin Pipeline & Triage Workflow
   epic-5: in-progress
-  5-1-admin-dashboard-layout: ready-for-dev
-  5-2-all-ideas-list-with-filtering-and-sorting: ready-for-dev
-  5-3-idea-pipeline-kanban-view: ready-for-dev
+  5-1-admin-dashboard-layout: review
+  5-2-all-ideas-list-with-filtering-and-sorting: review
+  5-3-idea-pipeline-kanban-view: review
   5-4-approve-idea-for-prd-development: ready-for-dev
   5-5-reject-idea-with-feedback: ready-for-dev
   5-6-view-any-users-idea-prd-and-prototype: ready-for-dev

@@ -609,20 +609,43 @@ async function generatePrototypeAsync(
     const result = await withRetry(() => generateWithOpenLovable(prdContent));
 
     // Update prototype with success
-    await supabase
+    const { data: prototype, error: updateError } = await supabase
       .from('prototypes')
       .update({
         code: result.code,
         url: result.url,
         status: 'ready',
       })
-      .eq('id', prototypeId);
+      .eq('id', prototypeId)
+      .select('idea_id')
+      .single();
+
+    if (updateError) {
+      console.error(`Failed to update prototype ${prototypeId}:`, updateError);
+      throw updateError;
+    }
+
+    // Update idea status to prototype_complete (Task 1 - AC 1, 4)
+    if (prototype?.idea_id) {
+      const { error: ideaUpdateError } = await supabase
+        .from('ideas')
+        .update({ status: 'prototype_complete' })
+        .eq('id', prototype.idea_id);
+
+      if (ideaUpdateError) {
+        // Log error but don't fail the whole operation - prototype is already successful
+        console.error(`Failed to update idea status for ${prototype.idea_id}:`, ideaUpdateError);
+      } else {
+        console.log(`Idea ${prototype.idea_id} status updated to prototype_complete`);
+      }
+    }
 
     console.log(`Prototype ${prototypeId} generated successfully`);
   } catch (error) {
     console.error(`Prototype ${prototypeId} generation failed:`, error);
 
     // Update prototype with failure
+    // DO NOT update idea status on failure - keep it at prd_development for retry (Task 6 - AC 6)
     await supabase
       .from('prototypes')
       .update({

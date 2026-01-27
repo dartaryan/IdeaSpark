@@ -7,3 +7,4 @@ export { useRefinePrototype } from './useRefinePrototype';
 export { useRestoreVersion } from './useRestoreVersion';
 export { useSharePrototype } from './useSharePrototype';
 export { usePublicPrototype } from './usePublicPrototype';
+export { usePrototypeByIdeaId, usePrototypesByIdeaId } from './usePrototypeByIdeaId';
