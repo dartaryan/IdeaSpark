@@ -11,10 +11,7 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import { formatDistanceToNow } from 'date-fns';
-import {
-  PrdDocumentView,
-  PrdChatHistory,
-} from '../../prd/components';
+import { PrdDocumentView } from '../../prd/components';
 
 /**
  * Admin PRD viewer component - view any user's PRD
@@ -162,22 +159,7 @@ export function AdminPrdViewer() {
         {/* Subtask 4.5: Render all PRD sections */}
         <PrdDocumentView prdContent={prd.content} />
 
-        {/* Subtask 4.8: Show chat history for draft PRDs */}
-        {!isPrdComplete && prdId && (
-          <div className="mt-8">
-            <div className="collapse collapse-arrow bg-base-200 rounded-[20px]">
-              <input type="checkbox" /> 
-              <div className="collapse-title text-lg font-medium">
-                Chat History
-              </div>
-              <div className="collapse-content"> 
-                <PrdChatHistory prdId={prdId} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Subtask 4.10: View Prototype button - TODO: Check if prototype exists */}
+        {/* Subtask 4.10: View Prototype button */}
         <div className="mt-8 flex justify-center gap-4">
           {ideaId && (
             <button
@@ -188,7 +170,6 @@ export function AdminPrdViewer() {
               Back to Idea
             </button>
           )}
-          {/* TODO: Add "View Prototype" button when prototype exists */}
         </div>
       </div>
     </div>

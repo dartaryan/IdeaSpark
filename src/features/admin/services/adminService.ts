@@ -3,7 +3,7 @@
 
 import { supabase } from '../../../lib/supabase';
 import type { ServiceResponse } from '../../../types/service';
-import type { MetricData, IdeaFilters, IdeaWithSubmitter, PipelineIdeas } from '../types';
+import type { MetricData, IdeaFilters, IdeaWithSubmitter, PipelineIdeas, UserWithActivity, UserDetail } from '../types';
 import type { IdeaStatus } from '../../../types/database';
 import { differenceInDays } from 'date-fns';
 
@@ -625,6 +625,262 @@ export const adminService = {
       return {
         data: null,
         error: { message: 'Failed to reject idea', code: 'UNKNOWN_ERROR' },
+      };
+    }
+  },
+
+  /**
+   * Get all users with activity counts
+   * Story 5.7 - Task 6: Extend adminService with user list and activity functions
+   * Subtask 6.1: Add getAllUsers() function to adminService.ts
+   * Subtask 6.2: Query users table: SELECT id, name, email, role, created_at
+   * Subtask 6.3: Join with ideas table to count submitted ideas per user
+   * Subtask 6.4: Return ServiceResponse<User[]> with users and idea counts
+   * Subtask 6.7: Handle errors gracefully with user-friendly messages
+   * Subtask 6.8: Verify admin role before executing queries (RLS backup)
+   * 
+   * @returns ServiceResponse with array of users with activity metrics
+   */
+  async getAllUsers(): Promise<ServiceResponse<any[]>> {
+    try {
+      // Subtask 6.8: Verify admin role
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'UNAUTHORIZED' },
+        };
+      }
+
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (userError || !userData || userData.role !== 'admin') {
+        return {
+          data: null,
+          error: { message: 'Unauthorized access', code: 'UNAUTHORIZED' },
+        };
+      }
+
+      // Subtask 6.2 & 6.3: Query users with ideas count
+      const { data, error } = await supabase
+        .from('users')
+        .select(`
+          id,
+          email,
+          role,
+          created_at,
+          ideas (created_at)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to fetch users:', error);
+        return {
+          data: null,
+          error: { message: 'Failed to load users', code: 'DB_ERROR' },
+        };
+      }
+
+      // Transform data to include computed fields
+      const usersWithActivity = (data || []).map((u: any) => {
+        const ideas = u.ideas || [];
+        return {
+          id: u.id,
+          name: u.email?.split('@')[0] || 'Unknown',
+          email: u.email || '',
+          role: u.role || 'user',
+          created_at: u.created_at,
+          ideas_count: ideas.length,
+          last_idea_submitted_at: ideas.length > 0 
+            ? ideas.sort((a: any, b: any) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              )[0].created_at
+            : null,
+        };
+      });
+
+      return { data: usersWithActivity, error: null };
+    } catch (error) {
+      console.error('getAllUsers error:', error);
+      return {
+        data: null,
+        error: { message: 'An unexpected error occurred', code: 'UNKNOWN_ERROR' },
+      };
+    }
+  },
+
+  /**
+   * Get user by ID with detailed activity information
+   * Story 5.7 - Task 6: Extend adminService with user list and activity functions
+   * Subtask 6.5: Add getUserById(userId) function to get detailed user info
+   * Subtask 6.6: Return ServiceResponse with user and activity metrics
+   * Subtask 6.7: Handle errors gracefully with user-friendly messages
+   * Subtask 6.8: Verify admin role before executing queries (RLS backup)
+   * 
+   * @param userId - ID of the user to fetch
+   * @returns ServiceResponse with detailed user information and activity summary
+   */
+  async getUserById(userId: string): Promise<ServiceResponse<any>> {
+    try {
+      // Subtask 6.8: Verify admin role
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'UNAUTHORIZED' },
+        };
+      }
+
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (userError || !userData || userData.role !== 'admin') {
+        return {
+          data: null,
+          error: { message: 'Unauthorized access', code: 'UNAUTHORIZED' },
+        };
+      }
+
+      // Query user with all their ideas
+      const { data, error } = await supabase
+        .from('users')
+        .select(`
+          id,
+          email,
+          role,
+          created_at,
+          ideas (id, title, status, created_at)
+        `)
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Failed to fetch user:', error);
+        return {
+          data: null,
+          error: { message: 'Failed to load user details', code: 'DB_ERROR' },
+        };
+      }
+
+      // Calculate activity metrics from ideas
+      const ideas = (data as any).ideas || [];
+      const ideasByStatus = ideas.reduce((acc: any, idea: any) => {
+        acc[idea.status] = (acc[idea.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      const approvedCount = ideasByStatus.approved || 0;
+      const approvalRate = ideas.length > 0
+        ? Math.round((approvedCount / ideas.length) * 100)
+        : 0;
+
+      // Get recent activity (last 5 ideas)
+      const recentActivity = ideas
+        .sort((a: any, b: any) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+        .slice(0, 5)
+        .map((idea: any) => ({
+          type: 'submitted_idea',
+          idea_id: idea.id,
+          idea_title: idea.title || 'Untitled Idea',
+          timestamp: idea.created_at,
+        }));
+
+      const userDetail = {
+        id: data.id,
+        name: data.email?.split('@')[0] || 'Unknown',
+        email: data.email || '',
+        role: data.role || 'user',
+        created_at: data.created_at,
+        ideas_count: ideas.length,
+        ideas_by_status: {
+          submitted: ideasByStatus.submitted || 0,
+          approved: ideasByStatus.approved || 0,
+          prd_development: ideasByStatus.prd_development || 0,
+          prototype_complete: ideasByStatus.prototype_complete || 0,
+          rejected: ideasByStatus.rejected || 0,
+        },
+        approval_rate: approvalRate,
+        recent_activity: recentActivity,
+        last_idea_submitted_at: ideas.length > 0 ? ideas[0].created_at : null,
+      };
+
+      return { data: userDetail, error: null };
+    } catch (error) {
+      console.error('getUserById error:', error);
+      return {
+        data: null,
+        error: { message: 'An unexpected error occurred', code: 'UNKNOWN_ERROR' },
+      };
+    }
+  },
+
+  /**
+   * Get all ideas submitted by a specific user
+   * Story 5.7 - Task 6: Extend adminService with user list and activity functions
+   * Subtask 6.6: Add getIdeasByUser(userId) function to get all ideas by specific user
+   * Subtask 6.7: Handle errors gracefully with user-friendly messages
+   * Subtask 6.8: Verify admin role before executing queries (RLS backup)
+   * 
+   * @param userId - ID of the user whose ideas to fetch
+   * @returns ServiceResponse with array of ideas submitted by the user
+   */
+  async getIdeasByUser(userId: string): Promise<ServiceResponse<any[]>> {
+    try {
+      // Subtask 6.8: Verify admin role
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'UNAUTHORIZED' },
+        };
+      }
+
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (userError || !userData || userData.role !== 'admin') {
+        return {
+          data: null,
+          error: { message: 'Unauthorized access', code: 'UNAUTHORIZED' },
+        };
+      }
+
+      // Query all ideas by this user
+      const { data, error } = await supabase
+        .from('ideas')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to fetch user ideas:', error);
+        return {
+          data: null,
+          error: { message: 'Failed to load user ideas', code: 'DB_ERROR' },
+        };
+      }
+
+      return { data: data || [], error: null };
+    } catch (error) {
+      console.error('getIdeasByUser error:', error);
+      return {
+        data: null,
+        error: { message: 'An unexpected error occurred', code: 'UNKNOWN_ERROR' },
       };
     }
   },

@@ -1,20 +1,26 @@
 // src/features/admin/components/PipelineView.tsx
 // Main pipeline kanban page
 // Story 5.3 - Task 1: Create PipelineView component with kanban board layout
+// Story 5.8 - Task 4: Update IdeaPipeline Kanban view in real-time
 
 import { usePipelineIdeas } from '../hooks/usePipelineIdeas';
+import { useRealtimeIdeas } from '../hooks/useRealtimeIdeas';
 import { PipelineColumn } from './PipelineColumn';
 import { PipelineViewSkeleton } from './PipelineViewSkeleton';
-import { EmptyPipelineState } from './EmptyPipelineState';
+import { RealtimeIndicator } from './RealtimeIndicator';
 
 /**
  * Subtask 1.1: Create PipelineView.tsx in features/admin/components/
  * Subtask 1.2: Implement page header with "Pipeline View" title and real-time indicator
  * Subtask 1.3: Create horizontal scrollable layout for kanban columns
  * Subtask 1.4: Implement responsive grid: 4 columns desktop, 2 columns tablet, 1 column mobile
+ * Story 5.8 - Task 4: Real-time updates for Kanban view
  */
 export function PipelineView() {
   const { data: pipelineIdeas, isLoading, isError, error } = usePipelineIdeas();
+  
+  // Story 5.8 - Task 4: Enable realtime updates for pipeline view
+  const { isConnected, error: realtimeError } = useRealtimeIdeas();
 
   // Subtask 8.2: Loading state with skeleton
   if (isLoading) {
@@ -56,11 +62,8 @@ export function PipelineView() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-montserrat font-bold text-neutral">Pipeline View</h1>
         
-        {/* Subtask 6.5: Real-time indicator (green dot) */}
-        <div data-testid="realtime-indicator" className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-sm font-rubik text-neutral opacity-70">Live</span>
-        </div>
+        {/* Story 5.8 - Task 4 & 7: Real-time indicator with connection status */}
+        <RealtimeIndicator isConnected={isConnected} error={realtimeError} />
       </div>
 
       {/* Subtask 1.3: Horizontal scrollable layout */}

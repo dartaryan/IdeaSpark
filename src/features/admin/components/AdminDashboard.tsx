@@ -1,10 +1,13 @@
 // src/features/admin/components/AdminDashboard.tsx
 // Task 2: Admin Dashboard page component with layout structure
+// Story 5.8 - Task 2: Integrate realtime updates into AdminDashboard
 
 import { Link } from 'react-router-dom';
 import { useAdminMetrics } from '../hooks/useAdminMetrics';
+import { useRealtimeIdeas } from '../hooks/useRealtimeIdeas';
 import { MetricCard } from './MetricCard';
 import { RecentSubmissions } from './RecentSubmissions';
+import { RealtimeIndicator } from './RealtimeIndicator';
 import { ROUTES } from '../../../routes/routeConstants';
 
 /**
@@ -14,10 +17,14 @@ import { ROUTES } from '../../../routes/routeConstants';
  * - Displays metric cards for each pipeline stage
  * - Responsive grid layout (4 columns desktop, 2 columns tablet, 1 column mobile)
  * - Loading and error states
- * - Real-time metrics with 30-second refresh
+ * - Real-time metrics with live updates (<500ms latency)
+ * - Story 5.8: Real-time dashboard updates via Supabase Realtime
  */
 export function AdminDashboard() {
   const { data: metrics, isLoading, error } = useAdminMetrics();
+  
+  // Story 5.8 - Task 2: Enable realtime subscription when dashboard is mounted
+  const { isConnected, error: realtimeError } = useRealtimeIdeas();
 
   // Loading state
   if (isLoading) {
@@ -59,10 +66,14 @@ export function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Page Header - Subtask 2.4 */}
-      <h1 className="text-3xl font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-        Admin Dashboard
-      </h1>
+      {/* Page Header with Realtime Indicator - Story 5.8 Task 7 */}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-3xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          Admin Dashboard
+        </h1>
+        {/* Story 5.8 - Task 7: Visual feedback for realtime connection */}
+        <RealtimeIndicator isConnected={isConnected} error={realtimeError} />
+      </div>
 
       {/* Quick Navigation Links */}
       <div className="flex gap-3 mb-8">
@@ -77,6 +88,12 @@ export function AdminDashboard() {
           className="btn btn-outline btn-sm"
         >
           Pipeline View
+        </Link>
+        <Link
+          to="/admin/users"
+          className="btn btn-outline btn-sm"
+        >
+          Users
         </Link>
       </div>
 

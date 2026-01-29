@@ -20,6 +20,8 @@ import { NotAuthorizedPage } from '../pages/NotAuthorizedPage';
 import { PublicPrototypeViewer } from '../features/prototypes/pages';
 import { AdminPrdViewer } from '../features/admin/components/AdminPrdViewer';
 import { AdminPrototypeViewer } from '../features/admin/components/AdminPrototypeViewer';
+import { UserList } from '../features/admin/components/UserList';
+import { UserDetailView } from '../features/admin/components/UserDetailView';
 import { AuthenticatedLayout } from '../components/layouts/AuthenticatedLayout';
 import { AdminRoute } from './AdminRoute';
 import { ROUTES } from './routeConstants';
@@ -142,6 +144,24 @@ export const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <AdminPrototypeViewer />
+          </AdminRoute>
+        ),
+      },
+      // Story 5.7 - Task 9: Admin user list route
+      {
+        path: '/admin/users',
+        element: (
+          <AdminRoute>
+            <UserList />
+          </AdminRoute>
+        ),
+      },
+      // Story 5.7 - Task 9: Admin user detail route
+      {
+        path: '/admin/users/:userId',
+        element: (
+          <AdminRoute>
+            <UserDetailView />
           </AdminRoute>
         ),
       },

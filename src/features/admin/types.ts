@@ -73,3 +73,40 @@ export interface PipelineIdeas {
   prd_development: IdeaWithSubmitter[];
   prototype_complete: IdeaWithSubmitter[];
 }
+
+/**
+ * User with activity information
+ * Used in admin user list view
+ * Story 5.7 - Task 6: User activity types
+ */
+export interface UserWithActivity {
+  id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'admin';
+  created_at: string;
+  ideas_count: number;
+  last_idea_submitted_at?: string | null;
+}
+
+/**
+ * Detailed user information with activity metrics
+ * Used in admin user detail view
+ * Story 5.7 - Task 6: User detail types
+ */
+export interface UserDetail extends UserWithActivity {
+  ideas_by_status: {
+    submitted: number;
+    approved: number;
+    prd_development: number;
+    prototype_complete: number;
+    rejected: number;
+  };
+  approval_rate?: number; // percentage of ideas approved
+  recent_activity: {
+    type: 'submitted_idea' | 'completed_prd' | 'generated_prototype';
+    idea_id: string;
+    idea_title: string;
+    timestamp: string;
+  }[];
+}
