@@ -1,7 +1,7 @@
 // src/features/admin/components/analytics/UserActivityCard.tsx
 // Story 6.6 Task 6: User Activity Card Component
 
-import { UserActivityMetrics } from '../../analytics/types';
+import type { UserActivityMetrics } from '../../analytics';
 import { TopContributorsLeaderboard } from './TopContributorsLeaderboard';
 import { RecentSubmissionsList } from './RecentSubmissionsList';
 

@@ -1,7 +1,7 @@
 // src/features/admin/components/analytics/TopContributorsLeaderboard.tsx
 // Story 6.6 Task 7: Top Contributors Leaderboard Component
 
-import { TopContributorData } from '../../analytics/types';
+import type { TopContributorData } from '../../analytics';
 
 /**
  * Story 6.6 Task 7: TopContributorsLeaderboard Component

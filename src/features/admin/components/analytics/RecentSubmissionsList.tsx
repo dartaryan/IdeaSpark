@@ -2,7 +2,7 @@
 // Story 6.6 Task 8: Recent Submissions List Component
 
 import { formatDistanceToNow } from 'date-fns';
-import { RecentSubmissionData } from '../../analytics/types';
+import type { RecentSubmissionData } from '../../analytics';
 
 /**
  * Story 6.6 Task 8: RecentSubmissionsList Component
