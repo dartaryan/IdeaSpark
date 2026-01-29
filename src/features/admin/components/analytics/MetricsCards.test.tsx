@@ -9,6 +9,8 @@ import type { AnalyticsData } from '../../analytics/types';
 
 const mockAnalyticsData: AnalyticsData = {
   totalIdeas: 42,
+  previousPeriodTotal: 35,
+  trendPercentage: 20, // (42-35)/35 * 100 = 20%
   pipelineBreakdown: [
     { status: 'submitted', count: 15, percentage: 36 },
     { status: 'approved', count: 12, percentage: 29 },
@@ -22,6 +24,7 @@ const mockAnalyticsData: AnalyticsData = {
     avgTimeToPrototype: 10,
   },
   timestamp: new Date().toISOString(),
+  lastUpdated: new Date().toISOString(),
 };
 
 describe('MetricsCards', () => {
@@ -57,7 +60,8 @@ describe('MetricsCards', () => {
     const { container } = render(<MetricsCards analytics={mockAnalyticsData} />);
     
     // Subtask 2.5 & 2.6: Check for trend indicators and percentages
-    expect(screen.getByText('+12%')).toBeInTheDocument();
+    // Story 6.2: Now displays real trend from analytics data
+    expect(screen.getByText('+20%')).toBeInTheDocument(); // Real trend from mock data
     expect(screen.getByText('+5%')).toBeInTheDocument();
     expect(screen.getByText('-2d')).toBeInTheDocument();
     
@@ -93,9 +97,93 @@ describe('MetricsCards', () => {
 
   it('should apply hover effects on cards', () => {
     // Subtask 12.9: Verify hover effects exist
+    // Task 7: Only clickable cards (Total Ideas) have enhanced hover effects when onClick provided
     const { container } = render(<MetricsCards analytics={mockAnalyticsData} />);
     
-    const cards = container.querySelectorAll('.hover\\:shadow-2xl');
-    expect(cards.length).toBe(4);
+    const allCards = container.querySelectorAll('.card');
+    expect(allCards.length).toBe(4);
+    
+    // When no onClick is provided, cards should not have enhanced clickable hover effects
+    const clickableHoverCards = container.querySelectorAll('.hover\\:scale-105');
+    expect(clickableHoverCards.length).toBe(0);
+  });
+
+  // Story 6.2 Task 3: Tests for real trend data display
+  it('should display real trend from analytics data', () => {
+    // Subtask 10.7: Test metric card displays totalIdeas from props
+    const analyticsWithPositiveTrend: AnalyticsData = {
+      ...mockAnalyticsData,
+      totalIdeas: 50,
+      previousPeriodTotal: 40,
+      trendPercentage: 25, // ((50-40)/40)*100
+    };
+
+    render(<MetricsCards analytics={analyticsWithPositiveTrend} />);
+    
+    expect(screen.getByText('50')).toBeInTheDocument();
+    expect(screen.getByText('+25%')).toBeInTheDocument();
+  });
+
+  it('should display negative trend correctly', () => {
+    // Subtask 10.8: Test trend indicator displays correctly (negative)
+    const analyticsWithNegativeTrend: AnalyticsData = {
+      ...mockAnalyticsData,
+      totalIdeas: 30,
+      previousPeriodTotal: 50,
+      trendPercentage: -40, // ((30-50)/50)*100
+    };
+
+    const { container } = render(<MetricsCards analytics={analyticsWithNegativeTrend} />);
+    
+    expect(screen.getByText('30')).toBeInTheDocument();
+    expect(screen.getByText('-40%')).toBeInTheDocument();
+    
+    // Check for red color on negative trend
+    const redElements = container.querySelectorAll('.text-red-600');
+    expect(redElements.length).toBeGreaterThan(0);
+  });
+
+  it('should display zero trend correctly', () => {
+    // Subtask 10.8: Test trend indicator for zero change
+    const analyticsWithZeroTrend: AnalyticsData = {
+      ...mockAnalyticsData,
+      totalIdeas: 40,
+      previousPeriodTotal: 40,
+      trendPercentage: 0,
+    };
+
+    const { container } = render(<MetricsCards analytics={analyticsWithZeroTrend} />);
+    
+    expect(screen.getByText('40')).toBeInTheDocument();
+    // Check that there are multiple "0%" (one for Total Ideas trend, one for Pipeline Stages)
+    const zeroPercents = screen.getAllByText('0%');
+    expect(zeroPercents.length).toBeGreaterThan(0);
+    
+    // Check for neutral indicator (gray) on Total Ideas card
+    const neutralIcons = container.querySelectorAll('[style*="rgb(82, 83, 85)"]');
+    expect(neutralIcons.length).toBeGreaterThan(0);
+  });
+
+  it('should handle zero ideas case', () => {
+    // Subtask 3.9: Test zero ideas case
+    const analyticsWithZeroIdeas: AnalyticsData = {
+      ...mockAnalyticsData,
+      totalIdeas: 0,
+      previousPeriodTotal: 0,
+      trendPercentage: 0,
+      pipelineBreakdown: [],
+    };
+
+    const { container } = render(<MetricsCards analytics={analyticsWithZeroIdeas} />);
+    
+    // Find the Total Ideas card specifically
+    const totalIdeasLabel = screen.getByText('Total Ideas');
+    expect(totalIdeasLabel).toBeInTheDocument();
+    
+    // Find the parent card and verify it shows 0
+    const card = totalIdeasLabel.closest('.card');
+    expect(card).toBeInTheDocument();
+    expect(card?.textContent).toContain('0');
+    expect(card?.textContent).toContain('0%');
   });
 });

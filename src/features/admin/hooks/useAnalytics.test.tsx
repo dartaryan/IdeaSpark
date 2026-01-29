@@ -18,6 +18,8 @@ vi.mock('../services/analyticsService', () => ({
 
 const mockAnalyticsData: AnalyticsData = {
   totalIdeas: 25,
+  previousPeriodTotal: 20,
+  trendPercentage: 25, // ((25-20)/20)*100
   pipelineBreakdown: [
     { status: 'submitted', count: 10, percentage: 40 },
     { status: 'approved', count: 8, percentage: 32 },
@@ -29,6 +31,7 @@ const mockAnalyticsData: AnalyticsData = {
     avgTimeToPrototype: 14,
   },
   timestamp: new Date().toISOString(),
+  lastUpdated: new Date().toISOString(),
 };
 
 // Wrapper component for React Query
@@ -156,5 +159,94 @@ describe('useAnalytics', () => {
 
     // Data should be available
     expect(result.current.data).toEqual(mockAnalyticsData);
+  });
+
+  // Story 6.2 Task 5: Tests for date range parameter
+  it('should accept and use dateRange parameter', async () => {
+    // Subtask 10.17: Test hook accepts and uses dateRange parameter
+    const dateRange = {
+      startDate: '2026-01-01T00:00:00Z',
+      endDate: '2026-02-01T00:00:00Z',
+    };
+
+    vi.mocked(analyticsService.getAnalytics).mockResolvedValue({
+      data: mockAnalyticsData,
+      error: null,
+    });
+
+    const { result } = renderHook(() => useAnalytics(dateRange), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Verify service was called with dateRange
+    expect(analyticsService.getAnalytics).toHaveBeenCalledWith(dateRange);
+    expect(result.current.data).toEqual(mockAnalyticsData);
+  });
+
+  it('should include dateRange in query key', async () => {
+    // Subtask 10.18: Test query key includes dateRange
+    const dateRange = {
+      startDate: '2026-01-01T00:00:00Z',
+      endDate: '2026-02-01T00:00:00Z',
+    };
+
+    vi.mocked(analyticsService.getAnalytics).mockResolvedValue({
+      data: mockAnalyticsData,
+      error: null,
+    });
+
+    const queryClient1 = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    
+    const wrapper1 = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient1}>
+        {children}
+      </QueryClientProvider>
+    );
+
+    // First render with dateRange
+    const { result: result1 } = renderHook(() => useAnalytics(dateRange), {
+      wrapper: wrapper1,
+    });
+
+    await waitFor(() => {
+      expect(result1.current.isLoading).toBe(false);
+    });
+
+    expect(analyticsService.getAnalytics).toHaveBeenCalledTimes(1);
+
+    // Second render with different dateRange should trigger new fetch
+    const queryClient2 = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    
+    const wrapper2 = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient2}>
+        {children}
+      </QueryClientProvider>
+    );
+
+    const differentDateRange = {
+      startDate: '2026-02-01T00:00:00Z',
+      endDate: '2026-03-01T00:00:00Z',
+    };
+
+    const { result: result2 } = renderHook(() => useAnalytics(differentDateRange), {
+      wrapper: wrapper2,
+    });
+
+    await waitFor(() => {
+      expect(result2.current.isLoading).toBe(false);
+    });
+
+    // Should have been called twice - once for each different dateRange
+    expect(analyticsService.getAnalytics).toHaveBeenCalledTimes(2);
+    expect(analyticsService.getAnalytics).toHaveBeenNthCalledWith(1, dateRange);
+    expect(analyticsService.getAnalytics).toHaveBeenNthCalledWith(2, differentDateRange);
   });
 });

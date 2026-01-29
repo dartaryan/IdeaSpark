@@ -1,6 +1,7 @@
 // src/features/admin/components/analytics/MetricsCards.tsx
 // Task 2: Create MetricsCards component for key statistics
 
+import { cloneElement } from 'react';
 import { 
   LightBulbIcon, 
   ChartBarIcon, 
@@ -16,15 +17,17 @@ import type { AnalyticsData } from '../../analytics/types';
 
 interface MetricsCardsProps {
   analytics: AnalyticsData | undefined;
+  onTotalIdeasClick?: () => void; // Task 7: Make Total Ideas card clickable
 }
 
 /**
  * Subtask 2.1: Create MetricsCards.tsx in features/admin/components/analytics/
  * Subtask 2.2: Design MetricCard component with icon, label, value, and trend indicator
+ * Task 7: Add click interaction for Total Ideas metric card
  * 
  * MetricsCards component - displays key metric cards on the analytics dashboard
  */
-export function MetricsCards({ analytics }: MetricsCardsProps) {
+export function MetricsCards({ analytics, onTotalIdeasClick }: MetricsCardsProps) {
   // Subtask 2.8: Loading skeleton state for metric cards
   if (!analytics) {
     return (
@@ -43,17 +46,32 @@ export function MetricsCards({ analytics }: MetricsCardsProps) {
     );
   }
 
+  // Subtask 3.3 & 3.4: Calculate trend from analytics data
+  const getTrend = (percentage: number): 'up' | 'down' | 'neutral' => {
+    if (percentage > 0) return 'up';
+    if (percentage < 0) return 'down';
+    return 'neutral';
+  };
+
+  const formatTrendValue = (percentage: number): string => {
+    if (percentage === 0) return '0%';
+    return percentage > 0 ? `+${percentage}%` : `${percentage}%`;
+  };
+
   // Subtask 2.3: Implement 4 placeholder metric cards
+  // Updated in Story 6.2 to use real trend data
   const metrics = [
     {
       // Subtask 2.4: Use Heroicons for metric icons (light-bulb)
       icon: <LightBulbIcon className="w-12 h-12" style={{ color: '#E10514' }} />,
       label: 'Total Ideas',
       value: analytics.totalIdeas,
-      trend: 'up' as const,
-      // Subtask 2.6: Display trend percentage
-      trendValue: '+12%',
-      description: 'from last month',
+      // Subtask 3.2 & 3.3: Display real trend from analytics
+      trend: getTrend(analytics.trendPercentage),
+      // Subtask 3.4: Format trend with proper sign and color
+      trendValue: formatTrendValue(analytics.trendPercentage),
+      // Subtask 3.5: Show trend context
+      description: 'from last 30 days',
     },
     {
       // Subtask 2.4: chart-bar icon
@@ -88,7 +106,12 @@ export function MetricsCards({ analytics }: MetricsCardsProps) {
   return (
     <>
       {metrics.map((metric, index) => (
-        <MetricCard key={index} {...metric} />
+        <MetricCard 
+          key={index} 
+          {...metric} 
+          onClick={index === 0 ? onTotalIdeasClick : undefined}
+          isClickable={index === 0 && !!onTotalIdeasClick}
+        />
       ))}
     </>
   );
@@ -96,6 +119,7 @@ export function MetricsCards({ analytics }: MetricsCardsProps) {
 
 /**
  * Subtask 2.2: MetricCard component with icon, label, value, and trend indicator
+ * Task 7: Add click interaction and keyboard accessibility
  * Individual metric card component
  */
 function MetricCard({
@@ -105,6 +129,8 @@ function MetricCard({
   trend,
   trendValue,
   description,
+  onClick,
+  isClickable = false,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -112,12 +138,15 @@ function MetricCard({
   trend: 'up' | 'down' | 'neutral';
   trendValue: string;
   description: string;
+  onClick?: () => void;
+  isClickable?: boolean;
 }) {
   // Subtask 2.5: Trend indicators: up arrow (green), down arrow (red), neutral dash (gray)
+  // Task 13: Add aria-hidden to decorative icons
   const trendIcon = {
-    up: <ArrowUpIcon className="w-4 h-4 text-green-600" />,
-    down: <ArrowDownIcon className="w-4 h-4 text-red-600" />,
-    neutral: <MinusIcon className="w-4 h-4" style={{ color: '#525355' }} />,
+    up: <ArrowUpIcon className="w-4 h-4 text-green-600" aria-hidden="true" />,
+    down: <ArrowDownIcon className="w-4 h-4 text-red-600" aria-hidden="true" />,
+    neutral: <MinusIcon className="w-4 h-4" style={{ color: '#525355' }} aria-hidden="true" />,
   }[trend];
 
   const trendColor = {
@@ -126,16 +155,35 @@ function MetricCard({
     neutral: '#525355',
   }[trend];
 
+  // Task 7: Handle keyboard accessibility
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isClickable && onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     // Subtask 1.4: Use DaisyUI card components with PassportCard styling (20px border radius)
-    // Subtask 2.9: Make cards clickable (future enhancement - disabled for now)
+    // Task 7: Make Total Ideas card clickable with keyboard support
+    // Task 13: Add focus indicator for keyboard navigation
     <div 
-      className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer" 
-      style={{ borderRadius: '20px' }}
+      className={`card bg-base-100 shadow-xl transition-all ${
+        isClickable ? 'hover:shadow-2xl hover:scale-105 cursor-pointer focus:ring-2 focus:ring-offset-2 focus:outline-none' : ''
+      }`}
+      style={{ 
+        borderRadius: '20px',
+        ...(isClickable ? { '--tw-ring-color': '#E10514' } as any : {})
+      }}
+      onClick={isClickable ? onClick : undefined}
+      onKeyDown={isClickable ? handleKeyDown : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      role={isClickable ? 'button' : undefined}
+      aria-label={isClickable ? `${label}: ${value}. Click to see detailed breakdown` : undefined}
     >
       <div className="card-body p-6">
-        {/* Icon */}
-        <div className="mb-4">
+        {/* Icon - Task 13: Mark as decorative for screen readers */}
+        <div className="mb-4" aria-hidden="true">
           {icon}
         </div>
         
@@ -156,6 +204,7 @@ function MetricCard({
         </p>
         
         {/* Trend indicator - Subtask 2.6: Display trend percentage */}
+        {/* Task 13: Add screen reader text for trend direction */}
         <div className="flex items-center gap-1">
           {trendIcon}
           <span 
@@ -165,6 +214,10 @@ function MetricCard({
               color: typeof trendColor === 'string' && trendColor.startsWith('#') ? trendColor : undefined
             }}
           >
+            {/* Screen reader text for trend direction */}
+            <span className="sr-only">
+              {trend === 'up' ? 'Increase of ' : trend === 'down' ? 'Decrease of ' : 'No change, '}
+            </span>
             {trendValue}
           </span>
           <span 

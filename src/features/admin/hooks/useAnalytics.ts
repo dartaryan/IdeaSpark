@@ -3,7 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { analyticsService } from '../services/analyticsService';
-import type { AnalyticsData } from '../analytics/types';
+import type { AnalyticsData, DateRange } from '../analytics/types';
 
 /**
  * Subtask 5.1: Create useAnalytics.ts in features/admin/hooks/
@@ -19,16 +19,20 @@ import type { AnalyticsData } from '../analytics/types';
  * - Subtask 5.7: Return analytics data with proper TypeScript types
  * - Subtask 5.8: Add refetch function for manual refresh capability
  * 
+ * Story 6.2 Task 5: Updated to support date range filtering
+ * @param dateRange Optional date range filter { startDate, endDate }
  * @returns React Query result with analytics data
  */
-export function useAnalytics() {
+export function useAnalytics(dateRange?: DateRange) {
   return useQuery<AnalyticsData, Error>({
     // Subtask 5.2: Query key for React Query
-    queryKey: ['admin', 'analytics'],
+    // Subtask 5.2 (Story 6.2): Include dateRange in query key for proper caching
+    queryKey: ['admin', 'analytics', dateRange],
     
     // Subtask 5.3: Fetch function calling analyticsService
+    // Subtask 5.3 (Story 6.2): Pass dateRange to service
     queryFn: async () => {
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(dateRange);
       
       if (result.error) {
         throw new Error(result.error.message);
@@ -42,13 +46,16 @@ export function useAnalytics() {
     },
     
     // Subtask 5.4: Set staleTime to 60 seconds
+    // Subtask 5.5 (Story 6.2): Maintain existing caching behavior
     staleTime: 60 * 1000, // 60 seconds
     
     // Subtask 5.5: Set cacheTime (now called gcTime in React Query v5) to 5 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
     
+    // Subtask 5.4 (Story 6.2): Invalidate query when dateRange changes (handled automatically by queryKey)
     // Subtask 5.6: React Query automatically handles loading, error, and success states
     // Subtask 5.7: TypeScript types ensure proper return type
     // Subtask 5.8: refetch function is automatically provided by useQuery
+    // Subtask 5.6 (Story 6.2): Return refetch function for manual refresh with current filter
   });
 }
