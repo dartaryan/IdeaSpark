@@ -1,146 +1,182 @@
-// src/features/admin/components/analytics/DateRangeFilter.test.tsx
-// Story 6.2 Task 10: Unit tests for DateRangeFilter
-// Subtask 10.9: Create DateRangeFilter.test.tsx
+/**
+ * Story 6.7 Task 14: Unit tests for DateRangeFilter component
+ * Subtask 14.6-14.9: Test preset button interactions and keyboard navigation
+ */
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DateRangeFilter } from './DateRangeFilter';
+import type { DateRange } from '../../types';
 
 describe('DateRangeFilter', () => {
-  it('should render preset filter options', () => {
-    // Subtask 10.10: Test preset filter options work
-    const mockOnFilterChange = vi.fn();
-    render(<DateRangeFilter onFilterChange={mockOnFilterChange} />);
+  const mockOnDateRangeChange = vi.fn();
+  
+  const mockCurrentRange: DateRange = {
+    start: new Date('2026-01-01'),
+    end: new Date('2026-01-31'),
+    label: 'Last 30 days',
+  };
+
+  beforeEach(() => {
+    mockOnDateRangeChange.mockClear();
+  });
+
+  it('should render all preset buttons', () => {
+    render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
 
     expect(screen.getByText('Last 7 days')).toBeInTheDocument();
     expect(screen.getByText('Last 30 days')).toBeInTheDocument();
     expect(screen.getByText('Last 90 days')).toBeInTheDocument();
     expect(screen.getByText('All time')).toBeInTheDocument();
-    expect(screen.getByText('Custom range')).toBeInTheDocument();
+    expect(screen.getByText('Custom')).toBeInTheDocument();
   });
 
-  it('should call onFilterChange when preset is selected', () => {
-    // Subtask 10.10: Test preset filter options work
-    const mockOnFilterChange = vi.fn();
-    render(<DateRangeFilter onFilterChange={mockOnFilterChange} />);
+  it('should display current date range label', () => {
+    render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
 
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'last-7-days' } });
-
-    expect(mockOnFilterChange).toHaveBeenCalled();
-    const callArg = mockOnFilterChange.mock.calls[0][0];
-    expect(callArg).toBeDefined();
-    expect(callArg.startDate).toBeDefined();
-    expect(callArg.endDate).toBeDefined();
+    expect(screen.getByText(/Showing:/)).toBeInTheDocument();
+    expect(screen.getByText(/Jan 1, 2026 - Jan 31, 2026/)).toBeInTheDocument();
   });
 
-  it('should show custom date inputs when custom range is selected', () => {
-    // Subtask 10.11: Test custom date range selection
-    const mockOnFilterChange = vi.fn();
-    const { container } = render(<DateRangeFilter onFilterChange={mockOnFilterChange} />);
+  it('should highlight active button based on currentRange label', () => {
+    render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
 
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'custom' } });
-
-    // Should show date inputs and apply button
-    const dateInputs = container.querySelectorAll('input[type="date"]');
-    expect(dateInputs.length).toBe(2);
-    expect(screen.getByText('Apply')).toBeInTheDocument();
+    const activeButton = screen.getByText('Last 30 days').closest('button');
+    expect(activeButton).toHaveClass('btn-primary');
   });
 
-  it('should validate start date is before end date', () => {
-    // Subtask 10.12: Test date validation (start < end)
-    const mockOnFilterChange = vi.fn();
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('should call onDateRangeChange when Last 7 days button is clicked', () => {
+    render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
+
+    const last7DaysButton = screen.getByText('Last 7 days');
+    fireEvent.click(last7DaysButton);
+
+    expect(mockOnDateRangeChange).toHaveBeenCalledTimes(1);
+    expect(mockOnDateRangeChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: 'Last 7 days',
+      })
+    );
+  });
+
+  it('should call onDateRangeChange when Last 90 days button is clicked', () => {
+    render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
+
+    const last90DaysButton = screen.getByText('Last 90 days');
+    fireEvent.click(last90DaysButton);
+
+    expect(mockOnDateRangeChange).toHaveBeenCalledTimes(1);
+    expect(mockOnDateRangeChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: 'Last 90 days',
+      })
+    );
+  });
+
+  it('should call onDateRangeChange when All time button is clicked', () => {
+    render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
+
+    const allTimeButton = screen.getByText('All time');
+    fireEvent.click(allTimeButton);
+
+    expect(mockOnDateRangeChange).toHaveBeenCalledTimes(1);
+    expect(mockOnDateRangeChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: 'All time',
+        start: null,
+      })
+    );
+  });
+
+  it('should open custom date modal when Custom button is clicked', () => {
+    render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
+
+    const customButton = screen.getByText('Custom');
+    fireEvent.click(customButton);
+
+    // Modal should appear
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Custom Date Range')).toBeInTheDocument();
+  });
+
+  it('should support keyboard navigation through buttons', () => {
+    render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
+
+    const last7DaysButton = screen.getByText('Last 7 days').closest('button');
     
-    const { container } = render(<DateRangeFilter onFilterChange={mockOnFilterChange} />);
+    // Tab to first button
+    last7DaysButton?.focus();
+    expect(document.activeElement).toBe(last7DaysButton);
 
-    // Select custom range
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'custom' } });
-
-    // Set end date before start date (using valid past dates)
-    const dateInputs = container.querySelectorAll('input[type="date"]');
-    const [startInput, endInput] = Array.from(dateInputs);
-    fireEvent.change(startInput, { target: { value: '2025-12-15' } });
-    fireEvent.change(endInput, { target: { value: '2025-12-01' } });
-
-    const applyButton = screen.getByText('Apply');
-    fireEvent.click(applyButton);
-
-    expect(alertSpy).toHaveBeenCalledWith('Start date must be before end date');
-    expect(mockOnFilterChange).not.toHaveBeenCalled();
-
-    alertSpy.mockRestore();
+    // Enter/Space key on focused button triggers click (native browser behavior)
+    // In testing, we verify the button can receive focus and be clicked
+    fireEvent.click(last7DaysButton!);
+    expect(mockOnDateRangeChange).toHaveBeenCalled();
   });
 
-  it('should validate dates are not in the future', () => {
-    // Subtask 10.12: Test date validation (no future dates)
-    const mockOnFilterChange = vi.fn();
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-    
-    const { container } = render(<DateRangeFilter onFilterChange={mockOnFilterChange} />);
+  it('should apply responsive classes for mobile layout', () => {
+    const { container } = render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
 
-    // Select custom range
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'custom' } });
-
-    // Set future dates
-    const dateInputs = container.querySelectorAll('input[type="date"]');
-    const [startInput, endInput] = Array.from(dateInputs);
-    fireEvent.change(startInput, { target: { value: '2027-01-01' } });
-    fireEvent.change(endInput, { target: { value: '2027-02-01' } });
-
-    const applyButton = screen.getByText('Apply');
-    fireEvent.click(applyButton);
-
-    expect(alertSpy).toHaveBeenCalledWith('Dates cannot be in the future');
-    expect(mockOnFilterChange).not.toHaveBeenCalled();
-
-    alertSpy.mockRestore();
+    // Button group should have responsive flex classes
+    const buttonGroup = container.querySelector('.btn-group');
+    expect(buttonGroup).toHaveClass('flex-col', 'md:flex-row');
   });
 
-  it('should show clear filter button when filter is active', () => {
-    // Test clear filter functionality
-    const mockOnFilterChange = vi.fn();
-    render(<DateRangeFilter onFilterChange={mockOnFilterChange} />);
+  it('should use PassportCard primary color for active button', () => {
+    render(
+      <DateRangeFilter 
+        currentRange={mockCurrentRange}
+        onDateRangeChange={mockOnDateRangeChange}
+      />
+    );
 
-    // Select a preset
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'last-30-days' } });
-
-    // Clear filter button should be visible
-    const clearButton = screen.getByText('Clear Filter');
-    expect(clearButton).toBeInTheDocument();
-
-    // Click clear filter
-    fireEvent.click(clearButton);
-
-    expect(mockOnFilterChange).toHaveBeenCalledWith(undefined);
-  });
-
-  it('should apply custom date range correctly', () => {
-    // Subtask 10.11: Test custom date range selection
-    const mockOnFilterChange = vi.fn();
-    const { container } = render(<DateRangeFilter onFilterChange={mockOnFilterChange} />);
-
-    // Select custom range
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'custom' } });
-
-    // Set valid dates (using past dates to avoid future validation)
-    const dateInputs = container.querySelectorAll('input[type="date"]');
-    const [startInput, endInput] = Array.from(dateInputs);
-    fireEvent.change(startInput, { target: { value: '2025-12-01' } });
-    fireEvent.change(endInput, { target: { value: '2025-12-31' } });
-
-    const applyButton = screen.getByText('Apply');
-    fireEvent.click(applyButton);
-
-    expect(mockOnFilterChange).toHaveBeenCalled();
-    const callArg = mockOnFilterChange.mock.calls[0][0];
-    expect(callArg).toBeDefined();
-    expect(callArg.startDate).toContain('2025-12-01');
-    expect(callArg.endDate).toContain('2025-12-31');
+    const activeButton = screen.getByText('Last 30 days').closest('button');
+    // PassportCard primary color is #E10514
+    expect(activeButton).toHaveClass('btn-primary');
   });
 });

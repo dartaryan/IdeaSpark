@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAnalytics } from './useAnalytics';
 import { analyticsService } from '../services/analyticsService';
 import type { AnalyticsData } from '../analytics/types';
+import type { DateRange } from '../types'; // Story 6.7: Use new DateRange type
 
 // Mock the analyticsService
 vi.mock('../services/analyticsService', () => ({
@@ -51,6 +52,13 @@ function createWrapper() {
   );
 }
 
+// Story 6.7: Helper to create test DateRange
+const createTestDateRange = (): DateRange => ({
+  start: new Date('2026-01-01'),
+  end: new Date('2026-01-31'),
+  label: 'Last 30 days',
+});
+
 describe('useAnalytics', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -63,7 +71,7 @@ describe('useAnalytics', () => {
       error: null,
     });
 
-    const { result } = renderHook(() => useAnalytics(), {
+    const { result } = renderHook(() => useAnalytics(createTestDateRange()), {
       wrapper: createWrapper(),
     });
 
@@ -87,7 +95,7 @@ describe('useAnalytics', () => {
       error: { message: 'Failed to fetch analytics', code: 'DB_ERROR' },
     });
 
-    const { result } = renderHook(() => useAnalytics(), {
+    const { result } = renderHook(() => useAnalytics(createTestDateRange()), {
       wrapper: createWrapper(),
     });
 
@@ -108,7 +116,7 @@ describe('useAnalytics', () => {
       error: null,
     });
 
-    const { result } = renderHook(() => useAnalytics(), {
+    const { result } = renderHook(() => useAnalytics(createTestDateRange()), {
       wrapper: createWrapper(),
     });
 
@@ -127,7 +135,7 @@ describe('useAnalytics', () => {
       error: null,
     });
 
-    const { result } = renderHook(() => useAnalytics(), {
+    const { result } = renderHook(() => useAnalytics(createTestDateRange()), {
       wrapper: createWrapper(),
     });
 
@@ -146,7 +154,7 @@ describe('useAnalytics', () => {
       error: null,
     });
 
-    const { result } = renderHook(() => useAnalytics(), {
+    const { result } = renderHook(() => useAnalytics(createTestDateRange()), {
       wrapper: createWrapper(),
     });
 
@@ -162,11 +170,13 @@ describe('useAnalytics', () => {
   });
 
   // Story 6.2 Task 5: Tests for date range parameter
+  // Story 6.7: Updated to use new DateRange type with Date objects
   it('should accept and use dateRange parameter', async () => {
     // Subtask 10.17: Test hook accepts and uses dateRange parameter
-    const dateRange = {
-      startDate: '2026-01-01T00:00:00Z',
-      endDate: '2026-02-01T00:00:00Z',
+    const dateRange: DateRange = {
+      start: new Date('2026-01-01'),
+      end: new Date('2026-02-01'),
+      label: 'Custom',
     };
 
     vi.mocked(analyticsService.getAnalytics).mockResolvedValue({
@@ -189,9 +199,10 @@ describe('useAnalytics', () => {
 
   it('should include dateRange in query key', async () => {
     // Subtask 10.18: Test query key includes dateRange
-    const dateRange = {
-      startDate: '2026-01-01T00:00:00Z',
-      endDate: '2026-02-01T00:00:00Z',
+    const dateRange: DateRange = {
+      start: new Date('2026-01-01'),
+      end: new Date('2026-02-01'),
+      label: 'Custom',
     };
 
     vi.mocked(analyticsService.getAnalytics).mockResolvedValue({
@@ -231,9 +242,10 @@ describe('useAnalytics', () => {
       </QueryClientProvider>
     );
 
-    const differentDateRange = {
-      startDate: '2026-02-01T00:00:00Z',
-      endDate: '2026-03-01T00:00:00Z',
+    const differentDateRange: DateRange = {
+      start: new Date('2026-02-01'),
+      end: new Date('2026-03-01'),
+      label: 'Custom',
     };
 
     const { result: result2 } = renderHook(() => useAnalytics(differentDateRange), {

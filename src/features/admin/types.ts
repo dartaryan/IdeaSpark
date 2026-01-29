@@ -110,3 +110,73 @@ export interface UserDetail extends UserWithActivity {
     timestamp: string;
   }[];
 }
+
+/**
+ * Date range for filtering analytics
+ * Story 6.7 - Task 1: DateRange interface
+ * Story 6.7 - Task 20: Enhanced documentation with examples
+ * Subtask 1.1: Define DateRange interface with start, end, label
+ * 
+ * Represents a time period for filtering analytics data.
+ * Used throughout the analytics dashboard to filter metrics by date.
+ * 
+ * @example
+ * ```typescript
+ * // Regular date range (last 30 days)
+ * const range: DateRange = {
+ *   start: new Date('2025-12-30'),
+ *   end: new Date('2026-01-29'),
+ *   label: 'Last 30 days'
+ * };
+ * 
+ * // All time range (no start limit)
+ * const allTime: DateRange = {
+ *   start: null,
+ *   end: new Date(),
+ *   label: 'All time'
+ * };
+ * ```
+ */
+export interface DateRange {
+  /** 
+   * Start date of the range. 
+   * Set to null for "All time" to include all historical data.
+   */
+  start: Date | null;
+  /** 
+   * End date of the range.
+   * Typically set to current date/time.
+   */
+  end: Date;
+  /** 
+   * Human-readable label for display in UI.
+   * Examples: "Last 30 days", "Custom", "All time"
+   */
+  label: string;
+}
+
+/**
+ * Preset date range options
+ * Story 6.7 - Task 1: DateRangePreset type
+ * Story 6.7 - Task 20: Enhanced documentation
+ * Subtask 1.2: Define DateRangePreset type with all preset options
+ * 
+ * Predefined time period options for quick filtering.
+ * - `last7days`: Last 7 days from now
+ * - `last30days`: Last 30 days from now (default)
+ * - `last90days`: Last 90 days from now
+ * - `alltime`: All historical data (no start date limit)
+ * - `custom`: User-defined date range via date picker
+ * 
+ * @example
+ * ```typescript
+ * const preset: DateRangePreset = 'last30days';
+ * const range = getPresetDateRange(preset);
+ * ```
+ */
+export type DateRangePreset = 
+  | 'last7days' 
+  | 'last30days' 
+  | 'last90days' 
+  | 'alltime' 
+  | 'custom';

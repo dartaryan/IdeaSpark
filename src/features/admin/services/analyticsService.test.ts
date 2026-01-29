@@ -17,6 +17,15 @@ vi.mock('../../../lib/supabase', () => ({
   },
 }));
 
+// Story 6.7: Helper function to create test DateRange
+function createTestDateRange() {
+  return {
+    start: new Date('2026-01-01'),
+    end: new Date('2026-01-31'),
+    label: 'Last 30 days',
+  };
+}
+
 describe('analyticsService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -110,7 +119,7 @@ describe('analyticsService', () => {
         return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Subtask 6.2: Verify ServiceResponse<AnalyticsData> structure
       expect(result.data).toBeDefined();
@@ -146,7 +155,7 @@ describe('analyticsService', () => {
         return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       expect(result.data?.totalIdeas).toBe(3);
     });
@@ -173,7 +182,7 @@ describe('analyticsService', () => {
         return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       expect(result.data?.pipelineBreakdown).toHaveLength(3);
       
@@ -205,7 +214,7 @@ describe('analyticsService', () => {
         return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // 2 out of 5 = 40%
       expect(result.data?.completionRate).toBe(40);
@@ -225,12 +234,12 @@ describe('analyticsService', () => {
         }),
       } as any);
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Subtask 6.8: Verify error handling with user-friendly messages
       expect(result.data).toBeNull();
       expect(result.error).toBeDefined();
-      expect(result.error?.message).toBe('Failed to fetch analytics data');
+      expect(result.error?.message).toBe('Failed to fetch analytics');
     });
 
     it('should verify user authentication before fetching', async () => {
@@ -240,7 +249,7 @@ describe('analyticsService', () => {
         error: null,
       } as any);
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       expect(result.data).toBeNull();
       expect(result.error?.message).toBe('User not authenticated');
@@ -265,7 +274,7 @@ describe('analyticsService', () => {
         return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       expect(result.data?.timeMetrics).toBeDefined();
       expect(result.data?.timeMetrics.avgTimeToApproval).toBeDefined();
@@ -306,7 +315,7 @@ describe('analyticsService', () => {
         return createMockQueryBuilder(queryCount === 1 ? mockCurrentIdeas : mockPreviousIdeas);
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Trend: ((5 - 2) / 2) * 100 = 150%
       expect(result.data?.totalIdeas).toBe(5);
@@ -346,7 +355,7 @@ describe('analyticsService', () => {
         return createMockQueryBuilder(queryCount === 1 ? mockCurrentIdeas : mockPreviousIdeas);
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Trend: ((2 - 5) / 5) * 100 = -60%
       expect(result.data?.totalIdeas).toBe(2);
@@ -380,7 +389,7 @@ describe('analyticsService', () => {
         return createMockQueryBuilder(queryCount === 1 ? mockCurrentIdeas : mockPreviousIdeas);
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       expect(result.data?.totalIdeas).toBe(3);
       expect(result.data?.previousPeriodTotal).toBe(0);
@@ -444,7 +453,7 @@ describe('analyticsService', () => {
           return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
         });
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         const submittedBreakdown = result.data?.pipelineBreakdown.find(b => b.status === 'submitted');
         expect(submittedBreakdown?.label).toBe('Submitted');
@@ -476,7 +485,7 @@ describe('analyticsService', () => {
           return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
         });
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         // Verify colors are assigned (hex codes)
         result.data?.pipelineBreakdown.forEach(breakdown => {
@@ -523,7 +532,7 @@ describe('analyticsService', () => {
           return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
         });
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         // Expected order: submitted, approved, prd_development, prototype_complete, rejected
         expect(result.data?.pipelineBreakdown[0].status).toBe('submitted');
@@ -549,7 +558,7 @@ describe('analyticsService', () => {
           return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
         });
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         expect(result.data?.pipelineBreakdown).toEqual([]);
         expect(result.data?.totalIdeas).toBe(0);
@@ -627,7 +636,7 @@ describe('analyticsService', () => {
         error: null,
       });
 
-      await analyticsService.getIdeasBreakdown();
+      await analyticsService.getIdeasBreakdown(createTestDateRange());
 
       // Verify RPC was called with date parameters
       expect(supabase.rpc).toHaveBeenCalledWith('get_ideas_breakdown', {
@@ -648,7 +657,7 @@ describe('analyticsService', () => {
         error: null,
       });
 
-      const result = await analyticsService.getIdeasBreakdown();
+      const result = await analyticsService.getIdeasBreakdown(createTestDateRange());
 
       expect(result.data).toEqual([]);
       expect(result.error).toBeNull();
@@ -665,11 +674,11 @@ describe('analyticsService', () => {
         error: { message: 'Database connection failed', code: 'DB_ERROR' } as any,
       });
 
-      const result = await analyticsService.getIdeasBreakdown();
+      const result = await analyticsService.getIdeasBreakdown(createTestDateRange());
 
       expect(result.data).toBeNull();
       expect(result.error).toEqual({
-        message: 'Failed to fetch breakdown data',
+        message: 'Failed to fetch breakdown',
         code: 'DB_ERROR',
       });
     });
@@ -705,7 +714,7 @@ describe('analyticsService', () => {
         error: null,
       } as any);
 
-      const result = await analyticsService.getIdeasBreakdown();
+      const result = await analyticsService.getIdeasBreakdown(createTestDateRange());
 
       expect(result.data).toBeNull();
       expect(result.error).toEqual({
@@ -730,7 +739,7 @@ describe('analyticsService', () => {
         error: null,
       });
 
-      const result = await analyticsService.getIdeasBreakdown();
+      const result = await analyticsService.getIdeasBreakdown(createTestDateRange());
 
       expect(result.data).toHaveLength(2);
       expect(result.data?.[0].period).toBe('Dec 25, 2025');
@@ -785,7 +794,7 @@ describe('analyticsService', () => {
         }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       expect(result.data?.completionRates).toBeDefined();
       expect(result.data?.completionRates?.submittedToApproved).toBeDefined();
@@ -836,7 +845,7 @@ describe('analyticsService', () => {
         }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Submitted → Approved: 75/100 = 75%
       expect(result.data?.completionRates?.submittedToApproved.rate).toBe(75);
@@ -894,7 +903,7 @@ describe('analyticsService', () => {
         }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // All rates should be 0% when no ideas exist (not NaN or error)
       expect(result.data?.completionRates?.submittedToApproved.rate).toBe(0);
@@ -942,7 +951,7 @@ describe('analyticsService', () => {
         }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Trend: 80% - 70% = +10% change (direction: 'up')
       const trend = result.data?.completionRates?.submittedToApproved.trend;
@@ -990,7 +999,7 @@ describe('analyticsService', () => {
         }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Trend: 60% - 75% = -15% change (direction: 'down')
       const trend = result.data?.completionRates?.submittedToApproved.trend;
@@ -1038,7 +1047,7 @@ describe('analyticsService', () => {
         }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Trend: 71% - 70% = +1% change (direction: 'neutral', <2% threshold)
       const trend = result.data?.completionRates?.submittedToApproved.trend;
@@ -1122,7 +1131,7 @@ describe('analyticsService', () => {
         error: { message: 'RPC function error', code: 'DB_ERROR' } as any,
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Should still return analytics data with default completion rates (0%)
       expect(result.data).toBeDefined();
@@ -1205,7 +1214,7 @@ describe('analyticsService', () => {
         return Promise.resolve({ data: null, error: null }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Subtask 13.2: Verify timeToDecision is returned
       expect(result.data?.timeToDecision).toBeDefined();
@@ -1265,7 +1274,7 @@ describe('analyticsService', () => {
         return Promise.resolve({ data: null, error: null }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Subtask 13.3: Verify NULL timestamps don't break calculation
       expect(result.data?.timeToDecision?.submissionToDecision.averageDays).toBe(0);
@@ -1332,7 +1341,7 @@ describe('analyticsService', () => {
         return Promise.resolve({ data: null, error: null }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Subtask 13.4: Verify trend is 'down' (improvement for time metrics)
       const trend = result.data?.timeToDecision?.submissionToDecision.trend;
@@ -1398,7 +1407,7 @@ describe('analyticsService', () => {
         return Promise.resolve({ data: null, error: null }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Subtask 13.4: Verify trend is 'up' (worsening for time metrics)
       const trend = result.data?.timeToDecision?.submissionToDecision.trend;
@@ -1543,7 +1552,7 @@ describe('analyticsService', () => {
         return Promise.resolve({ data: null, error: null }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Subtask 13.6: Verify time formatting
       expect(result.data?.timeToDecision?.submissionToDecision.formattedTime).toContain('hour');
@@ -1588,7 +1597,7 @@ describe('analyticsService', () => {
         return Promise.resolve({ data: null, error: null }) as any;
       });
 
-      const result = await analyticsService.getAnalytics();
+      const result = await analyticsService.getAnalytics(createTestDateRange());
 
       // Should still return analytics data with default time metrics (0 days, N/A)
       expect(result.data).toBeDefined();
@@ -1668,7 +1677,7 @@ describe('analyticsService', () => {
           }) as any
         );
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         // Verify userActivity structure
         expect(result.data?.userActivity).toBeDefined();
@@ -1753,7 +1762,7 @@ describe('analyticsService', () => {
           Promise.resolve({ data: { submitted_count: 0, approved_count: 0, prd_complete_count: 0, prototype_count: 0 }, error: null }) as any
         );
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         // Verify active user calculations
         expect(result.data?.userActivity?.totalUsers).toBe(15);
@@ -1821,7 +1830,7 @@ describe('analyticsService', () => {
           Promise.resolve({ data: { submitted_count: 0, approved_count: 0, prd_complete_count: 0, prototype_count: 0 }, error: null }) as any
         );
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         // Verify increasing trend (3 active now vs 1 previously = +2 change)
         expect(result.data?.userActivity?.trend.direction).toBe('up');
@@ -1893,7 +1902,7 @@ describe('analyticsService', () => {
           Promise.resolve({ data: { submitted_count: 0, approved_count: 0, prd_complete_count: 0, prototype_count: 0 }, error: null }) as any
         );
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         // Verify leaderboard structure
         expect(result.data?.userActivity?.topContributors).toBeDefined();
@@ -1968,7 +1977,7 @@ describe('analyticsService', () => {
           Promise.resolve({ data: { submitted_count: 0, approved_count: 0, prd_complete_count: 0, prototype_count: 0 }, error: null }) as any
         );
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         // Verify recent submissions structure
         expect(result.data?.userActivity?.recentSubmissions).toBeDefined();
@@ -2010,7 +2019,7 @@ describe('analyticsService', () => {
           Promise.resolve({ data: { submitted_count: 0, approved_count: 0, prd_complete_count: 0, prototype_count: 0 }, error: null }) as any
         );
 
-        const result = await analyticsService.getAnalytics();
+        const result = await analyticsService.getAnalytics(createTestDateRange());
 
         // Verify empty state handling
         expect(result.data?.userActivity?.totalUsers).toBe(0);
@@ -2022,3 +2031,5 @@ describe('analyticsService', () => {
     });
   });
 });
+
+

@@ -6,37 +6,37 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { useDateRange } from '../../hooks/useDateRange'; // Story 6.7 Task 7: Use useDateRange hook
 import { MetricsCards } from './MetricsCards';
 import { SubmissionChart } from './SubmissionChart';
 import { CompletionRateChart } from './CompletionRateChart';
 import { PipelineBreakdownChart } from './PipelineBreakdownChart';
 import { DateRangeFilter } from './DateRangeFilter';
+import { DateRangeInfo } from './DateRangeInfo'; // Story 6.7 Task 10
 import { IdeaBreakdownModal } from './IdeaBreakdownModal';
 import { CompletionRatesCard } from './CompletionRatesCard';
 import { TimeToDecisionCard } from './TimeToDecisionCard';
 import { UserActivityCard } from './UserActivityCard';
 import { analyticsService } from '../../services/analyticsService';
 import { formatDistanceToNow } from 'date-fns';
-import type { DateRange, IdeaBreakdown } from '../../analytics/types';
+import type { IdeaBreakdown } from '../../analytics/types';
 
 /**
  * AnalyticsDashboard component - displays innovation metrics and charts
  * 
- * Features:
- * - Subtask 1.2: Responsive grid layout with 4 metric cards at top
- * - Subtask 1.3: Chart section below metric cards (2-column grid on desktop)
- * - Subtask 1.4: DaisyUI card components with PassportCard styling (20px border radius)
- * - Subtask 1.5: Page header with title "Innovation Analytics" and subtitle
- * - Subtask 1.6: Breadcrumb navigation: Admin Dashboard → Analytics
- * - Subtask 1.7: Consistent spacing using DSM tokens (p-6, gap-6)
- * - Subtask 1.8: Responsive layout (mobile-first, tablet breakpoint at 768px, desktop at 1024px)
- * 
- * Story 6.2 Task 6: Integrated date range filtering
+ * Story 6.7 Task 7: Integrated DateRangeFilter with useDateRange hook
+ * - Subtask 7.1: Import DateRangeFilter and useDateRange
+ * - Subtask 7.2: Use useDateRange hook to manage date range state
+ * - Subtask 7.3: Position DateRangeFilter at top of dashboard
+ * - Subtask 7.4: Pass currentRange and onDateRangeChange to DateRangeFilter
+ * - Subtask 7.5: Pass currentRange to useAnalytics hook
+ * - Subtask 7.6: Show loading state on all cards while refetching
+ * - Subtask 7.7: Add data refresh timestamp display
+ * - Subtask 7.8: Ensure filter is sticky (stays visible when scrolling)
  */
 export function AnalyticsDashboard() {
-  // Subtask 6.3: Manage dateRange state
-  // Subtask 6.8: Reset filter when navigating away (don't persist across sessions)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  // Story 6.7 Task 7 Subtask 7.2: Use useDateRange hook to manage date range state
+  const { currentRange, setCustomRange } = useDateRange('last30days');
 
   // Task 7: Manage breakdown modal state
   // Task 14: Add error state for breakdown
@@ -45,17 +45,16 @@ export function AnalyticsDashboard() {
   const [isBreakdownLoading, setIsBreakdownLoading] = useState(false);
   const [breakdownError, setBreakdownError] = useState<string | null>(null);
 
-  // Task 5: useAnalytics hook for data fetching
-  // Subtask 6.4: Pass dateRange to useAnalytics hook
-  const { data: analytics, isLoading, error, refetch, dataUpdatedAt } = useAnalytics(dateRange);
+  // Story 6.7 Task 7 Subtask 7.5: Pass currentRange to useAnalytics hook
+  const { data: analytics, isLoading, error, refetch, dataUpdatedAt } = useAnalytics(currentRange);
 
   // Task 7: Fetch breakdown data when modal opens
-  // Task 14: Enhanced error handling with specific messages
+  // Story 6.7 Task 7: Updated to use new DateRange type
   useEffect(() => {
     if (isBreakdownOpen) {
       setIsBreakdownLoading(true);
       setBreakdownError(null);
-      analyticsService.getIdeasBreakdown(dateRange)
+      analyticsService.getIdeasBreakdown(currentRange)
         .then((result) => {
           if (result.data) {
             setBreakdownData(result.data);
@@ -75,7 +74,7 @@ export function AnalyticsDashboard() {
           setIsBreakdownLoading(false);
         });
     }
-  }, [isBreakdownOpen, dateRange]);
+  }, [isBreakdownOpen, currentRange]);
 
   // Task 10: Loading state with skeleton
   if (isLoading) {
@@ -115,22 +114,8 @@ export function AnalyticsDashboard() {
     );
   }
 
-  // Calculate last updated time for timestamp display (Task 4)
+  // Story 6.7 Task 7 Subtask 7.7: Calculate last updated time for timestamp display
   const lastUpdated = dataUpdatedAt ? formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true }) : 'Never';
-
-  // Subtask 6.6: Format timestamp text to show filtered period
-  const getFilterDescription = () => {
-    if (!dateRange) return 'All time';
-    
-    const start = new Date(dateRange.startDate);
-    const end = new Date(dateRange.endDate);
-    
-    // Format dates
-    const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    
-    return `${startStr} - ${endStr}`;
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -165,12 +150,16 @@ export function AnalyticsDashboard() {
           </p>
         </div>
 
-        {/* Story 6.2 Task 6: Date filter and refresh controls */}
+        {/* Story 6.7 Task 7: Date filter and refresh controls */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          {/* Subtask 6.1 & 6.2: Add DateRangeFilter component to dashboard header (top-right) */}
+          {/* Story 6.7 Task 7 Subtask 7.3-7.4: Add DateRangeFilter component to dashboard header */}
           <DateRangeFilter
-            onFilterChange={setDateRange}
-            currentRange={dateRange}
+            currentRange={currentRange}
+            onDateRangeChange={(range) => {
+              // If preset was clicked, setPreset is handled inside DateRangeFilter
+              // If custom range, it's passed here
+              setCustomRange(range);
+            }}
           />
 
           {/* Task 4: Data refresh timestamp and refresh button */}
@@ -185,20 +174,28 @@ export function AnalyticsDashboard() {
         </div>
       </div>
 
-      {/* Subtask 6.6: Display filtered period information */}
-      <div className="mb-4 text-sm" style={{ fontFamily: 'Rubik, sans-serif', color: '#525355' }}>
-        <span className="font-medium">Showing data for:</span> {getFilterDescription()}
-        <span className="ml-3">• Last updated: {lastUpdated}</span>
+      {/* Story 6.7 Task 10: DateRangeInfo banner - positioned below filter, above cards */}
+      <div className="mb-6">
+        <DateRangeInfo 
+          dateRange={currentRange} 
+          totalIdeas={analytics?.totalIdeas || 0}
+        />
+      </div>
+
+      {/* Story 6.7 Task 7: Compact timestamp display */}
+      <div className="mb-4 text-sm text-right" style={{ fontFamily: 'Rubik, sans-serif', color: '#9CA3AF' }}>
+        Last updated: {lastUpdated}
       </div>
 
       {/* Subtask 1.2: Responsive grid layout with 4 metric cards at top */}
       {/* Subtask 1.7: Apply consistent spacing using DSM tokens (p-6, gap-6) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         {/* Task 2: MetricsCards component for key statistics */}
-        {/* Task 7: Add onClick handler for Total Ideas card */}
+        {/* Story 6.7 Task 8: Pass dateRange to MetricsCards */}
         <MetricsCards 
           analytics={analytics} 
           onTotalIdeasClick={() => setIsBreakdownOpen(true)}
+          dateRange={currentRange}
         />
       </div>
 
@@ -272,13 +269,13 @@ export function AnalyticsDashboard() {
       </div>
 
       {/* Task 7 & 9: Ideas Breakdown Modal */}
-      {/* Task 14: Pass error and retry handler */}
+      {/* Story 6.7 Task 7: Updated to use new DateRange type */}
       <IdeaBreakdownModal
         isOpen={isBreakdownOpen}
         onClose={() => setIsBreakdownOpen(false)}
         breakdown={breakdownData}
         isLoading={isBreakdownLoading}
-        dateRange={dateRange}
+        dateRange={currentRange}
         error={breakdownError}
         onRetry={() => {
           // Re-trigger the breakdown fetch by toggling the modal state

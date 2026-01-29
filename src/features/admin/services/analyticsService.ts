@@ -3,7 +3,8 @@
 
 import { supabase } from '../../../lib/supabase';
 import type { ServiceResponse } from '../../../types/service';
-import type { AnalyticsData, DateRange, IdeaBreakdown, PipelineStatus, PipelineStageData, CompletionRates, ConversionRate, TrendData, TimeToDecisionMetrics, TimeMetric, BenchmarkData, UserActivityMetrics, TopContributorData, RecentSubmissionData } from '../analytics/types';
+import type { AnalyticsData, IdeaBreakdown, PipelineStatus, PipelineStageData, CompletionRates, ConversionRate, TrendData, TimeToDecisionMetrics, TimeMetric, BenchmarkData, UserActivityMetrics, TopContributorData, RecentSubmissionData } from '../analytics/types';
+import type { DateRange } from '../types'; // Story 6.7 Task 5: Use DateRange from admin types
 import { TIME_BENCHMARKS, TIME_FORMAT_THRESHOLDS } from '../../../lib/constants';
 
 /**
@@ -633,11 +634,13 @@ export const analyticsService = {
    * Subtask 6.2: Implement getAnalytics() function returning ServiceResponse<AnalyticsData>
    * Aggregates data from ideas table to calculate analytics metrics
    * 
-   * Story 6.2 Task 1: Updated to support date range filtering and trend calculation
-   * @param dateRange Optional date range filter { startDate, endDate } in ISO format
+   * Story 6.7 Task 5: Updated to accept DateRange parameter with Date objects
+   * Subtask 5.1: Update getAnalytics() signature: getAnalytics(dateRange: DateRange)
+   * Subtask 5.4: Handle "All time" case (null start date)
+   * @param dateRange Date range filter { start: Date | null, end: Date, label: string }
    * @returns AnalyticsData with all dashboard metrics
    */
-  async getAnalytics(dateRange?: DateRange): Promise<ServiceResponse<AnalyticsData>> {
+  async getAnalytics(dateRange: DateRange): Promise<ServiceResponse<AnalyticsData>> {
     try {
       // Subtask 6.9: Verify admin role before executing queries (RLS backup)
       const { data: { user } } = await supabase.auth.getUser();
@@ -648,43 +651,42 @@ export const analyticsService = {
         };
       }
 
-      // Subtask 1.5 & 1.6: Determine comparison period
-      // If no filter: last 30 days vs previous 30 days
-      // If filter: filtered range vs previous equal-length period
-      const now = new Date();
-      let currentPeriodStart: Date;
-      let currentPeriodEnd: Date;
+      // Story 6.7 Task 5 Subtask 5.2-5.4: Use dateRange parameter
+      // Subtask 5.3: Add WHERE clause to all queries: created_at >= start AND created_at < end
+      // Subtask 5.4: Handle "All time" case (null start date): only filter by end date
+      const currentPeriodEnd = dateRange.end;
+      
+      // For "All time", use a very early date (2000-01-01) as effective start for calculations
+      // This allows functions expecting Date parameters to work while still querying all data
+      const effectiveCurrentStart = dateRange.start || new Date('2000-01-01');
+
+      // Subtask 5.10: Calculate previous period for trend comparison
+      // For "All time", go back 1 year from end date
+      // For specific ranges, calculate equal-length previous period
       let previousPeriodStart: Date;
       let previousPeriodEnd: Date;
 
-      if (dateRange) {
-        // Subtask 1.3: Apply date range filter
-        currentPeriodStart = new Date(dateRange.startDate);
-        currentPeriodEnd = new Date(dateRange.endDate);
-        
-        // Subtask 1.6: Calculate previous equal-length period
-        const periodLengthMs = currentPeriodEnd.getTime() - currentPeriodStart.getTime();
-        previousPeriodEnd = new Date(currentPeriodStart.getTime());
-        previousPeriodStart = new Date(currentPeriodStart.getTime() - periodLengthMs);
+      if (dateRange.start === null) {
+        // "All time" case: previous period is 1 year before end
+        previousPeriodEnd = new Date(currentPeriodEnd.getTime() - 365 * 24 * 60 * 60 * 1000);
+        previousPeriodStart = new Date(previousPeriodEnd.getTime() - 365 * 24 * 60 * 60 * 1000);
       } else {
-        // Subtask 1.5: Default comparison: last 30 days vs previous 30 days
-        currentPeriodEnd = now;
-        currentPeriodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        previousPeriodEnd = currentPeriodStart;
-        previousPeriodStart = new Date(currentPeriodStart.getTime() - 30 * 24 * 60 * 60 * 1000);
+        // Calculate previous equal-length previous period
+        const periodLengthMs = currentPeriodEnd.getTime() - dateRange.start.getTime();
+        previousPeriodEnd = dateRange.start;
+        previousPeriodStart = new Date(dateRange.start.getTime() - periodLengthMs);
       }
 
-      // Subtask 6.3: Query ideas table to calculate total ideas count
-      // Subtask 1.3: Apply date range filter if provided
+      // Subtask 5.3: Apply WHERE clause with date filter
       let query = supabase
         .from('ideas')
         .select('id, status, created_at, updated_at');
 
-      if (dateRange) {
-        query = query
-          .gte('created_at', currentPeriodStart.toISOString())
-          .lt('created_at', currentPeriodEnd.toISOString());
+      // Subtask 5.4: Handle "All time" case
+      if (dateRange.start !== null) {
+        query = query.gte('created_at', dateRange.start.toISOString());
       }
+      query = query.lt('created_at', currentPeriodEnd.toISOString());
 
       const { data: ideas, error } = await query;
 
@@ -694,7 +696,7 @@ export const analyticsService = {
         console.error('getAnalytics error:', error);
         return {
           data: null,
-          error: { message: 'Failed to fetch analytics data', code: 'DB_ERROR' },
+          error: { message: 'Failed to fetch analytics', code: 'DB_ERROR' },
         };
       }
 
@@ -766,13 +768,13 @@ export const analyticsService = {
       // (moved below to include completion rates)
 
       // Story 6.4 Task 1: Calculate completion rates
-      const completionRates = await calculateCompletionRates(currentPeriodStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
+      const completionRates = await calculateCompletionRates(effectiveCurrentStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
 
       // Story 6.5 Task 1: Calculate time-to-decision metrics
-      const timeToDecision = await calculateTimeToDecisionMetrics(currentPeriodStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
+      const timeToDecision = await calculateTimeToDecisionMetrics(effectiveCurrentStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
 
       // Story 6.6 Task 1: Calculate user activity metrics
-      const userActivity = await calculateUserActivityMetrics(currentPeriodStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
+      const userActivity = await calculateUserActivityMetrics(effectiveCurrentStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
 
       const analyticsData: AnalyticsData = {
         totalIdeas,
@@ -800,12 +802,13 @@ export const analyticsService = {
 
   /**
    * Story 6.2 Task 8: Get ideas breakdown by time period
+   * Story 6.7 Task 5: Updated to use new DateRange type with Date objects
    * Subtask 8.1: Create getIdeasBreakdown() function
    * 
-   * @param dateRange Optional date range filter
+   * @param dateRange Date range filter
    * @returns Array of idea counts grouped by time period
    */
-  async getIdeasBreakdown(dateRange?: DateRange): Promise<ServiceResponse<IdeaBreakdown[]>> {
+  async getIdeasBreakdown(dateRange: DateRange): Promise<ServiceResponse<IdeaBreakdown[]>> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -815,22 +818,9 @@ export const analyticsService = {
         };
       }
 
-      // Determine date range parameters
-      let startDate: string | null = null;
-      let endDate: string | null = null;
-
-      if (dateRange) {
-        startDate = dateRange.startDate;
-        endDate = dateRange.endDate;
-      } else {
-        // Default: last 30 days
-        const currentPeriodEnd = new Date();
-        const currentPeriodStart = new Date();
-        currentPeriodStart.setDate(currentPeriodEnd.getDate() - 30);
-        
-        startDate = currentPeriodStart.toISOString();
-        endDate = currentPeriodEnd.toISOString();
-      }
+      // Story 6.7 Task 5: Use new DateRange type with Date objects
+      const startDate = dateRange.start ? dateRange.start.toISOString() : null;
+      const endDate = dateRange.end.toISOString();
 
       // Subtask 8.2 & 8.3: Call optimized PostgreSQL function with date_trunc
       // This function groups ideas by week at the database level for better performance
@@ -845,7 +835,7 @@ export const analyticsService = {
         console.error('getIdeasBreakdown error:', error);
         return {
           data: null,
-          error: { message: 'Failed to fetch breakdown data', code: 'DB_ERROR' },
+          error: { message: 'Failed to fetch breakdown', code: 'DB_ERROR' },
         };
       }
 

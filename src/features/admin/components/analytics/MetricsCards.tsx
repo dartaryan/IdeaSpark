@@ -13,21 +13,25 @@ import {
   ArrowDownIcon, 
   MinusIcon 
 } from '@heroicons/react/24/solid';
+import { formatDateRange } from '../../../../lib/utils'; // Story 6.7 Task 8
 import type { AnalyticsData } from '../../analytics/types';
+import type { DateRange } from '../../types'; // Story 6.7 Task 8
 
 interface MetricsCardsProps {
   analytics: AnalyticsData | undefined;
   onTotalIdeasClick?: () => void; // Task 7: Make Total Ideas card clickable
+  dateRange: DateRange; // Story 6.7 Task 8 Subtask 8.1: Add dateRange prop
 }
 
 /**
  * Subtask 2.1: Create MetricsCards.tsx in features/admin/components/analytics/
  * Subtask 2.2: Design MetricCard component with icon, label, value, and trend indicator
  * Task 7: Add click interaction for Total Ideas metric card
+ * Story 6.7 Task 8: Add date range display to metric cards
  * 
  * MetricsCards component - displays key metric cards on the analytics dashboard
  */
-export function MetricsCards({ analytics, onTotalIdeasClick }: MetricsCardsProps) {
+export function MetricsCards({ analytics, onTotalIdeasClick, dateRange }: MetricsCardsProps) {
   // Subtask 2.8: Loading skeleton state for metric cards
   if (!analytics) {
     return (
@@ -111,6 +115,7 @@ export function MetricsCards({ analytics, onTotalIdeasClick }: MetricsCardsProps
           {...metric} 
           onClick={index === 0 ? onTotalIdeasClick : undefined}
           isClickable={index === 0 && !!onTotalIdeasClick}
+          dateRange={dateRange} // Story 6.7 Task 8: Pass dateRange to each card
         />
       ))}
     </>
@@ -120,6 +125,7 @@ export function MetricsCards({ analytics, onTotalIdeasClick }: MetricsCardsProps
 /**
  * Subtask 2.2: MetricCard component with icon, label, value, and trend indicator
  * Task 7: Add click interaction and keyboard accessibility
+ * Story 6.7 Task 8: Add date range display to cards
  * Individual metric card component
  */
 function MetricCard({
@@ -131,6 +137,7 @@ function MetricCard({
   description,
   onClick,
   isClickable = false,
+  dateRange, // Story 6.7 Task 8 Subtask 8.1: Accept dateRange prop
 }: {
   icon: React.ReactNode;
   label: string;
@@ -140,6 +147,7 @@ function MetricCard({
   description: string;
   onClick?: () => void;
   isClickable?: boolean;
+  dateRange: DateRange; // Story 6.7 Task 8
 }) {
   // Subtask 2.5: Trend indicators: up arrow (green), down arrow (red), neutral dash (gray)
   // Task 13: Add aria-hidden to decorative icons
@@ -201,6 +209,15 @@ function MetricCard({
           style={{ fontFamily: 'Montserrat, sans-serif', color: '#E10514' }}
         >
           {value}
+        </p>
+        
+        {/* Story 6.7 Task 8 Subtask 8.2-8.3: Date range subtitle */}
+        <p 
+          className="text-xs mb-2" 
+          style={{ fontFamily: 'Rubik, sans-serif', color: '#9CA3AF' }}
+          title="Data filtered by selected date range"
+        >
+          For period: {formatDateRange(dateRange)}
         </p>
         
         {/* Trend indicator - Subtask 2.6: Display trend percentage */}

@@ -3,14 +3,16 @@
 // Displays weekly breakdown of ideas submitted in a modal dialog
 
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import type { IdeaBreakdown, DateRange } from '../../analytics/types';
+import { formatDateRange } from '../../../../lib/utils'; // Story 6.7: Use formatDateRange utility
+import type { IdeaBreakdown } from '../../analytics/types';
+import type { DateRange } from '../../types'; // Story 6.7: Use new DateRange type
 
 interface IdeaBreakdownModalProps {
   isOpen: boolean;
   onClose: () => void;
   breakdown: IdeaBreakdown[];
   isLoading: boolean;
-  dateRange?: DateRange;
+  dateRange: DateRange; // Story 6.7: Made required with new DateRange type
   error?: string | null; // Task 14: Error message
   onRetry?: () => void; // Task 14: Retry handler
 }
@@ -44,18 +46,8 @@ export function IdeaBreakdownModal({
   // Calculate total ideas from breakdown
   const totalIdeas = breakdown.reduce((sum, item) => sum + item.count, 0);
 
-  // Format date range display
-  const getDateRangeText = () => {
-    if (!dateRange) return 'Last 30 days';
-    
-    const start = new Date(dateRange.startDate);
-    const end = new Date(dateRange.endDate);
-    
-    const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    
-    return `${startStr} - ${endStr}`;
-  };
+  // Story 6.7: Use formatDateRange utility for consistent date formatting
+  const dateRangeText = formatDateRange(dateRange);
 
   return (
     // Subtask 9.4: DaisyUI modal component
@@ -85,7 +77,7 @@ export function IdeaBreakdownModal({
               className="text-sm mt-1" 
               style={{ fontFamily: 'Rubik, sans-serif', color: '#525355' }}
             >
-              {getDateRangeText()}
+              {dateRangeText}
             </p>
           </div>
           

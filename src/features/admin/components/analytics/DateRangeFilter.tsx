@@ -1,177 +1,156 @@
-// src/features/admin/components/analytics/DateRangeFilter.tsx
-// Story 6.2 Task 4: Date range filter component
+/**
+ * Story 6.7 Task 2: DateRangeFilter component with preset buttons
+ * Story 6.7 Task 12: Implement keyboard shortcuts for quick range changes
+ * Subtask 2.1-2.10: Render preset buttons with responsive design and keyboard navigation
+ * Subtask 12.1-12.8: Keyboard shortcuts and help modal
+ */
 
-import { useState } from 'react';
-import type { DateRange } from '../../analytics/types';
+import { useState, useEffect } from 'react';
+import { getPresetDateRange, formatDateRange } from '../../../../lib/utils';
+import { CustomDateRangeModal } from './CustomDateRangeModal';
+import type { DateRange, DateRangePreset } from '../../types';
 
 interface DateRangeFilterProps {
-  onFilterChange: (dateRange: DateRange | undefined) => void;
-  currentRange?: DateRange;
+  /** Current selected date range */
+  currentRange: DateRange;
+  /** Callback when date range changes */
+  onDateRangeChange: (range: DateRange) => void;
 }
 
 /**
- * DateRangeFilter component - allows filtering analytics by date range
- * Subtask 4.1: Create DateRangeFilter.tsx in features/admin/components/analytics/
+ * DateRangeFilter component
+ * Allows users to select preset date ranges or custom date range for analytics filtering
+ * 
+ * Story 6.7 Task 2: Create DateRangeFilter component with preset buttons
+ * - Subtask 2.2: Accept onDateRangeChange callback
+ * - Subtask 2.3: Accept currentRange via props
+ * - Subtask 2.4: Render 4 preset buttons
+ * - Subtask 2.5: Add Custom button with modal
+ * - Subtask 2.6: Style active button with primary color
+ * - Subtask 2.7: Use DaisyUI btn-group
+ * - Subtask 2.8: Responsive layout
+ * - Subtask 2.9: Keyboard navigation
+ * - Subtask 2.10: Display selected range label
  */
-export function DateRangeFilter({ onFilterChange, currentRange }: DateRangeFilterProps) {
-  // Subtask 4.8: Display currently selected filter prominently
-  const [selectedPreset, setSelectedPreset] = useState<string>('all-time');
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
-  const [showCustom, setShowCustom] = useState(false);
+export function DateRangeFilter({ currentRange, onDateRangeChange }: DateRangeFilterProps) {
+  const [showCustomModal, setShowCustomModal] = useState(false);
 
-  // Subtask 4.2: Implement preset options
-  const presets = [
-    { value: 'last-7-days', label: 'Last 7 days' },
-    { value: 'last-30-days', label: 'Last 30 days' },
-    { value: 'last-90-days', label: 'Last 90 days' },
-    { value: 'all-time', label: 'All time' },
-    { value: 'custom', label: 'Custom range' },
+  const presets: Array<{ key: DateRangePreset; label: string; shortcut: string }> = [
+    { key: 'last7days', label: 'Last 7 days', shortcut: 'Ctrl+1' }, // Subtask 12.2
+    { key: 'last30days', label: 'Last 30 days', shortcut: 'Ctrl+2' }, // Subtask 12.3
+    { key: 'last90days', label: 'Last 90 days', shortcut: 'Ctrl+3' }, // Subtask 12.4
+    { key: 'alltime', label: 'All time', shortcut: 'Ctrl+4' }, // Subtask 12.5
   ];
 
-  // Calculate date range based on preset
-  const calculatePresetRange = (preset: string): DateRange | undefined => {
-    if (preset === 'all-time') {
-      return undefined; // No filter
+  // Task 12 Subtask 12.1-12.6: Add keyboard shortcuts for quick range changes
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      // Detect Mac vs Windows for modifier key
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifier = isMac ? event.metaKey : event.ctrlKey;
+      
+      if (!modifier) return;
+      
+      switch (event.key) {
+        case '1': // Subtask 12.2: Ctrl+1 for Last 7 days
+          event.preventDefault();
+          handlePresetClick('last7days');
+          break;
+        case '2': // Subtask 12.3: Ctrl+2 for Last 30 days
+          event.preventDefault();
+          handlePresetClick('last30days');
+          break;
+        case '3': // Subtask 12.4: Ctrl+3 for Last 90 days
+          event.preventDefault();
+          handlePresetClick('last90days');
+          break;
+        case '4': // Subtask 12.5: Ctrl+4 for All time
+          event.preventDefault();
+          handlePresetClick('alltime');
+          break;
+        case 'c':
+        case 'C': // Subtask 12.6: Ctrl+C for Custom range
+          event.preventDefault();
+          setShowCustomModal(true);
+          break;
+      }
     }
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-    const now = new Date();
-    const start = new Date();
-
-    switch (preset) {
-      case 'last-7-days':
-        start.setDate(now.getDate() - 7);
-        break;
-      case 'last-30-days':
-        start.setDate(now.getDate() - 30);
-        break;
-      case 'last-90-days':
-        start.setDate(now.getDate() - 90);
-        break;
-      default:
-        return undefined;
-    }
-
-    return {
-      startDate: start.toISOString(),
-      endDate: now.toISOString(),
-    };
+  const handlePresetClick = (preset: DateRangePreset) => {
+    const range = getPresetDateRange(preset);
+    onDateRangeChange(range);
   };
 
-  // Subtask 4.6: Apply filter button triggers analytics data refetch
-  const handlePresetChange = (preset: string) => {
-    setSelectedPreset(preset);
-
-    if (preset === 'custom') {
-      setShowCustom(true);
-      return;
-    }
-
-    setShowCustom(false);
-    const range = calculatePresetRange(preset);
-    onFilterChange(range);
+  const handleCustomClick = () => {
+    setShowCustomModal(true);
   };
 
-  // Subtask 4.6: Apply filter button for custom range
-  const handleApplyCustomRange = () => {
-    // Subtask 4.9: Validate: start date must be before end date
-    if (!customStart || !customEnd) {
-      alert('Please select both start and end dates');
-      return;
-    }
-
-    const start = new Date(customStart);
-    const end = new Date(customEnd);
-
-    // Subtask 4.10: Validate: dates cannot be in the future
-    const now = new Date();
-    if (start > now || end > now) {
-      alert('Dates cannot be in the future');
-      return;
-    }
-
-    if (start >= end) {
-      alert('Start date must be before end date');
-      return;
-    }
-
-    const range: DateRange = {
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
-    };
-
-    onFilterChange(range);
+  const handleCustomApply = (customRange: DateRange) => {
+    onDateRangeChange(customRange);
+    setShowCustomModal(false);
   };
 
-  // Subtask 4.7: Clear filter button resets to "All time"
-  const handleClearFilter = () => {
-    setSelectedPreset('all-time');
-    setShowCustom(false);
-    setCustomStart('');
-    setCustomEnd('');
-    onFilterChange(undefined);
+  const handleCustomClose = () => {
+    setShowCustomModal(false);
   };
+
+  const isActive = (label: string) => currentRange.label === label;
 
   return (
-    // Subtask 4.11 & 4.12: Position filter, make responsive
-    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-      {/* Subtask 4.4: Use DaisyUI select for preset options */}
-      <select
-        className="select select-bordered w-full sm:w-auto"
-        value={selectedPreset}
-        onChange={(e) => handlePresetChange(e.target.value)}
-        style={{ fontFamily: 'Rubik, sans-serif' }}
-      >
-        {presets.map((preset) => (
-          <option key={preset.value} value={preset.value}>
-            {preset.label}
-          </option>
-        ))}
-      </select>
-
-      {/* Subtask 4.3 & 4.5: Custom date range picker */}
-      {showCustom && (
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <input
-            type="date"
-            className="input input-bordered w-full sm:w-auto"
-            value={customStart}
-            onChange={(e) => setCustomStart(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            style={{ fontFamily: 'Rubik, sans-serif' }}
-          />
-          <input
-            type="date"
-            className="input input-bordered w-full sm:w-auto"
-            value={customEnd}
-            onChange={(e) => setCustomEnd(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            style={{ fontFamily: 'Rubik, sans-serif' }}
-          />
+    <div className="space-y-3">
+      {/* Preset button group - Subtask 2.7: DaisyUI btn-group */}
+      {/* Subtask 2.8: Responsive - vertical on mobile, horizontal on desktop */}
+      <div className="btn-group flex flex-col md:flex-row w-full md:w-auto">
+        {presets.map(({ key, label, shortcut }) => (
           <button
-            className="btn btn-primary"
-            onClick={handleApplyCustomRange}
-            style={{
-              fontFamily: 'Rubik, sans-serif',
-              backgroundColor: '#E10514',
-              borderColor: '#E10514',
-            }}
+            key={key}
+            type="button"
+            onClick={() => handlePresetClick(key)}
+            className={`btn ${
+              isActive(label) 
+                ? 'btn-primary' // Subtask 2.6: Active button with primary color (#E10514)
+                : 'btn-outline'
+            } flex-1 md:flex-none`}
+            aria-label={`Filter analytics by ${label.toLowerCase()}`}
+            aria-pressed={isActive(label)}
+            title={`${label} (${shortcut})`} // Subtask 12.7: Display keyboard shortcuts in tooltip
           >
-            Apply
+            {label}
           </button>
-        </div>
-      )}
-
-      {/* Subtask 4.7: Clear filter button */}
-      {selectedPreset !== 'all-time' && (
+        ))}
+        
+        {/* Subtask 2.5: Custom button opens date picker modal */}
         <button
-          className="btn btn-outline btn-sm"
-          onClick={handleClearFilter}
-          style={{ fontFamily: 'Rubik, sans-serif' }}
+          type="button"
+          onClick={handleCustomClick}
+          className={`btn ${
+            isActive('Custom') 
+              ? 'btn-primary'
+              : 'btn-outline'
+          } flex-1 md:flex-none`}
+          aria-label="Open custom date range picker"
+          aria-pressed={isActive('Custom')}
+          title="Custom (Ctrl+C)" // Subtask 12.7: Display keyboard shortcut in tooltip
         >
-          Clear Filter
+          Custom
         </button>
-      )}
+      </div>
+
+      {/* Subtask 2.10: Display selected range label */}
+      <div className="text-sm text-gray-600 dark:text-gray-400">
+        <span className="font-medium">Showing:</span> {formatDateRange(currentRange)}
+      </div>
+
+      {/* Custom date range modal */}
+      <CustomDateRangeModal
+        isOpen={showCustomModal}
+        onClose={handleCustomClose}
+        onApply={handleCustomApply}
+      />
     </div>
   );
 }
