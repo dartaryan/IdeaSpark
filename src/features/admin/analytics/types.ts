@@ -18,6 +18,9 @@
  * 
  * Updated in Story 6.5 Task 3:
  * - Subtask 3.2: Added timeToDecision for time-to-decision metrics
+ * 
+ * Updated in Story 6.6 Task 5:
+ * - Subtask 5.2: Added userActivity for user activity metrics
  */
 export interface AnalyticsData {
   totalIdeas: number;
@@ -27,6 +30,7 @@ export interface AnalyticsData {
   completionRate: number;
   completionRates?: CompletionRates; // Story 6.4 Task 3 Subtask 3.2: Conversion rate metrics
   timeToDecision?: TimeToDecisionMetrics; // Story 6.5 Task 3 Subtask 3.2: Time-to-decision metrics
+  userActivity?: UserActivityMetrics; // Story 6.6 Task 5 Subtask 5.2: User activity metrics
   timeMetrics: TimeMetrics;
   timestamp: string;
   lastUpdated: string; // Subtask 2.5: ISO timestamp
@@ -171,4 +175,45 @@ export interface TimeToDecisionMetrics {
   approvalToPrd: TimeMetric; // Time from approval to PRD completion
   prdToPrototype: TimeMetric; // Time from PRD completion to prototype
   endToEnd: TimeMetric; // Total time from idea to prototype
+}
+
+/**
+ * Story 6.6 Task 5: User Activity Types
+ * Subtask 5.4: Define TopContributorData interface
+ */
+export interface TopContributorData {
+  userId: string; // User ID
+  userName: string | null; // User name (nullable)
+  userEmail: string; // User email
+  ideasCount: number; // Number of ideas submitted by this user
+  percentage: number; // Percentage of total ideas (0-100)
+  joinDate: string; // User join date (ISO timestamp)
+  lastSubmissionDate: string | null; // Date of user's most recent submission (nullable)
+}
+
+/**
+ * Story 6.6 Task 5: User Activity Types
+ * Subtask 5.5: Define RecentSubmissionData interface
+ */
+export interface RecentSubmissionData {
+  ideaId: string; // Idea ID
+  title: string; // Idea title
+  status: string; // Idea status
+  createdAt: string; // Submission date (ISO timestamp)
+  userId: string; // Submitter user ID
+  userName: string | null; // Submitter name (nullable)
+  userEmail: string; // Submitter email
+}
+
+/**
+ * Story 6.6 Task 5: User Activity Types
+ * Subtask 5.3: Define UserActivityMetrics interface
+ */
+export interface UserActivityMetrics {
+  totalUsers: number; // Total user count
+  activeUsers: number; // Active users in current period (submitted idea in last 30 days)
+  activePercentage: number; // Percentage of active users (0-100)
+  trend: TrendData; // Trend comparison vs previous period
+  topContributors: TopContributorData[]; // Top 10 contributors
+  recentSubmissions: RecentSubmissionData[]; // Most recent 5 submissions
 }

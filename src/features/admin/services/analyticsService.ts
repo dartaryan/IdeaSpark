@@ -3,7 +3,7 @@
 
 import { supabase } from '../../../lib/supabase';
 import type { ServiceResponse } from '../../../types/service';
-import type { AnalyticsData, DateRange, IdeaBreakdown, PipelineStatus, PipelineStageData, CompletionRates, ConversionRate, TrendData, TimeToDecisionMetrics, TimeMetric, BenchmarkData } from '../analytics/types';
+import type { AnalyticsData, DateRange, IdeaBreakdown, PipelineStatus, PipelineStageData, CompletionRates, ConversionRate, TrendData, TimeToDecisionMetrics, TimeMetric, BenchmarkData, UserActivityMetrics, TopContributorData, RecentSubmissionData } from '../analytics/types';
 import { TIME_BENCHMARKS, TIME_FORMAT_THRESHOLDS } from '../../../lib/constants';
 
 /**
@@ -438,6 +438,192 @@ const PIPELINE_ORDER: Record<string, number> = {
 };
 
 /**
+ * Story 6.6 Task 1 & Task 2 & Task 3: Calculate user activity metrics with leaderboard and recent submissions
+ * Subtask 1.1-1.7, 2.1-2.8, 3.1-3.8: Optimized queries for user stats, top contributors, and recent submissions
+ * @param currentStart Start of current period
+ * @param currentEnd End of current period
+ * @param previousStart Start of previous period
+ * @param previousEnd End of previous period
+ * @returns UserActivityMetrics with all user activity data
+ */
+async function calculateUserActivityMetrics(
+  currentStart: Date,
+  currentEnd: Date,
+  previousStart: Date,
+  previousEnd: Date
+): Promise<UserActivityMetrics> {
+  try {
+    // Subtask 1.2: Query total users count
+    const { count: totalUsers, error: totalUsersError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+
+    if (totalUsersError) {
+      console.error('Total users count error:', totalUsersError);
+      return getDefaultUserActivityMetrics();
+    }
+
+    // Subtask 1.3: Query active users count (last 30 days) with date range filter
+    const { data: activeUsersData, error: activeUsersError } = await supabase
+      .from('ideas')
+      .select('user_id')
+      .gte('created_at', currentStart.toISOString())
+      .lt('created_at', currentEnd.toISOString());
+
+    if (activeUsersError) {
+      console.error('Active users count error:', activeUsersError);
+      return getDefaultUserActivityMetrics();
+    }
+
+    // Count distinct user IDs for active users
+    const uniqueActiveUsers = new Set(activeUsersData?.map((idea: any) => idea.user_id) || []);
+    const activeUsers = uniqueActiveUsers.size;
+
+    // Subtask 1.4: Calculate active user percentage
+    const activePercentage = totalUsers && totalUsers > 0
+      ? Math.round((activeUsers / totalUsers) * 100 * 10) / 10
+      : 0;
+
+    // Task 2: Query top contributors (leaderboard)
+    // Subtask 2.1-2.8: Query with user metadata, ideas count, and percentage
+    const { data: topContributorsData, error: topContributorsError } = await supabase
+      .from('ideas')
+      .select('user_id, users(id, email, name, created_at)')
+      .gte('created_at', currentStart.toISOString())
+      .lt('created_at', currentEnd.toISOString());
+
+    if (topContributorsError) {
+      console.error('Top contributors error:', topContributorsError);
+    }
+
+    // Aggregate ideas by user
+    const userIdeasMap = new Map<string, { user: any; ideas: any[]; lastSubmission: string }>();
+    topContributorsData?.forEach((idea: any) => {
+      const userId = idea.user_id;
+      const userData = idea.users;
+      
+      if (!userId || !userData) return;
+
+      if (!userIdeasMap.has(userId)) {
+        userIdeasMap.set(userId, {
+          user: userData,
+          ideas: [],
+          lastSubmission: idea.created_at || '',
+        });
+      }
+      
+      const userEntry = userIdeasMap.get(userId)!;
+      userEntry.ideas.push(idea);
+      
+      // Track most recent submission
+      if (idea.created_at && idea.created_at > userEntry.lastSubmission) {
+        userEntry.lastSubmission = idea.created_at;
+      }
+    });
+
+    // Convert to TopContributorData array and calculate percentages
+    const totalIdeasInPeriod = topContributorsData?.length || 0;
+    const topContributors: TopContributorData[] = Array.from(userIdeasMap.entries())
+      .map(([userId, { user, ideas, lastSubmission }]) => ({
+        userId,
+        userName: user.name || null,
+        userEmail: user.email || '',
+        ideasCount: ideas.length,
+        percentage: totalIdeasInPeriod > 0
+          ? Math.round((ideas.length / totalIdeasInPeriod) * 100 * 10) / 10
+          : 0,
+        joinDate: user.created_at || new Date().toISOString(),
+        lastSubmissionDate: lastSubmission || null,
+      }))
+      .sort((a, b) => {
+        // Subtask 2.5 & 2.8: Sort by ideas count DESC, then by last submission DESC
+        if (b.ideasCount !== a.ideasCount) {
+          return b.ideasCount - a.ideasCount;
+        }
+        if (a.lastSubmissionDate && b.lastSubmissionDate) {
+          return new Date(b.lastSubmissionDate).getTime() - new Date(a.lastSubmissionDate).getTime();
+        }
+        return 0;
+      })
+      .slice(0, 10); // Subtask 2.5: Limit to top 10
+
+    // Task 3: Query recent submissions with user details
+    // Subtask 3.1-3.8: Query with idea metadata and submitter info
+    const { data: recentSubmissionsData, error: recentSubmissionsError } = await supabase
+      .from('ideas')
+      .select('id, title, problem, status, created_at, user_id, users(id, email, name)')
+      .gte('created_at', currentStart.toISOString())
+      .lt('created_at', currentEnd.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5); // Subtask 3.4: Limit to 5 most recent
+
+    if (recentSubmissionsError) {
+      console.error('Recent submissions error:', recentSubmissionsError);
+    }
+
+    // Subtask 3.7: Format as RecentSubmissionData array
+    const recentSubmissions: RecentSubmissionData[] = (recentSubmissionsData || []).map((idea: any) => ({
+      ideaId: idea.id,
+      title: idea.title || 'Untitled',
+      status: idea.status || 'unknown',
+      createdAt: idea.created_at || new Date().toISOString(),
+      userId: idea.user_id || '',
+      userName: idea.users?.name || null,
+      userEmail: idea.users?.email || '',
+    }));
+
+    // Task 4: Calculate trend data for user activity
+    // Subtask 4.1-4.7: Query previous period active users and calculate trend
+    const { data: previousActiveUsersData, error: previousActiveUsersError } = await supabase
+      .from('ideas')
+      .select('user_id')
+      .gte('created_at', previousStart.toISOString())
+      .lt('created_at', previousEnd.toISOString());
+
+    if (previousActiveUsersError) {
+      console.error('Previous period active users error:', previousActiveUsersError);
+    }
+
+    const previousUniqueActiveUsers = new Set(previousActiveUsersData?.map((idea: any) => idea.user_id) || []);
+    const previousActiveUsers = previousUniqueActiveUsers.size;
+
+    // Subtask 4.2-4.5: Calculate trend
+    const trend = calculateTrend(activeUsers, previousActiveUsers);
+
+    // Subtask 1.6: Return UserActivityMetrics object
+    return {
+      totalUsers: totalUsers || 0,
+      activeUsers,
+      activePercentage,
+      trend,
+      topContributors,
+      recentSubmissions,
+    };
+  } catch (error) {
+    console.error('calculateUserActivityMetrics error:', error);
+    // Subtask 1.7: Error handling with default values
+    return getDefaultUserActivityMetrics();
+  }
+}
+
+/**
+ * Story 6.6 Task 1 Subtask 1.7: Default user activity metrics for error cases
+ * @returns UserActivityMetrics with all values at 0 and neutral trend
+ */
+function getDefaultUserActivityMetrics(): UserActivityMetrics {
+  const defaultTrend: TrendData = { direction: 'neutral', change: 0, changePercentage: 0 };
+  
+  return {
+    totalUsers: 0,
+    activeUsers: 0,
+    activePercentage: 0,
+    trend: defaultTrend,
+    topContributors: [],
+    recentSubmissions: [],
+  };
+}
+
+/**
  * Analytics service for fetching and aggregating analytics data
  * Subtask 6.1: Create analyticsService.ts in features/admin/services/
  * All methods require admin role - enforced by Supabase RLS policies
@@ -585,6 +771,9 @@ export const analyticsService = {
       // Story 6.5 Task 1: Calculate time-to-decision metrics
       const timeToDecision = await calculateTimeToDecisionMetrics(currentPeriodStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
 
+      // Story 6.6 Task 1: Calculate user activity metrics
+      const userActivity = await calculateUserActivityMetrics(currentPeriodStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
+
       const analyticsData: AnalyticsData = {
         totalIdeas,
         previousPeriodTotal,
@@ -593,6 +782,7 @@ export const analyticsService = {
         completionRate,
         completionRates, // Story 6.4 Task 1 Subtask 1.12: Add completion rates
         timeToDecision, // Story 6.5 Task 1 Subtask 1.11: Add time-to-decision metrics
+        userActivity, // Story 6.6 Task 1 Subtask 1.6: Add user activity metrics
         timeMetrics,
         timestamp: new Date().toISOString(),
         lastUpdated: new Date().toISOString(), // Subtask 2.5

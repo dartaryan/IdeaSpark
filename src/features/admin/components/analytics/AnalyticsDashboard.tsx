@@ -14,6 +14,7 @@ import { DateRangeFilter } from './DateRangeFilter';
 import { IdeaBreakdownModal } from './IdeaBreakdownModal';
 import { CompletionRatesCard } from './CompletionRatesCard';
 import { TimeToDecisionCard } from './TimeToDecisionCard';
+import { UserActivityCard } from './UserActivityCard';
 import { analyticsService } from '../../services/analyticsService';
 import { formatDistanceToNow } from 'date-fns';
 import type { DateRange, IdeaBreakdown } from '../../analytics/types';
@@ -250,6 +251,20 @@ export function AnalyticsDashboard() {
             />
           </div>
         )}
+
+        {/* Story 6.6 Task 10: User Activity Card */}
+        {/* Subtask 10.2: Position card in dashboard layout (after time metrics card) */}
+        {/* Subtask 10.4: Wrap card in responsive grid layout */}
+        <div className="lg:col-span-2">
+          {/* Subtask 10.3: Pass userActivity data from useAnalytics hook */}
+          {/* Subtask 10.5: Card respects current date range filter */}
+          {/* Subtask 10.6: Show loading skeleton while analytics data loads */}
+          {/* Subtask 10.8: Ensure consistent spacing with other dashboard cards */}
+          <UserActivityCard 
+            data={analytics?.userActivity}
+            isLoading={isLoading}
+          />
+        </div>
 
         {/* Task 3: Placeholder chart components */}
         <SubmissionChart />
