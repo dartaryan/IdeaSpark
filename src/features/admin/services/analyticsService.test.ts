@@ -398,6 +398,7 @@ describe('analyticsService', () => {
     });
 
     it('should handle date range filtering', async () => {
+      // Story 6.7: Updated to use new DateRange type with Date objects
       // Subtask 1.3 & 10.4: Test date range filter affects totalIdeas
       const mockIdeas = [
         { id: '1', status: 'submitted', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-02' },
@@ -411,20 +412,17 @@ describe('analyticsService', () => {
         error: null,
       } as any);
 
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          gte: vi.fn().mockReturnValue({
-            lt: vi.fn().mockResolvedValue({
-              data: mockIdeas.filter(idea => 
-                idea.created_at >= '2026-01-01' && idea.created_at < '2026-02-01'
-              ),
-              error: null,
-            }),
-          }),
-        }),
-      } as any);
+      vi.mocked(supabase.from).mockReturnValue(createMockQueryBuilder(
+        mockIdeas.filter(idea => 
+          idea.created_at >= '2026-01-01' && idea.created_at < '2026-02-01'
+        ),
+        null
+      ));
 
-      const dateRange = { startDate: '2026-01-01', endDate: '2026-02-01' };
+      // Mock RPC calls for completion rates and time metrics
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
+
+      const dateRange = createTestDateRange();
       const result = await analyticsService.getAnalytics(dateRange);
 
       // Should only count ideas in January 2026 (3 ideas)
@@ -565,6 +563,7 @@ describe('analyticsService', () => {
       });
 
       it('should apply date range filter to pipeline breakdown', async () => {
+        // Story 6.7: Updated to use new DateRange type
         // Subtask 1.4: Test date range affects breakdown
         const mockIdeas = [
           { id: '1', status: 'submitted', created_at: '2026-01-15T00:00:00Z', updated_at: '2026-01-16' },
@@ -576,18 +575,12 @@ describe('analyticsService', () => {
           error: null,
         } as any);
 
-        vi.mocked(supabase.from).mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            gte: vi.fn().mockReturnValue({
-              lt: vi.fn().mockResolvedValue({
-                data: mockIdeas,
-                error: null,
-              }),
-            }),
-          }),
-        } as any);
+        vi.mocked(supabase.from).mockReturnValue(createMockQueryBuilder(mockIdeas, null));
 
-        const dateRange = { startDate: '2026-01-01', endDate: '2026-02-01' };
+        // Mock RPC calls for completion rates and time metrics
+        vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
+
+        const dateRange = createTestDateRange();
         const result = await analyticsService.getAnalytics(dateRange);
 
         expect(result.data?.pipelineBreakdown).toHaveLength(2);
@@ -598,6 +591,7 @@ describe('analyticsService', () => {
   // Task 10: Tests for getIdeasBreakdown function
   describe('getIdeasBreakdown', () => {
     it('should return weekly breakdown of ideas', async () => {
+      // Story 6.7: Updated to use new DateRange type
       // Mock RPC call for breakdown
       const mockBreakdownData = [
         { period: 'Jan 01, 2026', count: 5, period_start: '2026-01-01T00:00:00Z' },
@@ -615,7 +609,7 @@ describe('analyticsService', () => {
         error: null,
       });
 
-      const dateRange = { startDate: '2026-01-01', endDate: '2026-02-01' };
+      const dateRange = createTestDateRange();
       const result = await analyticsService.getIdeasBreakdown(dateRange);
 
       expect(result.data).toHaveLength(3);
@@ -684,6 +678,7 @@ describe('analyticsService', () => {
     });
 
     it('should apply date range filter to RPC call', async () => {
+      // Story 6.7: Updated to use new DateRange type
       vi.mocked(supabase.auth.getUser).mockResolvedValue({
         data: { user: { id: 'test-user-id' } as any },
         error: null,
@@ -694,16 +689,12 @@ describe('analyticsService', () => {
         error: null,
       });
 
-      const dateRange = {
-        startDate: '2026-01-01T00:00:00.000Z',
-        endDate: '2026-01-31T23:59:59.999Z',
-      };
-
+      const dateRange = createTestDateRange();
       await analyticsService.getIdeasBreakdown(dateRange);
 
       expect(supabase.rpc).toHaveBeenCalledWith('get_ideas_breakdown', {
-        start_date: '2026-01-01T00:00:00.000Z',
-        end_date: '2026-01-31T23:59:59.999Z',
+        start_date: dateRange.start?.toISOString(),
+        end_date: dateRange.end.toISOString(),
         interval_type: 'week',
       });
     });
@@ -1102,7 +1093,7 @@ describe('analyticsService', () => {
         }) as any;
       });
 
-      const dateRange = { startDate: '2026-01-01', endDate: '2026-02-01' };
+      const dateRange = createTestDateRange();
       const result = await analyticsService.getAnalytics(dateRange);
 
       expect(result.data?.completionRates).toBeDefined();
@@ -1480,7 +1471,7 @@ describe('analyticsService', () => {
         return Promise.resolve({ data: null, error: null }) as any;
       });
 
-      const dateRange = { startDate: '2026-01-01', endDate: '2026-02-01' };
+      const dateRange = createTestDateRange();
       const result = await analyticsService.getAnalytics(dateRange);
 
       expect(result.data?.timeToDecision).toBeDefined();

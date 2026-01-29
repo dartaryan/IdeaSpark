@@ -1,8 +1,8 @@
-# generated: 2026-01-13
+# generated: 2026-01-29
 # project: IdeaSpark
-# project_key: ideaspark
+# project_key: NOKEY
 # tracking_system: file-system
-# story_location: "{project-root}/_bmad-output/implementation-artifacts"
+# story_location: c:\Users\ben.akiva\Documents\Repos\IdeaSpark\_bmad-output\implementation-artifacts
 
 # STATUS DEFINITIONS:
 # ==================
@@ -33,11 +33,11 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-01-13
+generated: 2026-01-29
 project: IdeaSpark
-project_key: ideaspark
+project_key: NOKEY
 tracking_system: file-system
-story_location: "{project-root}/_bmad-output/implementation-artifacts"
+story_location: c:\Users\ben.akiva\Documents\Repos\IdeaSpark\_bmad-output\implementation-artifacts
 
 development_status:
   # Epic 1: Project Foundation & User Authentication
@@ -107,7 +107,7 @@ development_status:
   # Epic 6: Analytics & Innovation Metrics
   epic-6: in-progress
   6-1-analytics-dashboard-layout: review
-  6-2-total-ideas-submitted-metric: done
+  6-2-total-ideas-submitted-metric: review
   6-3-pipeline-stage-breakdown-chart: review
   6-4-completion-rates-metrics: review
   6-5-time-to-decision-metrics: review
