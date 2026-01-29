@@ -110,4 +110,101 @@ describe('MessageBubble', () => {
       expect(header).toHaveClass('text-xs', 'opacity-50', 'mb-1');
     });
   });
+
+  describe('Corrupted content handling', () => {
+    it('detects and extracts aiMessage from corrupted JSON response', () => {
+      const corruptedContent = JSON.stringify({
+        aiMessage: "This is the actual message",
+        sectionUpdates: [{ sectionKey: "problemStatement", content: "Some content", status: "complete" }]
+      });
+      
+      render(
+        <MessageBubble role="assistant" content={corruptedContent} />
+      );
+      
+      // Should display the extracted message, not the JSON
+      expect(screen.getByText(/This is the actual message/)).toBeInTheDocument();
+    });
+
+    it('handles corrupted error response gracefully', () => {
+      const corruptedContent = JSON.stringify({
+        error: "AI service not configured",
+        code: "CONFIG_ERROR"
+      });
+      
+      render(
+        <MessageBubble role="assistant" content={corruptedContent} />
+      );
+      
+      // Should show user-friendly error message
+      expect(screen.getByText(/⚠️ Error: AI service not configured/)).toBeInTheDocument();
+    });
+
+    it('does not treat normal messages as corrupted', () => {
+      const normalMessage = "This is a normal message with { and } brackets";
+      
+      render(
+        <MessageBubble role="assistant" content={normalMessage} />
+      );
+      
+      // Should display the message as-is
+      expect(screen.getByText(/This is a normal message with { and } brackets/)).toBeInTheDocument();
+    });
+
+    it('handles invalid JSON gracefully', () => {
+      const invalidJson = '{"aiMessage": invalid json}';
+      
+      render(
+        <MessageBubble role="assistant" content={invalidJson} />
+      );
+      
+      // Should display the original content when JSON parsing fails
+      expect(screen.getByText(/{"aiMessage": invalid json}/)).toBeInTheDocument();
+    });
+
+    it('does not process corrupted content for user messages', () => {
+      const corruptedContent = JSON.stringify({
+        aiMessage: "Should not extract this",
+        sectionUpdates: []
+      });
+      
+      render(
+        <MessageBubble role="user" content={corruptedContent} />
+      );
+      
+      // User messages should not be processed, display as-is
+      expect(screen.getByText(corruptedContent)).toBeInTheDocument();
+    });
+
+    it('extracts aiMessage and applies formatting', () => {
+      const corruptedContent = JSON.stringify({
+        aiMessage: "This is **bold** and *italic* text",
+        sectionUpdates: null
+      });
+      
+      const { container } = render(
+        <MessageBubble role="assistant" content={corruptedContent} />
+      );
+      
+      // Should extract message AND apply markdown formatting
+      const strong = container.querySelector('strong');
+      const em = container.querySelector('em');
+      expect(strong).toBeInTheDocument();
+      expect(em).toBeInTheDocument();
+    });
+
+    it('handles unknown JSON format by displaying original', () => {
+      const unknownJson = JSON.stringify({
+        someField: "value",
+        anotherField: "another value"
+      });
+      
+      render(
+        <MessageBubble role="assistant" content={unknownJson} />
+      );
+      
+      // Should display original when format is unrecognized
+      expect(screen.getByText(unknownJson)).toBeInTheDocument();
+    });
+  });
 });

@@ -29,6 +29,55 @@ interface EdgeFunctionError {
   code: string;
 }
 
+/**
+ * Type guard to check if response is an error response
+ * More robust than just checking for 'error' and 'code' properties
+ */
+function isEdgeFunctionError(data: unknown): data is EdgeFunctionError {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  
+  const obj = data as Record<string, unknown>;
+  
+  // Must have both error and code as strings
+  if (typeof obj.error !== 'string' || typeof obj.code !== 'string') {
+    return false;
+  }
+  
+  // Should NOT have aiMessage (that would indicate a valid response)
+  if ('aiMessage' in obj) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Type guard to check if response is a valid chat response
+ */
+function isChatResponse(data: unknown): data is ChatResponse {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  
+  const obj = data as Record<string, unknown>;
+  
+  // Must have aiMessage as a string
+  if (typeof obj.aiMessage !== 'string') {
+    return false;
+  }
+  
+  // sectionUpdates is optional, but if present must be an array
+  if ('sectionUpdates' in obj && obj.sectionUpdates !== null && obj.sectionUpdates !== undefined) {
+    if (!Array.isArray(obj.sectionUpdates)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 export const prdChatService = {
   /**
    * Get welcome message for a new PRD conversation
@@ -84,12 +133,23 @@ export const prdChatService = {
         };
       }
 
-      // Check for error response
-      if ('error' in data && 'code' in data) {
-        const errorData = data as unknown as EdgeFunctionError;
+      // Check for error response using type guard
+      if (isEdgeFunctionError(data)) {
         return {
           data: null,
-          error: { message: errorData.error, code: errorData.code },
+          error: { message: data.error, code: data.code },
+        };
+      }
+
+      // Validate that response is a valid ChatResponse
+      if (!isChatResponse(data)) {
+        console.error('Invalid response format from edge function:', data);
+        return {
+          data: null,
+          error: { 
+            message: 'Invalid response format from AI assistant', 
+            code: 'INVALID_RESPONSE' 
+          },
         };
       }
 
@@ -146,12 +206,23 @@ export const prdChatService = {
         };
       }
 
-      // Check for error response
-      if ('error' in data && 'code' in data) {
-        const errorData = data as unknown as EdgeFunctionError;
+      // Check for error response using type guard
+      if (isEdgeFunctionError(data)) {
         return {
           data: null,
-          error: { message: errorData.error, code: errorData.code },
+          error: { message: data.error, code: data.code },
+        };
+      }
+
+      // Validate that response is a valid ChatResponse
+      if (!isChatResponse(data)) {
+        console.error('Invalid response format from edge function:', data);
+        return {
+          data: null,
+          error: { 
+            message: 'Invalid response format from AI assistant', 
+            code: 'INVALID_RESPONSE' 
+          },
         };
       }
 
