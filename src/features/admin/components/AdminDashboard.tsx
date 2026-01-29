@@ -95,6 +95,13 @@ export function AdminDashboard() {
         >
           Users
         </Link>
+        <Link
+          to="/admin/analytics"
+          className="btn btn-outline btn-sm"
+          title="View innovation metrics"
+        >
+          Analytics
+        </Link>
       </div>
 
       {/* Metric Cards Grid - Task 3: Using MetricCard component */}

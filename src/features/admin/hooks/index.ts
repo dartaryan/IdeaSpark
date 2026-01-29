@@ -14,3 +14,4 @@ export { useUsers } from './useUsers';
 export { useUser } from './useUser';
 export { useUserIdeas } from './useUserIdeas';
 export { useRealtimeIdeas } from './useRealtimeIdeas';
+export { useAnalytics } from './useAnalytics';
