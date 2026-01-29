@@ -1114,4 +1114,472 @@ describe('analyticsService', () => {
       expect(result.data?.completionRates?.overallSubmittedToPrototype.rate).toBe(0);
     });
   });
+
+  describe('Time-to-Decision Metrics - Story 6.5', () => {
+    // Task 13 Subtask 13.2: Test getAnalytics() returns timeToDecision correctly
+    it('should return time-to-decision metrics in analytics data', async () => {
+      const mockIdeas = [
+        { id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' },
+      ];
+      const mockPreviousIdeas: any[] = [];
+
+      const mockCurrentCounts = {
+        submitted_count: 10,
+        approved_count: 8,
+        prd_complete_count: 6,
+        prototype_count: 4,
+      };
+      const mockPreviousCounts = {
+        submitted_count: 0,
+        approved_count: 0,
+        prd_complete_count: 0,
+        prototype_count: 0,
+      };
+
+      const mockCurrentTimeMetrics = {
+        avg_submission_to_decision_days: 2.5,
+        submission_to_decision_count: 8,
+        avg_approval_to_prd_days: 4.8,
+        approval_to_prd_count: 6,
+        avg_prd_to_prototype_days: 1.5,
+        prd_to_prototype_count: 4,
+        avg_end_to_end_days: 9.2,
+        end_to_end_count: 4,
+      };
+      const mockPreviousTimeMetrics = {
+        avg_submission_to_decision_days: 3.0,
+        submission_to_decision_count: 5,
+        avg_approval_to_prd_days: 5.5,
+        approval_to_prd_count: 4,
+        avg_prd_to_prototype_days: 2.0,
+        prd_to_prototype_count: 3,
+        avg_end_to_end_days: 10.5,
+        end_to_end_count: 3,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let completionRateCallCount = 0;
+      let timeMetricsCallCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation((fnName) => {
+        if (fnName === 'get_completion_rate_counts') {
+          completionRateCallCount++;
+          return Promise.resolve({
+            data: completionRateCallCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+            error: null,
+          }) as any;
+        } else if (fnName === 'get_time_to_decision_metrics') {
+          timeMetricsCallCount++;
+          return Promise.resolve({
+            data: timeMetricsCallCount === 1 ? mockCurrentTimeMetrics : mockPreviousTimeMetrics,
+            error: null,
+          }) as any;
+        }
+        return Promise.resolve({ data: null, error: null }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Subtask 13.2: Verify timeToDecision is returned
+      expect(result.data?.timeToDecision).toBeDefined();
+      expect(result.data?.timeToDecision?.submissionToDecision).toBeDefined();
+      expect(result.data?.timeToDecision?.approvalToPrd).toBeDefined();
+      expect(result.data?.timeToDecision?.prdToPrototype).toBeDefined();
+      expect(result.data?.timeToDecision?.endToEnd).toBeDefined();
+    });
+
+    // Task 13 Subtask 13.3: Test time calculation accuracy (edge case: NULL timestamps)
+    it('should handle NULL timestamps gracefully', async () => {
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' }];
+      const mockPreviousIdeas: any[] = [];
+      const mockCurrentCounts = { submitted_count: 1, approved_count: 0, prd_complete_count: 0, prototype_count: 0 };
+      const mockPreviousCounts = { submitted_count: 0, approved_count: 0, prd_complete_count: 0, prototype_count: 0 };
+
+      // Mock time metrics with NULL/0 values for ideas that haven't progressed
+      const mockCurrentTimeMetrics = {
+        avg_submission_to_decision_days: 0,
+        submission_to_decision_count: 0,
+        avg_approval_to_prd_days: 0,
+        approval_to_prd_count: 0,
+        avg_prd_to_prototype_days: 0,
+        prd_to_prototype_count: 0,
+        avg_end_to_end_days: 0,
+        end_to_end_count: 0,
+      };
+      const mockPreviousTimeMetrics = { ...mockCurrentTimeMetrics };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let completionRateCallCount = 0;
+      let timeMetricsCallCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation((fnName) => {
+        if (fnName === 'get_completion_rate_counts') {
+          completionRateCallCount++;
+          return Promise.resolve({
+            data: completionRateCallCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+            error: null,
+          }) as any;
+        } else if (fnName === 'get_time_to_decision_metrics') {
+          timeMetricsCallCount++;
+          return Promise.resolve({
+            data: timeMetricsCallCount === 1 ? mockCurrentTimeMetrics : mockPreviousTimeMetrics,
+            error: null,
+          }) as any;
+        }
+        return Promise.resolve({ data: null, error: null }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Subtask 13.3: Verify NULL timestamps don't break calculation
+      expect(result.data?.timeToDecision?.submissionToDecision.averageDays).toBe(0);
+      expect(result.data?.timeToDecision?.submissionToDecision.count).toBe(0);
+      expect(result.data?.timeToDecision?.submissionToDecision.formattedTime).toBe('N/A');
+    });
+
+    // Task 13 Subtask 13.4: Test trend calculation for improving, worsening, and neutral trends
+    it('should calculate improving trend when time decreases', async () => {
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' }];
+      const mockPreviousIdeas: any[] = [];
+      const mockCurrentCounts = { submitted_count: 10, approved_count: 8, prd_complete_count: 6, prototype_count: 4 };
+      const mockPreviousCounts = { submitted_count: 10, approved_count: 7, prd_complete_count: 5, prototype_count: 3 };
+
+      // Current: 2.0 days, Previous: 3.0 days = -1.0 days (IMPROVEMENT for time)
+      const mockCurrentTimeMetrics = {
+        avg_submission_to_decision_days: 2.0,
+        submission_to_decision_count: 8,
+        avg_approval_to_prd_days: 4.0,
+        approval_to_prd_count: 6,
+        avg_prd_to_prototype_days: 1.0,
+        prd_to_prototype_count: 4,
+        avg_end_to_end_days: 8.0,
+        end_to_end_count: 4,
+      };
+      const mockPreviousTimeMetrics = {
+        avg_submission_to_decision_days: 3.0,
+        submission_to_decision_count: 7,
+        avg_approval_to_prd_days: 5.5,
+        approval_to_prd_count: 5,
+        avg_prd_to_prototype_days: 2.0,
+        prd_to_prototype_count: 3,
+        avg_end_to_end_days: 10.0,
+        end_to_end_count: 3,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let completionRateCallCount = 0;
+      let timeMetricsCallCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation((fnName) => {
+        if (fnName === 'get_completion_rate_counts') {
+          completionRateCallCount++;
+          return Promise.resolve({
+            data: completionRateCallCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+            error: null,
+          }) as any;
+        } else if (fnName === 'get_time_to_decision_metrics') {
+          timeMetricsCallCount++;
+          return Promise.resolve({
+            data: timeMetricsCallCount === 1 ? mockCurrentTimeMetrics : mockPreviousTimeMetrics,
+            error: null,
+          }) as any;
+        }
+        return Promise.resolve({ data: null, error: null }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Subtask 13.4: Verify trend is 'down' (improvement for time metrics)
+      const trend = result.data?.timeToDecision?.submissionToDecision.trend;
+      expect(trend?.direction).toBe('down'); // Time decreased = improvement
+      expect(trend?.change).toBe(-1.0); // Negative change for time
+    });
+
+    it('should calculate worsening trend when time increases', async () => {
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' }];
+      const mockPreviousIdeas: any[] = [];
+      const mockCurrentCounts = { submitted_count: 10, approved_count: 8, prd_complete_count: 6, prototype_count: 4 };
+      const mockPreviousCounts = { submitted_count: 10, approved_count: 7, prd_complete_count: 5, prototype_count: 3 };
+
+      // Current: 4.0 days, Previous: 2.5 days = +1.5 days (WORSENING for time)
+      const mockCurrentTimeMetrics = {
+        avg_submission_to_decision_days: 4.0,
+        submission_to_decision_count: 8,
+        avg_approval_to_prd_days: 6.5,
+        approval_to_prd_count: 6,
+        avg_prd_to_prototype_days: 2.5,
+        prd_to_prototype_count: 4,
+        avg_end_to_end_days: 12.0,
+        end_to_end_count: 4,
+      };
+      const mockPreviousTimeMetrics = {
+        avg_submission_to_decision_days: 2.5,
+        submission_to_decision_count: 7,
+        avg_approval_to_prd_days: 5.0,
+        approval_to_prd_count: 5,
+        avg_prd_to_prototype_days: 1.5,
+        prd_to_prototype_count: 3,
+        avg_end_to_end_days: 9.0,
+        end_to_end_count: 3,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let completionRateCallCount = 0;
+      let timeMetricsCallCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation((fnName) => {
+        if (fnName === 'get_completion_rate_counts') {
+          completionRateCallCount++;
+          return Promise.resolve({
+            data: completionRateCallCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+            error: null,
+          }) as any;
+        } else if (fnName === 'get_time_to_decision_metrics') {
+          timeMetricsCallCount++;
+          return Promise.resolve({
+            data: timeMetricsCallCount === 1 ? mockCurrentTimeMetrics : mockPreviousTimeMetrics,
+            error: null,
+          }) as any;
+        }
+        return Promise.resolve({ data: null, error: null }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Subtask 13.4: Verify trend is 'up' (worsening for time metrics)
+      const trend = result.data?.timeToDecision?.submissionToDecision.trend;
+      expect(trend?.direction).toBe('up'); // Time increased = worsening
+      expect(trend?.change).toBe(1.5); // Positive change for time
+    });
+
+    // Task 13 Subtask 13.5: Test date range filter affects time metrics data
+    it('should apply date range filter to time metrics', async () => {
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-15', updated_at: '2026-01-16' }];
+      const mockPreviousIdeas: any[] = [];
+      const mockCurrentCounts = { submitted_count: 10, approved_count: 8, prd_complete_count: 6, prototype_count: 4 };
+      const mockPreviousCounts = { submitted_count: 0, approved_count: 0, prd_complete_count: 0, prototype_count: 0 };
+      const mockCurrentTimeMetrics = {
+        avg_submission_to_decision_days: 2.5,
+        submission_to_decision_count: 8,
+        avg_approval_to_prd_days: 4.8,
+        approval_to_prd_count: 6,
+        avg_prd_to_prototype_days: 1.5,
+        prd_to_prototype_count: 4,
+        avg_end_to_end_days: 9.2,
+        end_to_end_count: 4,
+      };
+      const mockPreviousTimeMetrics = {
+        avg_submission_to_decision_days: 0,
+        submission_to_decision_count: 0,
+        avg_approval_to_prd_days: 0,
+        approval_to_prd_count: 0,
+        avg_prd_to_prototype_days: 0,
+        prd_to_prototype_count: 0,
+        avg_end_to_end_days: 0,
+        end_to_end_count: 0,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          gte: vi.fn().mockReturnValue({
+            lt: vi.fn().mockResolvedValue({
+              data: mockIdeas,
+              error: null,
+            }),
+          }),
+        }),
+      } as any);
+
+      let completionRateCallCount = 0;
+      let timeMetricsCallCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation((fnName, params) => {
+        // Subtask 13.5: Verify RPC is called with correct date range
+        expect(params).toHaveProperty('start_date');
+        expect(params).toHaveProperty('end_date');
+        
+        if (fnName === 'get_completion_rate_counts') {
+          completionRateCallCount++;
+          return Promise.resolve({
+            data: completionRateCallCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+            error: null,
+          }) as any;
+        } else if (fnName === 'get_time_to_decision_metrics') {
+          timeMetricsCallCount++;
+          return Promise.resolve({
+            data: timeMetricsCallCount === 1 ? mockCurrentTimeMetrics : mockPreviousTimeMetrics,
+            error: null,
+          }) as any;
+        }
+        return Promise.resolve({ data: null, error: null }) as any;
+      });
+
+      const dateRange = { startDate: '2026-01-01', endDate: '2026-02-01' };
+      const result = await analyticsService.getAnalytics(dateRange);
+
+      expect(result.data?.timeToDecision).toBeDefined();
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        'get_time_to_decision_metrics',
+        expect.objectContaining({
+          start_date: expect.any(String),
+          end_date: expect.any(String),
+        })
+      );
+    });
+
+    // Task 13 Subtask 13.6: Test human-readable time formatting (hours vs days)
+    it('should format time as hours when less than 2 days', async () => {
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' }];
+      const mockPreviousIdeas: any[] = [];
+      const mockCurrentCounts = { submitted_count: 10, approved_count: 8, prd_complete_count: 6, prototype_count: 4 };
+      const mockPreviousCounts = { submitted_count: 0, approved_count: 0, prd_complete_count: 0, prototype_count: 0 };
+
+      // Time: 1.5 days = 36 hours (should be formatted as hours)
+      const mockCurrentTimeMetrics = {
+        avg_submission_to_decision_days: 1.5,
+        submission_to_decision_count: 8,
+        avg_approval_to_prd_days: 0.75, // 18 hours
+        approval_to_prd_count: 6,
+        avg_prd_to_prototype_days: 1.0, // 24 hours
+        prd_to_prototype_count: 4,
+        avg_end_to_end_days: 3.2, // >2 days, should be formatted as days
+        end_to_end_count: 4,
+      };
+      const mockPreviousTimeMetrics = {
+        avg_submission_to_decision_days: 0,
+        submission_to_decision_count: 0,
+        avg_approval_to_prd_days: 0,
+        approval_to_prd_count: 0,
+        avg_prd_to_prototype_days: 0,
+        prd_to_prototype_count: 0,
+        avg_end_to_end_days: 0,
+        end_to_end_count: 0,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let completionRateCallCount = 0;
+      let timeMetricsCallCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation((fnName) => {
+        if (fnName === 'get_completion_rate_counts') {
+          completionRateCallCount++;
+          return Promise.resolve({
+            data: completionRateCallCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+            error: null,
+          }) as any;
+        } else if (fnName === 'get_time_to_decision_metrics') {
+          timeMetricsCallCount++;
+          return Promise.resolve({
+            data: timeMetricsCallCount === 1 ? mockCurrentTimeMetrics : mockPreviousTimeMetrics,
+            error: null,
+          }) as any;
+        }
+        return Promise.resolve({ data: null, error: null }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Subtask 13.6: Verify time formatting
+      expect(result.data?.timeToDecision?.submissionToDecision.formattedTime).toContain('hour');
+      expect(result.data?.timeToDecision?.approvalToPrd.formattedTime).toContain('hour');
+      expect(result.data?.timeToDecision?.prdToPrototype.formattedTime).toContain('hour');
+      expect(result.data?.timeToDecision?.endToEnd.formattedTime).toContain('day'); // >2 days
+    });
+
+    // Test error handling for time metrics
+    it('should handle time metrics query failure gracefully', async () => {
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' }];
+      const mockPreviousIdeas: any[] = [];
+      const mockCurrentCounts = { submitted_count: 10, approved_count: 8, prd_complete_count: 6, prototype_count: 4 };
+      const mockPreviousCounts = { submitted_count: 0, approved_count: 0, prd_complete_count: 0, prototype_count: 0 };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let completionRateCallCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation((fnName) => {
+        if (fnName === 'get_completion_rate_counts') {
+          completionRateCallCount++;
+          return Promise.resolve({
+            data: completionRateCallCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+            error: null,
+          }) as any;
+        } else if (fnName === 'get_time_to_decision_metrics') {
+          // Mock RPC error for time metrics
+          return Promise.resolve({
+            data: null,
+            error: { message: 'Time metrics RPC error', code: 'DB_ERROR' } as any,
+          }) as any;
+        }
+        return Promise.resolve({ data: null, error: null }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Should still return analytics data with default time metrics (0 days, N/A)
+      expect(result.data).toBeDefined();
+      expect(result.data?.timeToDecision?.submissionToDecision.averageDays).toBe(0);
+      expect(result.data?.timeToDecision?.submissionToDecision.formattedTime).toBe('N/A');
+      expect(result.data?.timeToDecision?.approvalToPrd.averageDays).toBe(0);
+      expect(result.data?.timeToDecision?.prdToPrototype.averageDays).toBe(0);
+      expect(result.data?.timeToDecision?.endToEnd.averageDays).toBe(0);
+    });
+  });
 });

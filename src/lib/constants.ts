@@ -61,3 +61,41 @@ export const RATE_HEALTH_THRESHOLDS = {
   good: 40,       // Yellow indicator
   critical: 40,   // Red indicator (below this)
 } as const
+
+/**
+ * Story 6.5 Task 12: Time-to-Decision Benchmarks
+ * Subtask 12.1 & 12.8: Target time benchmarks for each pipeline stage
+ * Configurable values for easy adjustment
+ */
+export const TIME_BENCHMARKS = {
+  submissionToDecision: {
+    target: 3,        // Target: <3 days for admin review
+    atRisk: 3.3,      // 110% of target (90-110% range is at-risk)
+    behind: 3.3,      // >110% of target is behind
+  },
+  approvalToPrd: {
+    target: 5,        // Target: <5 days for PRD development
+    atRisk: 5.5,      // 110% of target
+    behind: 5.5,      // >110% of target is behind
+  },
+  prdToPrototype: {
+    target: 2,        // Target: <2 days (fast prototype generation)
+    atRisk: 2.2,      // 110% of target
+    behind: 2.2,      // >110% of target is behind
+  },
+  endToEnd: {
+    target: 10,       // Target: <10 days total (submission to prototype)
+    atRisk: 11,       // 110% of target
+    behind: 11,       // >110% of target is behind
+  },
+} as const
+
+/**
+ * Story 6.5 Task 1: Time Format Thresholds
+ * Subtask 1.9: Determines when to display hours vs days vs weeks
+ */
+export const TIME_FORMAT_THRESHOLDS = {
+  showHours: 2,       // Show hours if <2 days (48 hours)
+  showDays: 30,       // Show days if <30 days
+  showWeeks: 30,      // Show weeks if >=30 days
+} as const

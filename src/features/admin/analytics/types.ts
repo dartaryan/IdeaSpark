@@ -15,6 +15,9 @@
  * 
  * Updated in Story 6.4 Task 3:
  * - Subtask 3.2: Added completionRates for conversion rate metrics
+ * 
+ * Updated in Story 6.5 Task 3:
+ * - Subtask 3.2: Added timeToDecision for time-to-decision metrics
  */
 export interface AnalyticsData {
   totalIdeas: number;
@@ -23,6 +26,7 @@ export interface AnalyticsData {
   pipelineBreakdown: PipelineStageData[]; // Story 6.3 Subtask 2.2: Enhanced pipeline breakdown
   completionRate: number;
   completionRates?: CompletionRates; // Story 6.4 Task 3 Subtask 3.2: Conversion rate metrics
+  timeToDecision?: TimeToDecisionMetrics; // Story 6.5 Task 3 Subtask 3.2: Time-to-decision metrics
   timeMetrics: TimeMetrics;
   timestamp: string;
   lastUpdated: string; // Subtask 2.5: ISO timestamp
@@ -128,4 +132,43 @@ export interface CompletionRates {
   approvedToPrd: ConversionRate; // Approved → PRD Complete conversion
   prdToPrototype: ConversionRate; // PRD Complete → Prototype conversion
   overallSubmittedToPrototype: ConversionRate; // Overall end-to-end conversion
+}
+
+/**
+ * Story 6.5 Task 3: Time-to-Decision Metrics Types
+ * Subtask 3.6: Define BenchmarkData interface
+ */
+export interface BenchmarkData {
+  targetDays: number; // Target time in days
+  status: 'on-track' | 'at-risk' | 'behind'; // Benchmark comparison status
+}
+
+/**
+ * Story 6.5 Task 3: Time-to-Decision Metrics Types
+ * Subtask 3.5: Define TrendData interface for time metrics (reusing existing TrendData)
+ * Note: For time metrics, 'down' direction means improvement (shorter time is better)
+ */
+
+/**
+ * Story 6.5 Task 3: Time-to-Decision Metrics Types
+ * Subtask 3.4: Define TimeMetric interface
+ */
+export interface TimeMetric {
+  averageDays: number; // Average time in days
+  averageHours: number; // Average time in hours (for display formatting)
+  formattedTime: string; // Human-readable time (e.g., "2.5 days" or "18 hours")
+  trend: TrendData; // Trend comparison vs previous period
+  count: number; // Number of ideas in sample
+  benchmark: BenchmarkData; // Benchmark comparison data
+}
+
+/**
+ * Story 6.5 Task 3: Time-to-Decision Metrics Types
+ * Subtask 3.3: Define TimeToDecisionMetrics interface
+ */
+export interface TimeToDecisionMetrics {
+  submissionToDecision: TimeMetric; // Time from submission to approval/rejection
+  approvalToPrd: TimeMetric; // Time from approval to PRD completion
+  prdToPrototype: TimeMetric; // Time from PRD completion to prototype
+  endToEnd: TimeMetric; // Total time from idea to prototype
 }

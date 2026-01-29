@@ -13,6 +13,7 @@ import { PipelineBreakdownChart } from './PipelineBreakdownChart';
 import { DateRangeFilter } from './DateRangeFilter';
 import { IdeaBreakdownModal } from './IdeaBreakdownModal';
 import { CompletionRatesCard } from './CompletionRatesCard';
+import { TimeToDecisionCard } from './TimeToDecisionCard';
 import { analyticsService } from '../../services/analyticsService';
 import { formatDistanceToNow } from 'date-fns';
 import type { DateRange, IdeaBreakdown } from '../../analytics/types';
@@ -229,6 +230,22 @@ export function AnalyticsDashboard() {
             {/* Subtask 8.6: Show loading skeleton while analytics data loads */}
             <CompletionRatesCard 
               data={analytics.completionRates}
+              isLoading={isLoading}
+            />
+          </div>
+        )}
+
+        {/* Story 6.5 Task 9: Time-to-Decision Metrics Card */}
+        {/* Subtask 9.2: Position card in dashboard layout (after completion rates card) */}
+        {/* Subtask 9.4: Full width on mobile, 50% on desktop */}
+        {analytics?.timeToDecision && (
+          <div className="lg:col-span-2">
+            {/* Subtask 9.3: Pass timeToDecision data from useAnalytics hook */}
+            {/* Subtask 9.5: Card respects current date range filter */}
+            {/* Subtask 9.6: Show loading skeleton while analytics data loads */}
+            {/* Subtask 9.8: Ensure consistent spacing with other dashboard cards */}
+            <TimeToDecisionCard 
+              data={analytics.timeToDecision}
               isLoading={isLoading}
             />
           </div>

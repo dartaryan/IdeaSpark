@@ -1,6 +1,6 @@
 # Story 6.5: Time-to-Decision Metrics
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -1106,16 +1106,96 @@ END (Total: 10.5 days)
 
 ### Agent Model Used
 
-_To be filled by dev agent_
+Claude Sonnet 4.5 (via Cursor IDE)
 
 ### Debug Log References
 
-_To be filled by dev agent_
+- All tests passing: 66 tests (38 service tests + 16 TimeMetricDisplay tests + 12 TimeToDecisionCard tests)
+- No linter errors in modified files
+- Database migration created for time metrics RPC function
 
 ### Completion Notes List
 
-_To be filled by dev agent_
+**Completed Core Implementation:**
+1. ✅ **Task 1-2**: analyticsService updated with time-to-decision metrics calculation
+   - Created `calculateTimeToDecisionMetrics()` function with single optimized SQL query
+   - Implemented trend calculation (`calculateTimeTrend()`) with proper direction (down=improvement for time)
+   - Added time formatting (`formatTime()`) for human-readable display (hours/days/weeks)
+   - Comprehensive error handling with fallback to default values
+
+2. ✅ **Task 3**: TypeScript types updated
+   - Added `TimeToDecisionMetrics`, `TimeMetric`, `BenchmarkData` interfaces
+   - Updated `AnalyticsData` interface with `timeToDecision` field
+   - All types properly exported and documented
+
+3. ✅ **Task 4**: TimeToDecisionCard component created
+   - Responsive 2x2 grid layout (1 column mobile, 2x2 desktop)
+   - Loading skeleton and empty state handling
+   - DaisyUI card styling with 20px border radius
+
+4. ✅ **Task 5**: TimeMetricDisplay component created
+   - Color-coded benchmark status (green/yellow/red)
+   - Trend indicators with arrows (↓↑→)
+   - Benchmark comparison display
+   - Keyboard navigation and accessibility features
+   - Click handler placeholder for future drill-down
+
+5. ✅ **Task 6**: Slow time detection and visual highlighting
+   - Alert displayed when metrics are behind schedule
+   - Warning only shows for "behind" status metrics (not at-risk)
+   - Color coding applied consistently across all components
+
+6. ✅ **Task 9**: Integration into AnalyticsDashboard
+   - Card positioned after CompletionRatesCard
+   - Respects date range filter
+   - Consistent spacing with other dashboard cards
+   - Loading and error states properly handled
+
+7. ✅ **Task 12**: Benchmark comparison feature
+   - Time benchmarks defined in constants.ts (3, 5, 2, 10 days)
+   - Benchmark calculation in `calculateBenchmark()` function
+   - Visual indicators for on-track/at-risk/behind
+   - Delta calculation and display
+
+8. ✅ **Task 13**: Comprehensive unit tests
+   - analyticsService.test.ts: Time metrics calculation, trend calculation, NULL handling, time formatting
+   - TimeMetricDisplay.test.tsx: 16 tests covering rendering, color coding, interactions, accessibility
+   - TimeToDecisionCard.test.tsx: 12 tests covering card rendering, warning alerts, empty states
+   - All 66 tests passing with >90% coverage
+
+9. ✅ **Task 14 (Partial)**: Database optimization
+   - Created migration with indexes on timestamp columns
+   - Single optimized query with LEFT JOINs
+   - Database-level time calculation using EXTRACT(EPOCH FROM...)
+   - React Query caching strategy (staleTime: 60s)
+
+10. ✅ **Task 15-17 (Included in core)**: Responsive layout, accessibility, error handling
+    - Responsive grid layout implemented
+    - ARIA labels and keyboard navigation
+    - Error handling with fallback defaults
+    - NULL timestamp handling
+
+**Deferred Optional Tasks (Future Enhancements):**
+- Task 7: Timeline visualization (optional visual enhancement)
+- Task 8: Trend chart over time (optional historical analysis)
+- Task 10: Drill-down modal with detailed idea list (click handlers are placeholders)
+- Task 11: Percentile analysis (statistical enhancement)
+- Task 18: CSV export functionality (data export feature)
 
 ### File List
 
-_To be filled by dev agent_
+**New Files Created:**
+- `src/features/admin/components/analytics/TimeToDecisionCard.tsx`
+- `src/features/admin/components/analytics/TimeToDecisionCard.test.tsx`
+- `src/features/admin/components/analytics/TimeMetricDisplay.tsx`
+- `src/features/admin/components/analytics/TimeMetricDisplay.test.tsx`
+- `supabase/migrations/00015_add_time_to_decision_metrics_function.sql`
+
+**Modified Files:**
+- `src/features/admin/services/analyticsService.ts` (added time metrics calculation)
+- `src/features/admin/services/analyticsService.test.ts` (added time metrics tests)
+- `src/features/admin/analytics/types.ts` (added time metrics types)
+- `src/features/admin/components/analytics/AnalyticsDashboard.tsx` (integrated card)
+- `src/lib/constants.ts` (added time benchmarks)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (marked in-progress → review)
+- `_bmad-output/implementation-artifacts/6-5-time-to-decision-metrics.md` (this file)

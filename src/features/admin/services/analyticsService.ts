@@ -3,7 +3,8 @@
 
 import { supabase } from '../../../lib/supabase';
 import type { ServiceResponse } from '../../../types/service';
-import type { AnalyticsData, DateRange, IdeaBreakdown, PipelineStatus, PipelineStageData, CompletionRates, ConversionRate, TrendData } from '../analytics/types';
+import type { AnalyticsData, DateRange, IdeaBreakdown, PipelineStatus, PipelineStageData, CompletionRates, ConversionRate, TrendData, TimeToDecisionMetrics, TimeMetric, BenchmarkData } from '../analytics/types';
+import { TIME_BENCHMARKS, TIME_FORMAT_THRESHOLDS } from '../../../lib/constants';
 
 /**
  * Story 6.4 Task 1 & Task 2: Calculate completion rates with trend data
@@ -122,6 +123,92 @@ function calculateRate(numerator: number, denominator: number): number {
 }
 
 /**
+ * Story 6.5 Task 1 Subtask 1.9: Format time as human-readable
+ * @param days Time in days
+ * @returns Human-readable time string
+ */
+function formatTime(days: number): string {
+  // Handle 0 case specially
+  if (days === 0) {
+    return 'N/A';
+  }
+  
+  if (days < TIME_FORMAT_THRESHOLDS.showHours) {
+    const hours = Math.round(days * 24);
+    return `${hours} hour${hours === 1 ? '' : 's'}`;
+  } else if (days < TIME_FORMAT_THRESHOLDS.showWeeks) {
+    return `${days.toFixed(1)} day${days === 1 ? '' : 's'}`;
+  } else {
+    const weeks = (days / 7).toFixed(1);
+    return `${weeks} week${weeks === '1.0' ? '' : 's'}`;
+  }
+}
+
+/**
+ * Story 6.5 Task 12: Calculate benchmark comparison
+ * Subtask 12.2-12.6: Determine benchmark status and delta
+ * @param averageDays Average time in days
+ * @param benchmarkConfig Benchmark configuration for the metric
+ * @returns BenchmarkData with status and target
+ */
+function calculateBenchmark(averageDays: number, benchmarkConfig: { target: number; atRisk: number; behind: number }): BenchmarkData {
+  // Subtask 12.4: Determine status based on thresholds
+  let status: 'on-track' | 'at-risk' | 'behind';
+  
+  if (averageDays < benchmarkConfig.target * 0.9) {
+    status = 'on-track'; // <90% of target
+  } else if (averageDays <= benchmarkConfig.atRisk) {
+    status = 'at-risk'; // 90-110% of target
+  } else {
+    status = 'behind'; // >110% of target
+  }
+
+  return {
+    targetDays: benchmarkConfig.target,
+    status,
+  };
+}
+
+/**
+ * Story 6.5 Task 2: Calculate time trend comparing current vs previous period
+ * Subtask 2.2-2.7: Determine direction, change, and percentage change
+ * Note: For time metrics, DECREASING time is IMPROVEMENT (opposite of completion rates)
+ * @param currentDays Current period average days
+ * @param previousDays Previous period average days
+ * @returns TrendData with direction and change metrics
+ */
+function calculateTimeTrend(currentDays: number, previousDays: number): TrendData {
+  // Subtask 2.2: Calculate time change
+  const change = Math.round((currentDays - previousDays) * 10) / 10;
+  
+  // Subtask 2.3: Determine trend direction (>0.5 day significant, LOWER is better for time)
+  let direction: 'up' | 'down' | 'neutral';
+  if (change < -0.5) {
+    direction = 'down'; // Time decreased = IMPROVEMENT (use 'down' to indicate improvement)
+  } else if (change > 0.5) {
+    direction = 'up'; // Time increased = WORSENING
+  } else {
+    direction = 'neutral'; // No significant change
+  }
+
+  // Subtask 2.4: Calculate percentage change
+  // Subtask 2.6: Handle case where previous period has no data
+  let changePercentage = 0;
+  if (previousDays === 0) {
+    changePercentage = currentDays > 0 ? 100 : 0;
+  } else {
+    changePercentage = Math.round((change / previousDays) * 100 * 10) / 10;
+  }
+
+  // Subtask 2.5: Format trend data
+  return {
+    direction,
+    change,
+    changePercentage,
+  };
+}
+
+/**
  * Story 6.4 Task 2: Calculate trend data comparing current vs previous period
  * Subtask 2.2-2.7: Determine direction, change, and percentage change
  * @param currentRate Current period rate
@@ -173,6 +260,139 @@ function getDefaultCompletionRates(): CompletionRates {
     approvedToPrd: defaultRate,
     prdToPrototype: defaultRate,
     overallSubmittedToPrototype: defaultRate,
+  };
+}
+
+/**
+ * Story 6.5 Task 1 & Task 2: Calculate time-to-decision metrics with trend data
+ * Subtask 1.1-1.12 & Subtask 2.1-2.8: Optimized single query with JOINs
+ * @param currentStart Start of current period
+ * @param currentEnd End of current period
+ * @param previousStart Start of previous period
+ * @param previousEnd End of previous period
+ * @returns TimeToDecisionMetrics with all time metrics and trends
+ */
+async function calculateTimeToDecisionMetrics(
+  currentStart: Date,
+  currentEnd: Date,
+  previousStart: Date,
+  previousEnd: Date
+): Promise<TimeToDecisionMetrics> {
+  try {
+    // Subtask 1.10: Use single optimized query with LEFT JOINs to get all timestamps efficiently
+    // This query calculates average times for each pipeline stage in a single database call
+    const { data: currentData, error: currentError } = await (supabase.rpc as any)('get_time_to_decision_metrics', {
+      start_date: currentStart.toISOString(),
+      end_date: currentEnd.toISOString()
+    });
+
+    if (currentError) {
+      console.error('Current period time metrics error:', currentError);
+      // Subtask 1.12: Return default values on error
+      return getDefaultTimeToDecisionMetrics();
+    }
+
+    // Subtask 2.1: Query for previous period time metrics
+    const { data: previousData, error: previousError } = await (supabase.rpc as any)('get_time_to_decision_metrics', {
+      start_date: previousStart.toISOString(),
+      end_date: previousEnd.toISOString()
+    });
+
+    if (previousError) {
+      console.error('Previous period time metrics error:', previousError);
+    }
+
+    // Extract current period metrics
+    const currentSubmissionToDecision = (currentData as any)?.avg_submission_to_decision_days || 0;
+    const currentSubmissionToDecisionCount = (currentData as any)?.submission_to_decision_count || 0;
+    const currentApprovalToPrd = (currentData as any)?.avg_approval_to_prd_days || 0;
+    const currentApprovalToPrdCount = (currentData as any)?.approval_to_prd_count || 0;
+    const currentPrdToPrototype = (currentData as any)?.avg_prd_to_prototype_days || 0;
+    const currentPrdToPrototypeCount = (currentData as any)?.prd_to_prototype_count || 0;
+    const currentEndToEnd = (currentData as any)?.avg_end_to_end_days || 0;
+    const currentEndToEndCount = (currentData as any)?.end_to_end_count || 0;
+
+    // Extract previous period metrics (Subtask 2.6: handle missing data)
+    const previousSubmissionToDecision = (previousData as any)?.avg_submission_to_decision_days || 0;
+    const previousApprovalToPrd = (previousData as any)?.avg_approval_to_prd_days || 0;
+    const previousPrdToPrototype = (previousData as any)?.avg_prd_to_prototype_days || 0;
+    const previousEndToEnd = (previousData as any)?.avg_end_to_end_days || 0;
+
+    // Subtask 2.2-2.7: Calculate trend data for each time metric
+    const submissionToDecisionTrend = calculateTimeTrend(currentSubmissionToDecision, previousSubmissionToDecision);
+    const approvalToPrdTrend = calculateTimeTrend(currentApprovalToPrd, previousApprovalToPrd);
+    const prdToPrototypeTrend = calculateTimeTrend(currentPrdToPrototype, previousPrdToPrototype);
+    const endToEndTrend = calculateTimeTrend(currentEndToEnd, previousEndToEnd);
+
+    // Task 12: Calculate benchmark comparisons
+    const submissionToDecisionBenchmark = calculateBenchmark(currentSubmissionToDecision, TIME_BENCHMARKS.submissionToDecision);
+    const approvalToPrdBenchmark = calculateBenchmark(currentApprovalToPrd, TIME_BENCHMARKS.approvalToPrd);
+    const prdToPrototypeBenchmark = calculateBenchmark(currentPrdToPrototype, TIME_BENCHMARKS.prdToPrototype);
+    const endToEndBenchmark = calculateBenchmark(currentEndToEnd, TIME_BENCHMARKS.endToEnd);
+
+    // Subtask 1.11: Return TimeToDecisionMetrics object
+    return {
+      submissionToDecision: {
+        averageDays: currentSubmissionToDecision,
+        averageHours: currentSubmissionToDecision * 24,
+        formattedTime: formatTime(currentSubmissionToDecision),
+        trend: submissionToDecisionTrend,
+        count: currentSubmissionToDecisionCount,
+        benchmark: submissionToDecisionBenchmark,
+      },
+      approvalToPrd: {
+        averageDays: currentApprovalToPrd,
+        averageHours: currentApprovalToPrd * 24,
+        formattedTime: formatTime(currentApprovalToPrd),
+        trend: approvalToPrdTrend,
+        count: currentApprovalToPrdCount,
+        benchmark: approvalToPrdBenchmark,
+      },
+      prdToPrototype: {
+        averageDays: currentPrdToPrototype,
+        averageHours: currentPrdToPrototype * 24,
+        formattedTime: formatTime(currentPrdToPrototype),
+        trend: prdToPrototypeTrend,
+        count: currentPrdToPrototypeCount,
+        benchmark: prdToPrototypeBenchmark,
+      },
+      endToEnd: {
+        averageDays: currentEndToEnd,
+        averageHours: currentEndToEnd * 24,
+        formattedTime: formatTime(currentEndToEnd),
+        trend: endToEndTrend,
+        count: currentEndToEndCount,
+        benchmark: endToEndBenchmark,
+      },
+    };
+  } catch (error) {
+    console.error('calculateTimeToDecisionMetrics error:', error);
+    // Subtask 1.12 & 2.8: Error handling with default values
+    return getDefaultTimeToDecisionMetrics();
+  }
+}
+
+/**
+ * Story 6.5 Task 1 Subtask 1.12: Default time metrics for error cases
+ * @returns TimeToDecisionMetrics with all times at 0 and neutral trend
+ */
+function getDefaultTimeToDecisionMetrics(): TimeToDecisionMetrics {
+  const defaultTrend: TrendData = { direction: 'neutral', change: 0, changePercentage: 0 };
+  const defaultBenchmark: BenchmarkData = { targetDays: 0, status: 'on-track' };
+  const defaultTimeMetric: TimeMetric = { 
+    averageDays: 0, 
+    averageHours: 0,
+    formattedTime: 'N/A', 
+    trend: defaultTrend, 
+    count: 0,
+    benchmark: defaultBenchmark,
+  };
+  
+  return {
+    submissionToDecision: defaultTimeMetric,
+    approvalToPrd: defaultTimeMetric,
+    prdToPrototype: defaultTimeMetric,
+    endToEnd: defaultTimeMetric,
   };
 }
 
@@ -362,6 +582,9 @@ export const analyticsService = {
       // Story 6.4 Task 1: Calculate completion rates
       const completionRates = await calculateCompletionRates(currentPeriodStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
 
+      // Story 6.5 Task 1: Calculate time-to-decision metrics
+      const timeToDecision = await calculateTimeToDecisionMetrics(currentPeriodStart, currentPeriodEnd, previousPeriodStart, previousPeriodEnd);
+
       const analyticsData: AnalyticsData = {
         totalIdeas,
         previousPeriodTotal,
@@ -369,6 +592,7 @@ export const analyticsService = {
         pipelineBreakdown,
         completionRate,
         completionRates, // Story 6.4 Task 1 Subtask 1.12: Add completion rates
+        timeToDecision, // Story 6.5 Task 1 Subtask 1.11: Add time-to-decision metrics
         timeMetrics,
         timestamp: new Date().toISOString(),
         lastUpdated: new Date().toISOString(), // Subtask 2.5
