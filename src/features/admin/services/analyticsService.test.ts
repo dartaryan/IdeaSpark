@@ -720,4 +720,398 @@ describe('analyticsService', () => {
       expect(result.data?.[1].count).toBe(15);
     });
   });
+
+  // Story 6.4 Task 12: Comprehensive tests for completion rates
+  describe('completion rates', () => {
+    it('should return completion rates in analytics data', async () => {
+      // Subtask 12.2: Test getAnalytics() returns completionRates correctly
+      const mockIdeas = [
+        { id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' },
+        { id: '2', status: 'approved', created_at: '2026-01-03', updated_at: '2026-01-04' },
+      ];
+
+      const mockPreviousIdeas = [{ id: '3', created_at: '2025-12-01' }];
+
+      const mockCurrentCounts = {
+        submitted_count: 10,
+        approved_count: 7,
+        prd_complete_count: 5,
+        prototype_count: 3,
+      };
+
+      const mockPreviousCounts = {
+        submitted_count: 8,
+        approved_count: 5,
+        prd_complete_count: 3,
+        prototype_count: 2,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let rpcCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation(() => {
+        rpcCount++;
+        return Promise.resolve({
+          data: rpcCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+          error: null,
+        }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      expect(result.data?.completionRates).toBeDefined();
+      expect(result.data?.completionRates?.submittedToApproved).toBeDefined();
+      expect(result.data?.completionRates?.approvedToPrd).toBeDefined();
+      expect(result.data?.completionRates?.prdToPrototype).toBeDefined();
+      expect(result.data?.completionRates?.overallSubmittedToPrototype).toBeDefined();
+    });
+
+    it('should calculate conversion rates accurately', async () => {
+      // Subtask 12.3: Test rate calculation accuracy
+      const mockIdeas = [
+        { id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' },
+      ];
+
+      const mockPreviousIdeas = [{ id: '2', created_at: '2025-12-01' }];
+
+      const mockCurrentCounts = {
+        submitted_count: 100,
+        approved_count: 75,  // 75% approval rate
+        prd_complete_count: 50,  // 66.7% of approved
+        prototype_count: 25,  // 50% of PRD complete, 25% overall
+      };
+
+      const mockPreviousCounts = {
+        submitted_count: 80,
+        approved_count: 60,
+        prd_complete_count: 40,
+        prototype_count: 20,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let rpcCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation(() => {
+        rpcCount++;
+        return Promise.resolve({
+          data: rpcCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+          error: null,
+        }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Submitted → Approved: 75/100 = 75%
+      expect(result.data?.completionRates?.submittedToApproved.rate).toBe(75);
+      expect(result.data?.completionRates?.submittedToApproved.count).toBe(75);
+      expect(result.data?.completionRates?.submittedToApproved.totalCount).toBe(100);
+
+      // Approved → PRD: 50/75 = 66.7%
+      expect(result.data?.completionRates?.approvedToPrd.rate).toBe(66.7);
+      expect(result.data?.completionRates?.approvedToPrd.count).toBe(50);
+      expect(result.data?.completionRates?.approvedToPrd.totalCount).toBe(75);
+
+      // PRD → Prototype: 25/50 = 50%
+      expect(result.data?.completionRates?.prdToPrototype.rate).toBe(50);
+
+      // Overall: 25/100 = 25%
+      expect(result.data?.completionRates?.overallSubmittedToPrototype.rate).toBe(25);
+    });
+
+    it('should handle division by zero edge case', async () => {
+      // Subtask 12.3: Test edge case when denominator = 0
+      const mockIdeas: any[] = [];
+      const mockPreviousIdeas: any[] = [];
+
+      const mockCurrentCounts = {
+        submitted_count: 0,
+        approved_count: 0,
+        prd_complete_count: 0,
+        prototype_count: 0,
+      };
+
+      const mockPreviousCounts = {
+        submitted_count: 0,
+        approved_count: 0,
+        prd_complete_count: 0,
+        prototype_count: 0,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let rpcCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation(() => {
+        rpcCount++;
+        return Promise.resolve({
+          data: rpcCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+          error: null,
+        }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // All rates should be 0% when no ideas exist (not NaN or error)
+      expect(result.data?.completionRates?.submittedToApproved.rate).toBe(0);
+      expect(result.data?.completionRates?.approvedToPrd.rate).toBe(0);
+      expect(result.data?.completionRates?.prdToPrototype.rate).toBe(0);
+      expect(result.data?.completionRates?.overallSubmittedToPrototype.rate).toBe(0);
+    });
+
+    it('should calculate positive trend correctly', async () => {
+      // Subtask 12.4: Test trend calculation for positive trends
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' }];
+      const mockPreviousIdeas = [{ id: '2', created_at: '2025-12-01' }];
+
+      const mockCurrentCounts = {
+        submitted_count: 100,
+        approved_count: 80,  // 80% approval rate
+        prd_complete_count: 60,
+        prototype_count: 40,
+      };
+
+      const mockPreviousCounts = {
+        submitted_count: 100,
+        approved_count: 70,  // 70% approval rate (previous)
+        prd_complete_count: 50,
+        prototype_count: 30,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let rpcCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation(() => {
+        rpcCount++;
+        return Promise.resolve({
+          data: rpcCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+          error: null,
+        }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Trend: 80% - 70% = +10% change (direction: 'up')
+      const trend = result.data?.completionRates?.submittedToApproved.trend;
+      expect(trend?.direction).toBe('up');
+      expect(trend?.change).toBe(10);
+      expect(trend?.changePercentage).toBeGreaterThan(0);
+    });
+
+    it('should calculate negative trend correctly', async () => {
+      // Subtask 12.4: Test trend calculation for negative trends
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' }];
+      const mockPreviousIdeas = [{ id: '2', created_at: '2025-12-01' }];
+
+      const mockCurrentCounts = {
+        submitted_count: 100,
+        approved_count: 60,  // 60% approval rate
+        prd_complete_count: 40,
+        prototype_count: 20,
+      };
+
+      const mockPreviousCounts = {
+        submitted_count: 100,
+        approved_count: 75,  // 75% approval rate (previous)
+        prd_complete_count: 55,
+        prototype_count: 35,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let rpcCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation(() => {
+        rpcCount++;
+        return Promise.resolve({
+          data: rpcCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+          error: null,
+        }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Trend: 60% - 75% = -15% change (direction: 'down')
+      const trend = result.data?.completionRates?.submittedToApproved.trend;
+      expect(trend?.direction).toBe('down');
+      expect(trend?.change).toBe(-15);
+      expect(trend?.changePercentage).toBeLessThan(0);
+    });
+
+    it('should calculate neutral trend correctly', async () => {
+      // Subtask 12.4: Test trend calculation for neutral trends
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' }];
+      const mockPreviousIdeas = [{ id: '2', created_at: '2025-12-01' }];
+
+      const mockCurrentCounts = {
+        submitted_count: 100,
+        approved_count: 71,  // 71% approval rate
+        prd_complete_count: 50,
+        prototype_count: 25,
+      };
+
+      const mockPreviousCounts = {
+        submitted_count: 100,
+        approved_count: 70,  // 70% approval rate (previous) - only 1% change
+        prd_complete_count: 50,
+        prototype_count: 25,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      let rpcCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation(() => {
+        rpcCount++;
+        return Promise.resolve({
+          data: rpcCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+          error: null,
+        }) as any;
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Trend: 71% - 70% = +1% change (direction: 'neutral', <2% threshold)
+      const trend = result.data?.completionRates?.submittedToApproved.trend;
+      expect(trend?.direction).toBe('neutral');
+      expect(Math.abs(trend?.change || 0)).toBeLessThan(2);
+    });
+
+    it('should apply date range filter to completion rates data', async () => {
+      // Subtask 12.5: Test date range filter affects completion rates
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-15', updated_at: '2026-01-16' }];
+      const mockPreviousIdeas: any[] = [];
+
+      const mockCurrentCounts = {
+        submitted_count: 50,
+        approved_count: 40,
+        prd_complete_count: 30,
+        prototype_count: 20,
+      };
+
+      const mockPreviousCounts = {
+        submitted_count: 0,
+        approved_count: 0,
+        prd_complete_count: 0,
+        prototype_count: 0,
+      };
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          gte: vi.fn().mockReturnValue({
+            lt: vi.fn().mockResolvedValue({
+              data: mockIdeas,
+              error: null,
+            }),
+          }),
+        }),
+      } as any);
+
+      let rpcCount = 0;
+      vi.mocked(supabase.rpc).mockImplementation((fnName, params) => {
+        rpcCount++;
+        // Verify RPC is called with correct date range
+        expect(params).toHaveProperty('start_date');
+        expect(params).toHaveProperty('end_date');
+        
+        return Promise.resolve({
+          data: rpcCount === 1 ? mockCurrentCounts : mockPreviousCounts,
+          error: null,
+        }) as any;
+      });
+
+      const dateRange = { startDate: '2026-01-01', endDate: '2026-02-01' };
+      const result = await analyticsService.getAnalytics(dateRange);
+
+      expect(result.data?.completionRates).toBeDefined();
+      expect(supabase.rpc).toHaveBeenCalled();
+    });
+
+    it('should handle completion rates query failure gracefully', async () => {
+      // Subtask 12.3 & 1.13: Test error handling
+      const mockIdeas = [{ id: '1', status: 'submitted', created_at: '2026-01-01', updated_at: '2026-01-02' }];
+      const mockPreviousIdeas: any[] = [];
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      let queryCount = 0;
+      vi.mocked(supabase.from).mockImplementation(() => {
+        queryCount++;
+        return createMockQueryBuilder(queryCount === 1 ? mockIdeas : mockPreviousIdeas);
+      });
+
+      // Mock RPC to return error
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: null,
+        error: { message: 'RPC function error', code: 'DB_ERROR' } as any,
+      });
+
+      const result = await analyticsService.getAnalytics();
+
+      // Should still return analytics data with default completion rates (0%)
+      expect(result.data).toBeDefined();
+      expect(result.data?.completionRates?.submittedToApproved.rate).toBe(0);
+      expect(result.data?.completionRates?.approvedToPrd.rate).toBe(0);
+      expect(result.data?.completionRates?.prdToPrototype.rate).toBe(0);
+      expect(result.data?.completionRates?.overallSubmittedToPrototype.rate).toBe(0);
+    });
+  });
 });

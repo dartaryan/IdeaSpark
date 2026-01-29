@@ -4,7 +4,177 @@
 import { supabase } from '../../../lib/supabase';
 import type { ServiceResponse } from '../../../types/service';
 import type { AnalyticsData, DateRange, IdeaBreakdown, PipelineStatus, PipelineStageData, CompletionRates, ConversionRate, TrendData } from '../analytics/types';
-import { differenceInDays } from 'date-fns';
+
+/**
+ * Story 6.4 Task 1 & Task 2: Calculate completion rates with trend data
+ * Subtask 1.1-1.13 & Subtask 2.1-2.8: Optimized single query with COUNT FILTER
+ * @param currentStart Start of current period
+ * @param currentEnd End of current period
+ * @param previousStart Start of previous period
+ * @param previousEnd End of previous period
+ * @returns CompletionRates with all conversion metrics and trends
+ */
+async function calculateCompletionRates(
+  currentStart: Date,
+  currentEnd: Date,
+  previousStart: Date,
+  previousEnd: Date
+): Promise<CompletionRates> {
+  try {
+    // Subtask 1.5 & 13.5: Use single optimized query with COUNT FILTER
+    // Query for current period counts
+    const { data: currentCounts, error: currentError } = await (supabase.rpc as any)('get_completion_rate_counts', {
+      start_date: currentStart.toISOString(),
+      end_date: currentEnd.toISOString()
+    });
+
+    if (currentError) {
+      console.error('Current period completion rates error:', currentError);
+      // Subtask 1.13: Return default values on error
+      return getDefaultCompletionRates();
+    }
+
+    // Subtask 2.1: Query for previous period counts
+    const { data: previousCounts, error: previousError } = await (supabase.rpc as any)('get_completion_rate_counts', {
+      start_date: previousStart.toISOString(),
+      end_date: previousEnd.toISOString()
+    });
+
+    if (previousError) {
+      console.error('Previous period completion rates error:', previousError);
+    }
+
+    // Extract current period counts
+    const currentSubmitted = (currentCounts as any)?.submitted_count || 0;
+    const currentApproved = (currentCounts as any)?.approved_count || 0;
+    const currentPrdComplete = (currentCounts as any)?.prd_complete_count || 0;
+    const currentPrototype = (currentCounts as any)?.prototype_count || 0;
+
+    // Extract previous period counts (Subtask 2.6: handle missing data)
+    const previousSubmitted = (previousCounts as any)?.submitted_count || 0;
+    const previousApproved = (previousCounts as any)?.approved_count || 0;
+    const previousPrdComplete = (previousCounts as any)?.prd_complete_count || 0;
+    const previousPrototype = (previousCounts as any)?.prototype_count || 0;
+
+    // Subtask 1.6-1.9: Calculate conversion rates with division by zero handling
+    const submittedToApprovedRate = calculateRate(currentApproved, currentSubmitted);
+    const approvedToPrdRate = calculateRate(currentPrdComplete, currentApproved);
+    const prdToPrototypeRate = calculateRate(currentPrototype, currentPrdComplete);
+    const overallRate = calculateRate(currentPrototype, currentSubmitted);
+
+    // Calculate previous period rates for trend comparison
+    const prevSubmittedToApprovedRate = calculateRate(previousApproved, previousSubmitted);
+    const prevApprovedToPrdRate = calculateRate(previousPrdComplete, previousApproved);
+    const prevPrdToPrototypeRate = calculateRate(previousPrototype, previousPrdComplete);
+    const prevOverallRate = calculateRate(previousPrototype, previousSubmitted);
+
+    // Subtask 2.2-2.7: Calculate trend data for each conversion
+    const submittedToApprovedTrend = calculateTrend(submittedToApprovedRate, prevSubmittedToApprovedRate);
+    const approvedToPrdTrend = calculateTrend(approvedToPrdRate, prevApprovedToPrdRate);
+    const prdToPrototypeTrend = calculateTrend(prdToPrototypeRate, prevPrdToPrototypeRate);
+    const overallTrend = calculateTrend(overallRate, prevOverallRate);
+
+    // Subtask 1.12: Return CompletionRates object
+    return {
+      submittedToApproved: {
+        rate: submittedToApprovedRate,
+        trend: submittedToApprovedTrend,
+        count: currentApproved,
+        totalCount: currentSubmitted,
+      },
+      approvedToPrd: {
+        rate: approvedToPrdRate,
+        trend: approvedToPrdTrend,
+        count: currentPrdComplete,
+        totalCount: currentApproved,
+      },
+      prdToPrototype: {
+        rate: prdToPrototypeRate,
+        trend: prdToPrototypeTrend,
+        count: currentPrototype,
+        totalCount: currentPrdComplete,
+      },
+      overallSubmittedToPrototype: {
+        rate: overallRate,
+        trend: overallTrend,
+        count: currentPrototype,
+        totalCount: currentSubmitted,
+      },
+    };
+  } catch (error) {
+    console.error('calculateCompletionRates error:', error);
+    // Subtask 1.13 & 2.8: Error handling with default values
+    return getDefaultCompletionRates();
+  }
+}
+
+/**
+ * Story 6.4 Task 1 Subtask 1.10: Calculate rate with division by zero handling
+ * @param numerator Count of ideas that converted
+ * @param denominator Total count of ideas
+ * @returns Rate as percentage (0-100), or 0 if denominator is 0
+ */
+function calculateRate(numerator: number, denominator: number): number {
+  if (denominator === 0) {
+    return 0; // Subtask 1.10: Return 0% if no ideas to convert
+  }
+  return Math.round((numerator / denominator) * 100 * 10) / 10; // Round to 1 decimal place
+}
+
+/**
+ * Story 6.4 Task 2: Calculate trend data comparing current vs previous period
+ * Subtask 2.2-2.7: Determine direction, change, and percentage change
+ * @param currentRate Current period rate
+ * @param previousRate Previous period rate
+ * @returns TrendData with direction and change metrics
+ */
+function calculateTrend(currentRate: number, previousRate: number): TrendData {
+  // Subtask 2.2: Calculate rate change
+  const change = Math.round((currentRate - previousRate) * 10) / 10;
+  
+  // Subtask 2.3: Determine trend direction (>2% significant)
+  let direction: 'up' | 'down' | 'neutral';
+  if (change > 2) {
+    direction = 'up';
+  } else if (change < -2) {
+    direction = 'down';
+  } else {
+    direction = 'neutral';
+  }
+
+  // Subtask 2.4: Calculate percentage change
+  // Subtask 2.6: Handle case where previous period has no data
+  let changePercentage = 0;
+  if (previousRate === 0) {
+    // If previous was 0 and current is not, show 100% increase
+    changePercentage = currentRate > 0 ? 100 : 0;
+  } else {
+    changePercentage = Math.round((change / previousRate) * 100 * 10) / 10;
+  }
+
+  // Subtask 2.5: Format trend data
+  return {
+    direction,
+    change,
+    changePercentage,
+  };
+}
+
+/**
+ * Story 6.4 Task 1 Subtask 1.13: Default completion rates for error cases
+ * @returns CompletionRates with all rates at 0 and neutral trend
+ */
+function getDefaultCompletionRates(): CompletionRates {
+  const defaultTrend: TrendData = { direction: 'neutral', change: 0, changePercentage: 0 };
+  const defaultRate: ConversionRate = { rate: 0, trend: defaultTrend, count: 0, totalCount: 0 };
+  
+  return {
+    submittedToApproved: defaultRate,
+    approvedToPrd: defaultRate,
+    prdToPrototype: defaultRate,
+    overallSubmittedToPrototype: defaultRate,
+  };
+}
 
 /**
  * Story 6.3 Task 1 Subtask 1.6: Map status values to display labels
@@ -250,7 +420,7 @@ export const analyticsService = {
 
       // Subtask 8.2 & 8.3: Call optimized PostgreSQL function with date_trunc
       // This function groups ideas by week at the database level for better performance
-      const { data, error } = await supabase.rpc('get_ideas_breakdown', {
+      const { data, error } = await (supabase.rpc as any)('get_ideas_breakdown', {
         start_date: startDate,
         end_date: endDate,
         interval_type: 'week'
@@ -265,13 +435,13 @@ export const analyticsService = {
         };
       }
 
-      if (!data || data.length === 0) {
+      if (!data || (data as any).length === 0) {
         return { data: [], error: null };
       }
 
       // Subtask 8.4 & 8.5: Format breakdown with period labels
       // PostgreSQL function already formats periods, convert to IdeaBreakdown format
-      const breakdown: IdeaBreakdown[] = data.map((row: { period: string; count: number }) => ({
+      const breakdown: IdeaBreakdown[] = (data as any).map((row: { period: string; count: number }) => ({
         period: row.period,
         count: row.count,
       }));

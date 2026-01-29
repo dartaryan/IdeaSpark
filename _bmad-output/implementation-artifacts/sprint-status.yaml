@@ -109,7 +109,7 @@ development_status:
   6-1-analytics-dashboard-layout: review
   6-2-total-ideas-submitted-metric: done
   6-3-pipeline-stage-breakdown-chart: review
-  6-4-completion-rates-metrics: in-progress
+  6-4-completion-rates-metrics: review
   6-5-time-to-decision-metrics: ready-for-dev
   6-6-user-activity-overview: ready-for-dev
   6-7-date-range-filtering-for-analytics: ready-for-dev
