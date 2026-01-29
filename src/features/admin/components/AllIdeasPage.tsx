@@ -1,8 +1,9 @@
 // src/features/admin/components/AllIdeasPage.tsx
 // Task 1: All Ideas Page component - main list view for admin
+// Story 5.5: Updated to use RejectIdeaButton component in IdeaListItem
 
 import { useState } from 'react';
-import { useAllIdeas, useApproveIdea, useRejectIdea } from '../hooks';
+import { useAllIdeas } from '../hooks';
 import { IdeaFilters } from './IdeaFilters';
 import { IdeaListItem } from './IdeaListItem';
 import type { IdeaFilters as IdeaFiltersType } from '../types';
@@ -15,6 +16,7 @@ import type { IdeaFilters as IdeaFiltersType } from '../types';
  * - Filtering by status, sorting, and search
  * - Loading and error states
  * - Responsive layout
+ * - Inline reject action handled by IdeaListItem component (Story 5.5)
  */
 export function AllIdeasPage() {
   // Local state for filters
@@ -24,58 +26,7 @@ export function AllIdeasPage() {
     searchQuery: '',
   });
 
-  // Modal state
-  const [approveModalOpen, setApproveModalOpen] = useState(false);
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
-  const [rejectionFeedback, setRejectionFeedback] = useState('');
-
   const { data: ideas, isLoading, error } = useAllIdeas(filters);
-  const approveMutation = useApproveIdea();
-  const rejectMutation = useRejectIdea();
-
-  // Subtask 6.3: Handler to open approve confirmation modal
-  const handleApprove = (ideaId: string) => {
-    setSelectedIdeaId(ideaId);
-    setApproveModalOpen(true);
-  };
-
-  // Subtask 6.3: Confirm approval action
-  const confirmApprove = () => {
-    if (selectedIdeaId) {
-      approveMutation.mutate(selectedIdeaId, {
-        onSuccess: () => {
-          setApproveModalOpen(false);
-          setSelectedIdeaId(null);
-          // Subtask 6.7: Success toast handled by toast hook
-        },
-      });
-    }
-  };
-
-  // Subtask 6.4: Handler to open reject feedback modal
-  const handleReject = (ideaId: string) => {
-    setSelectedIdeaId(ideaId);
-    setRejectionFeedback('');
-    setRejectModalOpen(true);
-  };
-
-  // Subtask 6.4: Confirm rejection with feedback
-  const confirmReject = () => {
-    if (selectedIdeaId && rejectionFeedback.trim().length >= 20) {
-      rejectMutation.mutate(
-        { ideaId: selectedIdeaId, feedback: rejectionFeedback },
-        {
-          onSuccess: () => {
-            setRejectModalOpen(false);
-            setSelectedIdeaId(null);
-            setRejectionFeedback('');
-            // Subtask 6.7: Success toast handled by toast hook
-          },
-        }
-      );
-    }
-  };
 
   // Loading state - Task 7
   if (isLoading) {
@@ -141,14 +92,13 @@ export function AllIdeasPage() {
         />
 
         {/* List section - Task 3 */}
+        {/* Story 5.5 Task 6: IdeaListItem now contains inline reject action with modal */}
         {hasIdeas ? (
           <div className="space-y-4">
             {ideas?.map((idea) => (
               <IdeaListItem
                 key={idea.id}
                 idea={idea}
-                onApprove={handleApprove}
-                onReject={handleReject}
               />
             ))}
           </div>
@@ -180,82 +130,6 @@ export function AllIdeasPage() {
           </div>
         )}
       </div>
-
-      {/* Subtask 6.3: Approve Confirmation Modal */}
-      {approveModalOpen && (
-        <div className="modal modal-open">
-          <div className="modal-box" style={{ borderRadius: '20px' }}>
-            <h3 className="font-bold text-lg mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              Approve Idea
-            </h3>
-            <p className="mb-6">
-              Are you sure you want to approve this idea? The submitter will be notified and can proceed to PRD development.
-            </p>
-            <div className="modal-action">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setApproveModalOpen(false)}
-                disabled={approveMutation.isPending}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn"
-                style={{ backgroundColor: '#3B82F6', color: 'white', border: 'none' }}
-                onClick={confirmApprove}
-                disabled={approveMutation.isPending}
-              >
-                {approveMutation.isPending ? 'Approving...' : 'Approve'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Subtask 6.4: Reject Feedback Modal */}
-      {rejectModalOpen && (
-        <div className="modal modal-open">
-          <div className="modal-box" style={{ borderRadius: '20px' }}>
-            <h3 className="font-bold text-lg mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              Reject Idea
-            </h3>
-            <p className="mb-4">
-              Please provide feedback explaining why this idea is being rejected. The submitter will see this feedback.
-            </p>
-            <textarea
-              className="textarea textarea-bordered w-full mb-2"
-              placeholder="Enter feedback (minimum 20 characters)..."
-              rows={4}
-              value={rejectionFeedback}
-              onChange={(e) => setRejectionFeedback(e.target.value)}
-              disabled={rejectMutation.isPending}
-            />
-            <p className="text-sm text-base-content/60 mb-6">
-              {rejectionFeedback.length}/20 characters minimum
-            </p>
-            <div className="modal-action">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setRejectModalOpen(false)}
-                disabled={rejectMutation.isPending}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-error"
-                onClick={confirmReject}
-                disabled={rejectMutation.isPending || rejectionFeedback.trim().length < 20}
-              >
-                {rejectMutation.isPending ? 'Rejecting...' : 'Reject'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

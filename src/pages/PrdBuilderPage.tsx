@@ -13,7 +13,6 @@ import { SaveIndicator, CompletionValidationModal, ConfirmCompletionModal, Compl
 export function PrdBuilderPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   const {
     idea,
@@ -24,6 +23,36 @@ export function PrdBuilderPage() {
     isIdeaNotApproved,
     isCreatingPrd,
   } = usePrdPageData(id);
+
+  // IMPORTANT: All hooks must be called BEFORE any early returns to maintain consistent hook order
+  const { toast } = useToast();
+
+  // Use usePrdBuilder hook for section state management with auto-save
+  // Pass fallback values when prd is not yet available
+  const {
+    prdContent,
+    highlightedSections,
+    saveStatus,
+    lastSaved,
+    saveError,
+    handleSectionUpdates,
+    triggerSave,
+    clearSaveError,
+    completionValidation,
+    focusOnSection,
+    isComplete,
+    showValidationModal,
+    showConfirmModal,
+    attemptMarkComplete,
+    confirmComplete,
+    closeValidationModal,
+    closeConfirmModal,
+    isCompletingPrd,
+  } = usePrdBuilder({
+    prdId: prd?.id ?? '',
+    initialContent: prd?.content ?? undefined,
+    prdStatus: prd?.status ?? 'draft',
+  });
 
   // Loading state
   if (isLoading || isCreatingPrd) {
@@ -47,32 +76,6 @@ export function PrdBuilderPage() {
 
   // Main content
   if (!idea || !prd) return null;
-
-  // Use usePrdBuilder hook for section state management with auto-save
-  const {
-    prdContent,
-    highlightedSections,
-    saveStatus,
-    lastSaved,
-    saveError,
-    handleSectionUpdates,
-    triggerSave,
-    clearSaveError,
-    completionValidation,
-    focusOnSection,
-    isComplete,
-    showValidationModal,
-    showConfirmModal,
-    attemptMarkComplete,
-    confirmComplete,
-    closeValidationModal,
-    closeConfirmModal,
-    isCompletingPrd,
-  } = usePrdBuilder({
-    prdId: prd.id,
-    initialContent: prd.content,
-    prdStatus: prd.status,
-  });
 
   // Prepare idea context for ChatInterface
   const ideaContext = {

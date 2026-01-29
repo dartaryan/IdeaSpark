@@ -2,11 +2,33 @@
 // Test suite for PipelineColumn component
 // Story 5.3 - Task 2: Create PipelineColumn component
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PipelineColumn } from './PipelineColumn';
 import type { IdeaWithSubmitter } from '../types';
+
+// Mock dependencies
+vi.mock('../hooks/useApproveIdea', () => ({
+  useApproveIdea: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}));
+
+vi.mock('../hooks/useRejectIdea', () => ({
+  useRejectIdea: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}));
+
+vi.mock('../../../hooks/useToast', () => ({
+  useToast: () => ({
+    toast: vi.fn(),
+  }),
+}));
 
 const mockIdeas: IdeaWithSubmitter[] = [
   {
@@ -42,7 +64,18 @@ const mockIdeas: IdeaWithSubmitter[] = [
 ];
 
 const renderWithRouter = (ui: React.ReactElement) => {
-  return render(<BrowserRouter>{ui}</BrowserRouter>);
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>{ui}</BrowserRouter>
+    </QueryClientProvider>
+  );
 };
 
 describe('PipelineColumn', () => {

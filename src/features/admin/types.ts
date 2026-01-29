@@ -55,6 +55,12 @@ export interface IdeaWithSubmitter {
   submitter_name: string;
   submitter_email: string;
   days_in_stage?: number;
+  /** Constructive feedback from admin when idea is rejected */
+  rejection_feedback?: string | null;
+  /** Timestamp when idea was rejected */
+  rejected_at?: string | null;
+  /** User ID of admin who rejected the idea */
+  rejected_by?: string | null;
 }
 
 /**

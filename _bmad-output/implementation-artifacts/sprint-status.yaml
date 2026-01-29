@@ -97,9 +97,9 @@ development_status:
   5-1-admin-dashboard-layout: review
   5-2-all-ideas-list-with-filtering-and-sorting: review
   5-3-idea-pipeline-kanban-view: review
-  5-4-approve-idea-for-prd-development: in-progress
-  5-5-reject-idea-with-feedback: ready-for-dev
-  5-6-view-any-users-idea-prd-and-prototype: ready-for-dev
+  5-4-approve-idea-for-prd-development: review
+  5-5-reject-idea-with-feedback: review
+  5-6-view-any-users-idea-prd-and-prototype: review
   5-7-user-list-and-activity-overview: ready-for-dev
   5-8-real-time-dashboard-updates: ready-for-dev
   epic-5-retrospective: optional

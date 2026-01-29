@@ -1,6 +1,6 @@
 # Story 5.5: Reject Idea with Feedback
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,109 +26,109 @@ So that **submitters understand why and can improve future submissions**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend adminService with rejectIdea() function (AC: Idea status changes to rejected)
-  - [ ] Subtask 1.1: Add rejectIdea(ideaId: string, feedback: string) function to adminService.ts
-  - [ ] Subtask 1.2: Update ideas table: SET status = 'rejected', rejection_feedback = feedback, status_updated_at = NOW()
-  - [ ] Subtask 1.3: Record rejection timestamp in status_updated_at column
-  - [ ] Subtask 1.4: Return ServiceResponse<Idea> with updated idea including feedback
-  - [ ] Subtask 1.5: Handle database errors gracefully with error messages
+- [x] Task 1: Extend adminService with rejectIdea() function (AC: Idea status changes to rejected)
+  - [x] Subtask 1.1: Add rejectIdea(ideaId: string, feedback: string) function to adminService.ts
+  - [x] Subtask 1.2: Update ideas table: SET status = 'rejected', rejection_feedback = feedback, status_updated_at = NOW()
+  - [x] Subtask 1.3: Record rejection timestamp in status_updated_at column
+  - [x] Subtask 1.4: Return ServiceResponse<Idea> with updated idea including feedback
+  - [x] Subtask 1.5: Handle database errors gracefully with error messages
 
-- [ ] Task 2: Add rejection_feedback column to ideas table (AC: Feedback stored)
-  - [ ] Subtask 2.1: Create database migration: 00008_add_rejection_feedback.sql
-  - [ ] Subtask 2.2: Add column: rejection_feedback TEXT NULL
-  - [ ] Subtask 2.3: Add column: rejected_by UUID REFERENCES users(id) NULL
-  - [ ] Subtask 2.4: Add column: rejected_at TIMESTAMP WITH TIME ZONE NULL
-  - [ ] Subtask 2.5: Run migration in local Supabase instance
-  - [ ] Subtask 2.6: Update Idea TypeScript type to include rejection_feedback, rejected_by, rejected_at
+- [x] Task 2: Add rejection_feedback column to ideas table (AC: Feedback stored)
+  - [x] Subtask 2.1: Create database migration: 00012_add_rejection_feedback.sql
+  - [x] Subtask 2.2: Add column: rejection_feedback TEXT NULL
+  - [x] Subtask 2.3: Add column: rejected_by UUID REFERENCES users(id) NULL
+  - [x] Subtask 2.4: Add column: rejected_at TIMESTAMP WITH TIME ZONE NULL
+  - [x] Subtask 2.5: Run migration in local Supabase instance
+  - [x] Subtask 2.6: Update Idea TypeScript type to include rejection_feedback, rejected_by, rejected_at
 
-- [ ] Task 3: Create useRejectIdea React Query mutation hook (AC: Optimistic updates, real-time feedback)
-  - [ ] Subtask 3.1: Create useRejectIdea.ts in features/admin/hooks/
-  - [ ] Subtask 3.2: Implement useMutation with rejectIdea service function
-  - [ ] Subtask 3.3: Add onMutate for optimistic UI updates
-  - [ ] Subtask 3.4: Invalidate relevant React Query caches: ['admin', 'ideas'], ['admin', 'pipeline'], ['admin', 'metrics']
-  - [ ] Subtask 3.5: Show success toast notification on completion
-  - [ ] Subtask 3.6: Handle errors with rollback and error toast
+- [x] Task 3: Create useRejectIdea React Query mutation hook (AC: Optimistic updates, real-time feedback)
+  - [x] Subtask 3.1: Create useRejectIdea.ts in features/admin/hooks/
+  - [x] Subtask 3.2: Implement useMutation with rejectIdea service function
+  - [x] Subtask 3.3: Add onMutate for optimistic UI updates
+  - [x] Subtask 3.4: Invalidate relevant React Query caches: ['admin', 'ideas'], ['admin', 'pipeline'], ['admin', 'metrics']
+  - [x] Subtask 3.5: Show success toast notification on completion
+  - [x] Subtask 3.6: Handle errors with rollback and error toast
 
-- [ ] Task 4: Create RejectIdeaButton component with feedback modal (AC: Feedback dialog)
-  - [ ] Subtask 4.1: Create RejectIdeaButton.tsx in features/admin/components/
-  - [ ] Subtask 4.2: Display "Reject" button with danger color styling (#EF4444)
-  - [ ] Subtask 4.3: Implement feedback modal with textarea for rejection reason
-  - [ ] Subtask 4.4: Modal content: idea title, submitter name, feedback textarea (min 20 chars, max 500)
-  - [ ] Subtask 4.5: Add character counter showing remaining characters (500 max)
-  - [ ] Subtask 4.6: Modal actions: "Confirm Rejection" (danger) and "Cancel" (secondary)
-  - [ ] Subtask 4.7: Validate feedback is at least 20 characters before enabling submit
-  - [ ] Subtask 4.8: Call useRejectIdea mutation on confirmation
-  - [ ] Subtask 4.9: Disable button and show loading spinner while mutation in progress
-  - [ ] Subtask 4.10: Close modal after successful rejection
+- [x] Task 4: Create RejectIdeaButton component with feedback modal (AC: Feedback dialog)
+  - [x] Subtask 4.1: Create RejectIdeaButton.tsx in features/admin/components/
+  - [x] Subtask 4.2: Display "Reject" button with danger color styling (#EF4444)
+  - [x] Subtask 4.3: Implement feedback modal with textarea for rejection reason
+  - [x] Subtask 4.4: Modal content: idea title, submitter name, feedback textarea (min 20 chars, max 500)
+  - [x] Subtask 4.5: Add character counter showing remaining characters (500 max)
+  - [x] Subtask 4.6: Modal actions: "Confirm Rejection" (danger) and "Cancel" (secondary)
+  - [x] Subtask 4.7: Validate feedback is at least 20 characters before enabling submit
+  - [x] Subtask 4.8: Call useRejectIdea mutation on confirmation
+  - [x] Subtask 4.9: Disable button and show loading spinner while mutation in progress
+  - [x] Subtask 4.10: Close modal after successful rejection
 
-- [ ] Task 5: Integrate RejectIdeaButton into IdeaDetailPage (AC: Reject from detail view)
-  - [ ] Subtask 5.1: Add RejectIdeaButton to IdeaDetailPage for admin users
-  - [ ] Subtask 5.2: Only show button when idea status === 'submitted'
-  - [ ] Subtask 5.3: Position button next to ApproveIdeaButton in detail page header
-  - [ ] Subtask 5.4: Add role check: Only admins see reject button
-  - [ ] Subtask 5.5: Update UI immediately after rejection (status badge changes to red)
+- [x] Task 5: Integrate RejectIdeaButton into IdeaDetailPage (AC: Reject from detail view)
+  - [x] Subtask 5.1: Add RejectIdeaButton to IdeaDetailPage for admin users
+  - [x] Subtask 5.2: Only show button when idea status === 'submitted'
+  - [x] Subtask 5.3: Position button next to ApproveIdeaButton in detail page header
+  - [x] Subtask 5.4: Add role check: Only admins see reject button
+  - [x] Subtask 5.5: Update UI immediately after rejection (status badge changes to red)
 
-- [ ] Task 6: Add inline reject action to AllIdeasList (AC: Reject from list view)
-  - [ ] Subtask 6.1: Add reject icon button to IdeaListItem component
-  - [ ] Subtask 6.2: Only show reject button for ideas with status='submitted'
-  - [ ] Subtask 6.3: Use Heroicons x-circle icon (neutral gray #525355)
-  - [ ] Subtask 6.4: Trigger same feedback modal as RejectIdeaButton
-  - [ ] Subtask 6.5: Update list item status badge immediately after rejection
-  - [ ] Subtask 6.6: Add aria-label for accessibility: "Reject idea with feedback"
+- [x] Task 6: Add inline reject action to AllIdeasList (AC: Reject from list view)
+  - [x] Subtask 6.1: Add reject icon button to IdeaListItem component
+  - [x] Subtask 6.2: Only show reject button for ideas with status='submitted'
+  - [x] Subtask 6.3: Use Heroicons x-circle icon (neutral gray #525355)
+  - [x] Subtask 6.4: Trigger same feedback modal as RejectIdeaButton
+  - [x] Subtask 6.5: Update list item status badge immediately after rejection
+  - [x] Subtask 6.6: Add aria-label for accessibility: "Reject idea with feedback"
 
-- [ ] Task 7: Add inline reject action to PipelineView kanban cards (AC: Reject from pipeline view)
-  - [ ] Subtask 7.1: Add reject icon button to IdeaKanbanCard component
-  - [ ] Subtask 7.2: Only show for cards in "Submitted" column
-  - [ ] Subtask 7.3: Position button in card footer next to approve button
-  - [ ] Subtask 7.4: Trigger feedback modal
-  - [ ] Subtask 7.5: Card automatically moves to "Rejected" column after rejection (real-time)
-  - [ ] Subtask 7.6: Add smooth animation when card moves columns
+- [x] Task 7: Add inline reject action to PipelineView kanban cards (AC: Reject from pipeline view)
+  - [x] Subtask 7.1: Add reject icon button to IdeaKanbanCard component
+  - [x] Subtask 7.2: Only show for cards in "Submitted" column
+  - [x] Subtask 7.3: Position button in card footer next to approve button
+  - [x] Subtask 7.4: Trigger feedback modal
+  - [x] Subtask 7.5: Card automatically moves to "Rejected" column after rejection (real-time)
+  - [x] Subtask 7.6: Add smooth animation when card moves columns
 
-- [ ] Task 8: Display rejection feedback in IdeaDetailPage (AC: User sees rejection reason)
-  - [ ] Subtask 8.1: Check if idea status === 'rejected' and rejection_feedback exists
-  - [ ] Subtask 8.2: Display rejection feedback in prominent alert box (red/warning styling)
-  - [ ] Subtask 8.3: Show rejection timestamp: "Rejected on {date} by {admin_name}"
-  - [ ] Subtask 8.4: Format feedback with proper line breaks and readability
-  - [ ] Subtask 8.5: Add "Learn More" section with tips for improving future submissions
-  - [ ] Subtask 8.6: Update idea status badge to show "rejected" with red semantic color
+- [x] Task 8: Display rejection feedback in IdeaDetailPage (AC: User sees rejection reason)
+  - [x] Subtask 8.1: Check if idea status === 'rejected' and rejection_feedback exists
+  - [x] Subtask 8.2: Display rejection feedback in prominent alert box (red/warning styling)
+  - [x] Subtask 8.3: Show rejection timestamp: "Rejected on {date} by {admin_name}"
+  - [x] Subtask 8.4: Format feedback with proper line breaks and readability
+  - [x] Subtask 8.5: Add "Learn More" section with tips for improving future submissions
+  - [x] Subtask 8.6: Update idea status badge to show "rejected" with red semantic color
 
-- [ ] Task 9: Add rejection timestamp and admin tracking (AC: Timestamp recorded)
-  - [ ] Subtask 9.1: Add rejected_at column update in rejectIdea function
-  - [ ] Subtask 9.2: Add rejected_by column to track which admin rejected the idea
-  - [ ] Subtask 9.3: Store current timestamp when status changes to 'rejected'
-  - [ ] Subtask 9.4: Display rejection timestamp in idea detail view for users
-  - [ ] Subtask 9.5: Use relative time format: "Rejected 2 hours ago by Sarah"
-  - [ ] Subtask 9.6: Include rejection timestamp in analytics queries
+- [x] Task 9: Add rejection timestamp and admin tracking (AC: Timestamp recorded)
+  - [x] Subtask 9.1: Add rejected_at column update in rejectIdea function
+  - [x] Subtask 9.2: Add rejected_by column to track which admin rejected the idea
+  - [x] Subtask 9.3: Store current timestamp when status changes to 'rejected'
+  - [x] Subtask 9.4: Display rejection timestamp in idea detail view for users
+  - [x] Subtask 9.5: Use relative time format: "Rejected 2 hours ago by Sarah"
+  - [x] Subtask 9.6: Include rejection timestamp in analytics queries
 
-- [ ] Task 10: Add rejection action logging (AC: Admin actions logged)
-  - [ ] Subtask 10.1: Log rejection action to activity_log table (if exists)
-  - [ ] Subtask 10.2: Record: admin_user_id, idea_id, action='reject', feedback_preview, timestamp
-  - [ ] Subtask 10.3: If activity_log doesn't exist, add comment for future logging enhancement
-  - [ ] Subtask 10.4: Ensure logging doesn't block rejection if it fails (fail gracefully)
+- [x] Task 10: Add rejection action logging (AC: Admin actions logged)
+  - [x] Subtask 10.1: Log rejection action to activity_log table (if exists)
+  - [x] Subtask 10.2: Record: admin_user_id, idea_id, action='reject', feedback_preview, timestamp
+  - [x] Subtask 10.3: If activity_log doesn't exist, add comment for future logging enhancement
+  - [x] Subtask 10.4: Ensure logging doesn't block rejection if it fails (fail gracefully)
 
-- [ ] Task 11: Handle edge cases and validation (AC: Robust error handling)
-  - [ ] Subtask 11.1: Prevent rejecting ideas that are not in 'submitted' status
-  - [ ] Subtask 11.2: Show error toast: "This idea has already been reviewed"
-  - [ ] Subtask 11.3: Handle concurrent rejections (two admins rejecting same idea)
-  - [ ] Subtask 11.4: Handle database errors with user-friendly messages
-  - [ ] Subtask 11.5: Add optimistic update rollback if rejection fails
-  - [ ] Subtask 11.6: Validate user has admin role before allowing rejection
-  - [ ] Subtask 11.7: Validate feedback is at least 20 characters and max 500 characters
-  - [ ] Subtask 11.8: Sanitize feedback text to prevent XSS attacks
+- [x] Task 11: Handle edge cases and validation (AC: Robust error handling)
+  - [x] Subtask 11.1: Prevent rejecting ideas that are not in 'submitted' status
+  - [x] Subtask 11.2: Show error toast: "This idea has already been reviewed"
+  - [x] Subtask 11.3: Handle concurrent rejections (two admins rejecting same idea)
+  - [x] Subtask 11.4: Handle database errors with user-friendly messages
+  - [x] Subtask 11.5: Add optimistic update rollback if rejection fails
+  - [x] Subtask 11.6: Validate user has admin role before allowing rejection
+  - [x] Subtask 11.7: Validate feedback is at least 20 characters and max 500 characters
+  - [x] Subtask 11.8: Sanitize feedback text to prevent XSS attacks
 
-- [ ] Task 12: Integrate PassportCard DaisyUI theme throughout (AC: Consistent branding)
-  - [ ] Subtask 12.1: Use DaisyUI modal component for feedback dialog
-  - [ ] Subtask 12.2: Apply danger red color for reject button (#EF4444)
-  - [ ] Subtask 12.3: Use Heroicons x-circle for reject icon (neutral gray #525355)
-  - [ ] Subtask 12.4: Apply 20px border radius to modal and buttons
-  - [ ] Subtask 12.5: Use Montserrat font for modal headings, Rubik for body
-  - [ ] Subtask 12.6: Apply DSM shadows and spacing tokens consistently
-  - [ ] Subtask 12.7: Style rejection feedback alert with red/warning DaisyUI alert component
+- [x] Task 12: Integrate PassportCard DaisyUI theme throughout (AC: Consistent branding)
+  - [x] Subtask 12.1: Use DaisyUI modal component for feedback dialog
+  - [x] Subtask 12.2: Apply danger red color for reject button (#EF4444)
+  - [x] Subtask 12.3: Use Heroicons x-circle for reject icon (neutral gray #525355)
+  - [x] Subtask 12.4: Apply 20px border radius to modal and buttons
+  - [x] Subtask 12.5: Use Montserrat font for modal headings, Rubik for body
+  - [x] Subtask 12.6: Apply DSM shadows and spacing tokens consistently
+  - [x] Subtask 12.7: Style rejection feedback alert with red/warning DaisyUI alert component
 
-- [ ] Task 13: Add email notification for idea creator (AC: Creator notified - DEFERRED)
-  - [ ] Subtask 13.1: THIS TASK IS DEFERRED - Email notifications are post-MVP
-  - [ ] Subtask 13.2: Add TODO comment in code for future email integration
-  - [ ] Subtask 13.3: Rejection works without email (user sees feedback when they log in)
+- [x] Task 13: Add email notification for idea creator (AC: Creator notified - DEFERRED)
+  - [x] Subtask 13.1: THIS TASK IS DEFERRED - Email notifications are post-MVP
+  - [x] Subtask 13.2: Add TODO comment in code for future email integration
+  - [x] Subtask 13.3: Rejection works without email (user sees feedback when they log in)
 
 ## Dev Notes
 
@@ -751,16 +751,55 @@ export interface Idea {
 
 ### Agent Model Used
 
-_To be filled by DEV agent during implementation_
+Claude Opus 4.5 (via Cursor IDE)
 
 ### Debug Log References
 
-_To be added by DEV agent during implementation_
+- All 213 admin feature tests pass
+- Pre-existing test failures in geminiService.test.ts and PrdBuilder components (unrelated to this story)
 
 ### Completion Notes List
 
-_To be added by DEV agent upon completion_
+- Implemented complete rejection workflow with feedback modal
+- Added database migration for rejection tracking columns (00012_add_rejection_feedback.sql)
+- Extended adminService with rejectIdea() function including XSS sanitization and validation
+- Created useRejectIdea React Query mutation hook with optimistic updates and rollback
+- Created RejectIdeaButton and RejectIdeaModal components with PassportCard theme
+- Integrated reject functionality into IdeaDetailPage, IdeaListItem, and IdeaKanbanCard
+- Added rejection feedback display with relative timestamps and tips for future submissions
+- Activity logging deferred (TODO comment added) as activity_log table doesn't exist
+- Email notification deferred as per story requirements (post-MVP feature)
 
 ### File List
 
-_To be populated by DEV agent with all files created/modified_
+**Files Created:**
+- supabase/migrations/00012_add_rejection_feedback.sql
+- src/features/admin/hooks/useRejectIdea.ts
+- src/features/admin/hooks/useRejectIdea.test.tsx
+- src/features/admin/components/RejectIdeaButton.tsx
+- src/features/admin/components/RejectIdeaButton.test.tsx
+- src/features/admin/components/RejectIdeaModal.tsx
+
+**Files Modified:**
+- src/types/database.ts (added rejection fields to Idea type)
+- src/features/admin/types.ts (added rejection fields to IdeaWithSubmitter)
+- src/features/admin/services/adminService.ts (added rejectIdea function)
+- src/features/admin/services/adminService.test.ts (added rejectIdea tests)
+- src/features/admin/components/IdeaListItem.tsx (integrated RejectIdeaButton)
+- src/features/admin/components/IdeaListItem.test.tsx (updated tests)
+- src/features/admin/components/IdeaKanbanCard.tsx (integrated RejectIdeaButton)
+- src/features/admin/components/IdeaKanbanCard.test.tsx (updated tests)
+- src/features/admin/components/AllIdeasPage.tsx (removed deprecated reject modal)
+- src/features/admin/components/PipelineColumn.test.tsx (added useRejectIdea mock)
+- src/pages/IdeaDetailPage.tsx (added RejectIdeaButton and rejection feedback display)
+
+### Change Log
+
+- 2026-01-27: Story 5.5 implementation complete - Reject Idea with Feedback functionality
+  - Database migration for rejection_feedback, rejected_at, rejected_by columns
+  - Admin service extended with rejectIdea() function
+  - React Query mutation hook with optimistic updates
+  - RejectIdeaButton and RejectIdeaModal components
+  - Integration into IdeaDetailPage, IdeaListItem, IdeaKanbanCard
+  - Rejection feedback display for rejected ideas
+  - 213 admin feature tests passing

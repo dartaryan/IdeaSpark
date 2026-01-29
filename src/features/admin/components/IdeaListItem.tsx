@@ -1,14 +1,18 @@
 // src/features/admin/components/IdeaListItem.tsx
 // Task 3: Individual idea list item component
+// Task 5: Add inline approve action with confirmation modal
+// Story 5.5 Task 6: Add inline reject action with feedback modal
 
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
+import { CheckCircleIcon } from '@heroicons/react/24/outline';
+import { useApproveIdea } from '../hooks/useApproveIdea';
+import { RejectIdeaButton } from './RejectIdeaButton';
 import type { IdeaWithSubmitter } from '../types';
 
 interface IdeaListItemProps {
   idea: IdeaWithSubmitter;
-  onApprove: (ideaId: string) => void;
-  onReject: (ideaId: string) => void;
 }
 
 /**
@@ -55,9 +59,17 @@ function getStatusConfig(status: IdeaWithSubmitter['status']) {
  * - Status badge with semantic colors
  * - Relative submission date
  * - View Details link
- * - Quick action buttons (Approve/Reject)
+ * - Quick action buttons (Approve icon/Reject)
+ * 
+ * Task 5: Inline approve action with confirmation modal
  */
-export function IdeaListItem({ idea, onApprove, onReject }: IdeaListItemProps) {
+export function IdeaListItem({ idea }: IdeaListItemProps) {
+  // Task 5: Local state for approve confirmation modal
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  
+  // Task 5: Use approve mutation hook
+  const { mutate: approveIdea, isPending } = useApproveIdea();
+
   // Subtask 3.2: Truncate title to 80 chars with ellipsis
   const truncatedTitle = idea.title.length > 80 
     ? `${idea.title.substring(0, 80)}...` 
@@ -68,6 +80,21 @@ export function IdeaListItem({ idea, onApprove, onReject }: IdeaListItemProps) {
 
   // Get status badge configuration
   const statusConfig = getStatusConfig(idea.status);
+
+  // Task 5: Helper to truncate problem statement for modal
+  const truncateProblem = (text: string, maxLength = 150) => {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength) + '...';
+  };
+
+  // Task 5: Handle approve confirmation
+  const handleConfirmApprove = () => {
+    approveIdea(idea.id);
+    setIsApproveModalOpen(false);
+  };
+
+  // Task 5: Subtask 5.2 - Only show approve button for submitted ideas
+  const showApproveButton = idea.status === 'submitted';
 
   return (
     <div className="bg-base-100 border border-base-300 rounded-[20px] p-6 hover:shadow-lg transition-shadow">
@@ -136,24 +163,96 @@ export function IdeaListItem({ idea, onApprove, onReject }: IdeaListItemProps) {
             View Details
           </Link>
 
-          {/* Quick action buttons - Subtask 3.7 */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            style={{ backgroundColor: '#3B82F6', color: 'white', border: 'none' }}
-            onClick={() => onApprove(idea.id)}
-          >
-            Approve
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-error"
-            onClick={() => onReject(idea.id)}
-          >
-            Reject
-          </button>
+          {/* Task 5: Inline approve icon button - Only for submitted ideas */}
+          {showApproveButton && (
+            <button
+              type="button"
+              className="btn btn-sm btn-circle btn-ghost"
+              onClick={() => setIsApproveModalOpen(true)}
+              aria-label="Approve idea for PRD development"
+              title="Approve idea for PRD development"
+            >
+              {/* Subtask 5.3: Check-circle icon in neutral gray */}
+              <CheckCircleIcon className="w-5 h-5" style={{ color: '#525355' }} />
+            </button>
+          )}
+
+          {/* Story 5.5 Task 6: Inline reject button with feedback modal */}
+          {/* Subtask 6.1-6.6: Only show for submitted ideas, uses RejectIdeaButton with icon variant */}
+          <RejectIdeaButton idea={idea} variant="icon" size="sm" />
         </div>
       </div>
+
+      {/* Task 5: Subtask 5.4 - Confirmation modal (same as ApproveIdeaButton) */}
+      {isApproveModalOpen && (
+        <dialog className="modal modal-open" role="dialog">
+          <div className="modal-box rounded-[20px] max-w-lg">
+            {/* Modal header */}
+            <h3 className="font-montserrat font-bold text-xl mb-4">
+              Approve Idea for PRD Development
+            </h3>
+
+            {/* Modal content - idea summary */}
+            <div className="space-y-4 font-rubik">
+              {/* Idea title */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Idea Title</p>
+                <p className="font-semibold">{idea.title}</p>
+              </div>
+
+              {/* Submitter name */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Submitted by</p>
+                <p className="font-medium">{idea.submitter_name}</p>
+              </div>
+
+              {/* Problem statement (truncated) */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Problem Statement</p>
+                <p className="text-sm text-gray-700">{truncateProblem(idea.problem)}</p>
+              </div>
+
+              {/* Approval message */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
+                <p className="text-sm text-green-800">
+                  Approving this idea will allow the creator to start building a Product Requirements Document (PRD).
+                  The idea will move to the "Approved" stage in the pipeline.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal actions */}
+            <div className="modal-action flex gap-3">
+              {/* Cancel button */}
+              <button
+                onClick={() => setIsApproveModalOpen(false)}
+                className="btn btn-ghost rounded-[20px]"
+                aria-label="Cancel"
+              >
+                Cancel
+              </button>
+              
+              {/* Confirm Approval button */}
+              <button
+                onClick={handleConfirmApprove}
+                disabled={isPending}
+                className="btn btn-primary rounded-[20px] bg-[#E10514] hover:bg-[#c00410] border-none text-white"
+                aria-label="Confirm Approval"
+              >
+                {isPending ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : null}
+                Confirm Approval
+              </button>
+            </div>
+          </div>
+
+          {/* Modal backdrop */}
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => setIsApproveModalOpen(false)}>close</button>
+          </form>
+        </dialog>
+      )}
     </div>
   );
 }

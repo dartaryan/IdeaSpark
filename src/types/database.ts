@@ -59,6 +59,10 @@ export interface Database {
           status: IdeaStatus;
           created_at: string;
           updated_at: string;
+          status_updated_at: string | null;
+          rejection_feedback: string | null;
+          rejected_at: string | null;
+          rejected_by: string | null;
         };
         Insert: {
           id?: string;
@@ -73,6 +77,10 @@ export interface Database {
           status?: IdeaStatus;
           created_at?: string;
           updated_at?: string;
+          status_updated_at?: string | null;
+          rejection_feedback?: string | null;
+          rejected_at?: string | null;
+          rejected_by?: string | null;
         };
         Update: {
           id?: string;
@@ -87,6 +95,10 @@ export interface Database {
           status?: IdeaStatus;
           created_at?: string;
           updated_at?: string;
+          status_updated_at?: string | null;
+          rejection_feedback?: string | null;
+          rejected_at?: string | null;
+          rejected_by?: string | null;
         };
         Relationships: [
           {

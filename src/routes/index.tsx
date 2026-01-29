@@ -18,6 +18,8 @@ import { PipelinePage } from '../pages/PipelinePage';
 import { AnalyticsPage } from '../pages/AnalyticsPage';
 import { NotAuthorizedPage } from '../pages/NotAuthorizedPage';
 import { PublicPrototypeViewer } from '../features/prototypes/pages';
+import { AdminPrdViewer } from '../features/admin/components/AdminPrdViewer';
+import { AdminPrototypeViewer } from '../features/admin/components/AdminPrototypeViewer';
 import { AuthenticatedLayout } from '../components/layouts/AuthenticatedLayout';
 import { AdminRoute } from './AdminRoute';
 import { ROUTES } from './routeConstants';
@@ -122,6 +124,24 @@ export const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <AnalyticsPage />
+          </AdminRoute>
+        ),
+      },
+      // Story 5.6 - Task 8: Admin PRD viewer route
+      {
+        path: '/admin/prds/:prdId',
+        element: (
+          <AdminRoute>
+            <AdminPrdViewer />
+          </AdminRoute>
+        ),
+      },
+      // Story 5.6 - Task 8: Admin Prototype viewer route
+      {
+        path: '/admin/prototypes/:prototypeId',
+        element: (
+          <AdminRoute>
+            <AdminPrototypeViewer />
           </AdminRoute>
         ),
       },

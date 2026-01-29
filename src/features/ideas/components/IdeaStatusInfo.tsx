@@ -1,3 +1,4 @@
+import { formatDistanceToNow } from 'date-fns';
 import { IdeaStatusBadge } from './IdeaStatusBadge';
 import type { Idea, IdeaStatus } from '../types';
 
@@ -55,7 +56,16 @@ export function IdeaStatusInfo({ idea }: IdeaStatusInfoProps) {
             <span className="text-base-content/60">Submitted</span>
             <span>{formatDate(idea.created_at)}</span>
           </div>
-          {idea.updated_at !== idea.created_at && (
+          
+          {/* Task 8: Subtask 8.3 & 8.4, Task 7.4 - Show approval timestamp for approved ideas */}
+          {idea.status === 'approved' && idea.status_updated_at && (
+            <div className="flex justify-between">
+              <span className="text-base-content/60">Approved</span>
+              <span>{formatDistanceToNow(new Date(idea.status_updated_at), { addSuffix: true })}</span>
+            </div>
+          )}
+          
+          {idea.updated_at !== idea.created_at && idea.status !== 'approved' && (
             <div className="flex justify-between">
               <span className="text-base-content/60">Last Updated</span>
               <span>{formatDate(idea.updated_at)}</span>
