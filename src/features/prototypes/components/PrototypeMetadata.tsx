@@ -69,7 +69,7 @@ export function PrototypeMetadata({
               View Idea
             </button>
             <button
-              onClick={() => navigate(`/prd/${prdId}`)}
+              onClick={() => navigate(`/prd/view/${prdId}`)}
               className="btn btn-ghost btn-sm gap-2"
             >
               <FileText className="w-4 h-4" />

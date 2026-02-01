@@ -23,7 +23,7 @@ export function UserActivityCard({ data, isLoading }: UserActivityCardProps) {
   // Subtask 6.9: Loading skeleton
   if (isLoading) {
     return (
-      <div className="card bg-base-100 shadow-xl" style={{ borderRadius: '20px' }}>
+      <div className="card bg-base-100 shadow-xl" style={{ borderRadius: '20px', border: '2px solid #E10514' }}>
         <div className="card-body">
           <h2 className="card-title text-lg font-semibold">User Activity</h2>
           <div className="animate-pulse space-y-4">
@@ -39,7 +39,7 @@ export function UserActivityCard({ data, isLoading }: UserActivityCardProps) {
   // Subtask 6.10: Empty state
   if (!data || data.totalUsers === 0) {
     return (
-      <div className="card bg-base-100 shadow-xl" style={{ borderRadius: '20px' }}>
+      <div className="card bg-base-100 shadow-xl" style={{ borderRadius: '20px', border: '2px solid #E10514' }}>
         <div className="card-body">
           <h2 className="card-title text-lg font-semibold">User Activity</h2>
           <div className="text-base-content/60 text-center py-8">
@@ -71,7 +71,7 @@ export function UserActivityCard({ data, isLoading }: UserActivityCardProps) {
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl" style={{ borderRadius: '20px' }}>
+    <div className="card bg-base-100 shadow-xl" style={{ borderRadius: '20px', border: '2px solid #E10514' }}>
       <div className="card-body">
         {/* Subtask 6.3: Card title */}
         <h2 className="card-title text-lg font-semibold mb-4">User Activity</h2>
@@ -134,12 +134,6 @@ export function UserActivityCard({ data, isLoading }: UserActivityCardProps) {
           </div>
         </div>
 
-        {/* Subtask 6.7 & 6.8: Use DaisyUI components with PassportCard styling */}
-        <style jsx>{`
-          .card {
-            border: 2px solid #E10514;
-          }
-        `}</style>
       </div>
     </div>
   );

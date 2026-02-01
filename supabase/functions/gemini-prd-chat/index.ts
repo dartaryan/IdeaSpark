@@ -45,6 +45,105 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 /**
+ * Escapes literal newlines inside JSON string values using a state machine.
+ * This handles the case where Gemini returns JSON with unescaped newlines in strings.
+ */
+function escapeNewlinesInJsonStrings(text: string): string {
+  let result = '';
+  let inString = false;
+  let i = 0;
+  
+  while (i < text.length) {
+    const char = text[i];
+    
+    if (inString) {
+      if (char === '\\' && i + 1 < text.length) {
+        // Escape sequence - copy both characters as-is
+        result += char + text[i + 1];
+        i += 2;
+        continue;
+      } else if (char === '"') {
+        // End of string
+        result += char;
+        inString = false;
+      } else if (char === '\n') {
+        // Literal newline inside string - escape it
+        result += '\\n';
+      } else if (char === '\r') {
+        // Literal carriage return inside string - escape it
+        result += '\\r';
+      } else {
+        result += char;
+      }
+    } else {
+      if (char === '"') {
+        inString = true;
+      }
+      result += char;
+    }
+    i++;
+  }
+  
+  return result;
+}
+
+/**
+ * Extracts aiMessage from malformed/truncated JSON using manual string parsing.
+ * This is a fallback when JSON.parse fails.
+ */
+function extractAiMessageFromMalformedJson(text: string): string | null {
+  // Find the start of aiMessage value
+  const keyPattern = '"aiMessage"';
+  const keyIndex = text.indexOf(keyPattern);
+  if (keyIndex === -1) return null;
+  
+  // Find the colon and opening quote
+  let i = keyIndex + keyPattern.length;
+  while (i < text.length && (text[i] === ' ' || text[i] === ':' || text[i] === '\n' || text[i] === '\r' || text[i] === '\t')) {
+    i++;
+  }
+  
+  if (i >= text.length || text[i] !== '"') return null;
+  i++; // Skip opening quote
+  
+  // Extract the string value, handling escape sequences
+  let value = '';
+  while (i < text.length) {
+    const char = text[i];
+    
+    if (char === '\\' && i + 1 < text.length) {
+      // Handle escape sequence
+      const nextChar = text[i + 1];
+      if (nextChar === 'n') {
+        value += '\n';
+      } else if (nextChar === 'r') {
+        value += '\r';
+      } else if (nextChar === 't') {
+        value += '\t';
+      } else if (nextChar === '"') {
+        value += '"';
+      } else if (nextChar === '\\') {
+        value += '\\';
+      } else {
+        value += nextChar;
+      }
+      i += 2;
+      continue;
+    } else if (char === '"') {
+      // End of string - we found the complete value
+      return value;
+    } else {
+      // Regular character (including literal newlines)
+      value += char;
+    }
+    i++;
+  }
+  
+  // If we got here, string wasn't properly closed, but return what we have if it's substantial
+  return value.length > 10 ? value : null;
+}
+
+/**
  * Retry wrapper with exponential backoff (AC: 5)
  * Reused pattern from gemini-enhance
  */
@@ -231,7 +330,7 @@ async function chatWithGemini(
         temperature: 0.8,         // Slightly creative for natural conversation
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 1024,    // Limit for faster response (<3s) - AC: 8
+        maxOutputTokens: 4096,    // Increased to prevent truncation of long responses
       },
     }),
   });
@@ -264,6 +363,11 @@ async function chatWithGemini(
   }
   cleanedText = cleanedText.trim();
 
+  // Fix common JSON issues from Gemini:
+  // Literal newlines inside string values (invalid JSON)
+  // Use a state machine to properly escape newlines inside strings
+  cleanedText = escapeNewlinesInJsonStrings(cleanedText);
+
   try {
     const parsed = JSON.parse(cleanedText) as PrdChatResponse;
     
@@ -291,7 +395,26 @@ async function chatWithGemini(
   } catch (parseError) {
     console.error('Failed to parse Gemini response:', cleanedText);
     
-    // Fallback: If JSON parsing fails, treat entire response as aiMessage
+    // Fallback: Try to extract aiMessage from malformed/truncated JSON
+    const extractedMessage = extractAiMessageFromMalformedJson(cleanedText);
+    if (extractedMessage) {
+      console.log('Successfully extracted aiMessage from malformed JSON');
+      return {
+        aiMessage: extractedMessage,
+        sectionUpdates: undefined,
+      };
+    }
+    
+    // Last resort: If the response doesn't look like JSON at all, use it directly
+    // But if it looks like JSON, we have a problem - return error message
+    if (generatedText.trim().startsWith('{')) {
+      console.error('Could not extract aiMessage from malformed JSON response');
+      return {
+        aiMessage: 'מצטער, הייתה בעיה בעיבוד התגובה. אנא נסה שוב.',
+        sectionUpdates: undefined,
+      };
+    }
+    
     return {
       aiMessage: generatedText,
       sectionUpdates: undefined,

@@ -51,7 +51,7 @@ export function IdeaDetailActions({ idea }: IdeaDetailActionsProps) {
   const handleViewPrd = () => {
     // Navigate to PRD view page (Story 3.9, AC 3)
     if (prd) {
-      navigate(`/prd/${prd.id}`);
+      navigate(ROUTES.PRD_VIEW.replace(':prdId', prd.id));
     }
   };
 
@@ -68,9 +68,14 @@ export function IdeaDetailActions({ idea }: IdeaDetailActionsProps) {
   };
 
   const handleGeneratePrototype = () => {
-    // Navigate to PRD page which has the generate prototype button (AC 3, Task 3)
+    // Navigate to PRD view page which has the generate prototype button (AC 3, Task 3)
+    console.log('[IdeaDetailActions] handleGeneratePrototype called, prd:', prd);
     if (prd) {
-      navigate(`/prd/${prd.id}`);
+      const targetUrl = ROUTES.PRD_VIEW.replace(':prdId', prd.id);
+      console.log('[IdeaDetailActions] Navigating to:', targetUrl);
+      navigate(targetUrl);
+    } else {
+      console.error('[IdeaDetailActions] No PRD available!');
     }
   };
 

@@ -24,12 +24,113 @@ function isCorruptedContent(text: string): boolean {
 }
 
 /**
+ * Escapes literal newlines inside JSON string values using a state machine.
+ * This handles the case where Gemini returns JSON with unescaped newlines in strings.
+ */
+function escapeNewlinesInJsonStrings(text: string): string {
+  let result = '';
+  let inString = false;
+  let i = 0;
+  
+  while (i < text.length) {
+    const char = text[i];
+    
+    if (inString) {
+      if (char === '\\' && i + 1 < text.length) {
+        // Escape sequence - copy both characters as-is
+        result += char + text[i + 1];
+        i += 2;
+        continue;
+      } else if (char === '"') {
+        // End of string
+        result += char;
+        inString = false;
+      } else if (char === '\n') {
+        // Literal newline inside string - escape it
+        result += '\\n';
+      } else if (char === '\r') {
+        // Literal carriage return inside string - escape it
+        result += '\\r';
+      } else {
+        result += char;
+      }
+    } else {
+      if (char === '"') {
+        inString = true;
+      }
+      result += char;
+    }
+    i++;
+  }
+  
+  return result;
+}
+
+/**
+ * Extracts aiMessage from corrupted JSON using manual string parsing.
+ * Fallback when JSON.parse fails completely.
+ */
+function extractAiMessageManually(text: string): string | null {
+  // Find the start of aiMessage value
+  const keyPattern = '"aiMessage"';
+  const keyIndex = text.indexOf(keyPattern);
+  if (keyIndex === -1) return null;
+  
+  // Find the colon and opening quote
+  let i = keyIndex + keyPattern.length;
+  while (i < text.length && (text[i] === ' ' || text[i] === ':' || text[i] === '\n' || text[i] === '\r')) {
+    i++;
+  }
+  
+  if (text[i] !== '"') return null;
+  i++; // Skip opening quote
+  
+  // Extract the string value, handling escape sequences
+  let value = '';
+  while (i < text.length) {
+    const char = text[i];
+    
+    if (char === '\\' && i + 1 < text.length) {
+      // Handle escape sequence
+      const nextChar = text[i + 1];
+      if (nextChar === 'n') {
+        value += '\n';
+      } else if (nextChar === 'r') {
+        value += '\r';
+      } else if (nextChar === 't') {
+        value += '\t';
+      } else if (nextChar === '"') {
+        value += '"';
+      } else if (nextChar === '\\') {
+        value += '\\';
+      } else {
+        value += nextChar;
+      }
+      i += 2;
+      continue;
+    } else if (char === '"') {
+      // End of string - we found the complete value
+      return value;
+    } else {
+      // Regular character (including literal newlines)
+      value += char;
+    }
+    i++;
+  }
+  
+  // If we got here, string wasn't properly closed, but return what we have
+  return value.length > 0 ? value : null;
+}
+
+/**
  * Attempts to extract the message from corrupted JSON content
  * Returns the original text if extraction fails
  */
 function extractMessageFromCorruptedContent(text: string): string {
+  // First, try to fix newlines and parse as JSON
   try {
-    const parsed = JSON.parse(text);
+    const fixedText = escapeNewlinesInJsonStrings(text);
+    const parsed = JSON.parse(fixedText);
     
     // If this is an edge function response with aiMessage, extract it
     if (parsed.aiMessage && typeof parsed.aiMessage === 'string') {
@@ -44,7 +145,23 @@ function extractMessageFromCorruptedContent(text: string): string {
     // Unknown JSON format - return original
     return text;
   } catch {
-    // Not valid JSON - return original
+    // JSON parsing still failed - try manual extraction
+    const extracted = extractAiMessageManually(text);
+    if (extracted) {
+      return extracted;
+    }
+    
+    // Check for error message pattern
+    const errorKeyIndex = text.indexOf('"error"');
+    if (errorKeyIndex !== -1) {
+      const errorExtracted = text.substring(errorKeyIndex);
+      const errorMatch = errorExtracted.match(/"error"\s*:\s*"([^"]*)"/);
+      if (errorMatch && errorMatch[1]) {
+        return `⚠️ Error: ${errorMatch[1]}`;
+      }
+    }
+    
+    // All extraction attempts failed - return original
     return text;
   }
 }

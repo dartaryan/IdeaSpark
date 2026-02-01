@@ -15,7 +15,8 @@ export const ROUTES = {
   IDEAS: '/ideas',
   IDEA_DETAIL: '/ideas/:id',
   NEW_IDEA: '/ideas/new',
-  PRD_BUILDER: '/prd/:id',
+  PRD_BUILDER: '/prd/:id',          // Build PRD for idea (uses idea ID)
+  PRD_VIEW: '/prd/view/:prdId',     // View completed PRD (uses PRD ID)
   PROTOTYPE: '/prototype/:id',
 
   // Admin routes

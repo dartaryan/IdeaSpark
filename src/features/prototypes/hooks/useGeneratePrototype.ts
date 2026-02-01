@@ -102,6 +102,7 @@ export function useGeneratePrototype(options?: UseGeneratePrototypeOptions) {
 
   const generate = useCallback(
     async (prdId: string, ideaId: string) => {
+      console.log('[useGeneratePrototype] generate called with:', { prdId, ideaId });
       try {
         setIsGenerating(true);
         setError(null);
@@ -111,11 +112,14 @@ export function useGeneratePrototype(options?: UseGeneratePrototypeOptions) {
         updateProgress('analyzing', 10);
 
         // Fetch PRD content
+        console.log('[useGeneratePrototype] Fetching PRD content...');
         const { data: prd, error: prdError } = await supabase
           .from('prd_documents')
           .select('content')
           .eq('id', prdId)
           .single();
+
+        console.log('[useGeneratePrototype] PRD fetch result:', { prd: !!prd, error: prdError });
 
         if (prdError || !prd) {
           throw new Error('Failed to load PRD content');
@@ -133,11 +137,14 @@ export function useGeneratePrototype(options?: UseGeneratePrototypeOptions) {
         updateProgress('generating', 30);
 
         // Call Edge Function
+        console.log('[useGeneratePrototype] Calling Edge Function...');
         const { data, error: generateError } = await openLovableService.generate(
           prdId,
           ideaId,
           prdContent
         );
+
+        console.log('[useGeneratePrototype] Edge Function result:', { data, error: generateError });
 
         if (generateError || !data) {
           throw new Error(generateError?.message || 'Failed to start generation');
@@ -161,6 +168,7 @@ export function useGeneratePrototype(options?: UseGeneratePrototypeOptions) {
         await pollPrototypeStatus(data.prototypeId, ideaId);
       } catch (err) {
         const error = err as Error;
+        console.error('[useGeneratePrototype] Generation failed:', error);
         setError(error);
         setIsGenerating(false);
         localStorage.removeItem('prototype_generation_state');

@@ -18,20 +18,46 @@ export function GeneratePrototypeButton({
   onGenerationStart,
   onGenerationComplete,
 }: GeneratePrototypeButtonProps) {
+  // Log on every render
+  console.log('[GeneratePrototypeButton] RENDER', { prdId, ideaId, existingPrototypeId });
+  
   const navigate = useNavigate();
   const [showRegenerate, setShowRegenerate] = useState(false);
 
   const { generate, isGenerating, error, retry } = useGeneratePrototype({
     onSuccess: (prototypeId) => {
+      console.log('[GeneratePrototype] onSuccess called with prototypeId:', prototypeId);
       onGenerationComplete?.(prototypeId);
       // Navigate to prototype viewer
-      navigate(`/prototypes/${prototypeId}`);
+      const targetUrl = `/prototypes/${prototypeId}`;
+      console.log('[GeneratePrototype] Navigating to:', targetUrl);
+      navigate(targetUrl);
+    },
+    onError: (err) => {
+      console.error('[GeneratePrototype] onError called:', err);
     },
   });
 
   const handleGenerate = async () => {
-    onGenerationStart?.();
-    await generate(prdId, ideaId);
+    // Log immediately with timestamp
+    const startTime = Date.now();
+    console.log(`[GeneratePrototype] ${startTime} Button clicked!`);
+    console.log(`[GeneratePrototype] ${startTime} Props:`, { prdId, ideaId, existingPrototypeId });
+    console.log(`[GeneratePrototype] ${startTime} Current URL:`, window.location.href);
+    
+    if (!prdId || !ideaId) {
+      console.error(`[GeneratePrototype] ${startTime} Missing prdId or ideaId!`, { prdId, ideaId });
+      return;
+    }
+    
+    try {
+      onGenerationStart?.();
+      console.log(`[GeneratePrototype] ${startTime} About to call generate()...`);
+      await generate(prdId, ideaId);
+      console.log(`[GeneratePrototype] ${startTime} generate() completed after ${Date.now() - startTime}ms`);
+    } catch (err) {
+      console.error(`[GeneratePrototype] ${startTime} Error:`, err);
+    }
   };
 
   const handleRetry = () => {
@@ -43,6 +69,7 @@ export function GeneratePrototypeButton({
     return (
       <div className="flex gap-4">
         <button
+          type="button"
           onClick={() => navigate(`/prototypes/${existingPrototypeId}`)}
           className="btn btn-primary btn-lg gap-2 shadow-lg hover:shadow-xl transition-shadow"
         >
@@ -50,6 +77,7 @@ export function GeneratePrototypeButton({
           View Prototype
         </button>
         <button
+          type="button"
           onClick={() => setShowRegenerate(true)}
           className="btn btn-outline btn-lg"
         >
@@ -63,6 +91,7 @@ export function GeneratePrototypeButton({
   return (
     <div className="space-y-4">
       <button
+        type="button"
         onClick={handleGenerate}
         disabled={isGenerating}
         className="btn btn-primary btn-lg gap-2 shadow-lg hover:shadow-xl transition-shadow w-full sm:w-auto"
@@ -100,7 +129,7 @@ export function GeneratePrototypeButton({
             <span>{error.message}</span>
           </div>
           <div className="flex-none">
-            <button onClick={handleRetry} className="btn btn-sm btn-outline">
+            <button type="button" onClick={handleRetry} className="btn btn-sm btn-outline">
               Retry
             </button>
           </div>

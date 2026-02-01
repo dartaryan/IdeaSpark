@@ -34,7 +34,7 @@ export function usePrdView({ prdId, redirectIfDraft = true }: UsePrdViewOptions)
   // Redirect to builder if PRD is still draft
   useEffect(() => {
     if (redirectIfDraft && isDraft && data?.prd) {
-      navigate(`/prd/build/${data.prd.idea_id}`, { replace: true });
+      navigate(`/prd/${data.prd.idea_id}`, { replace: true });
     }
   }, [isDraft, redirectIfDraft, data, navigate]);
 

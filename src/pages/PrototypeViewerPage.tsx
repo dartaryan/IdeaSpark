@@ -80,7 +80,7 @@ export function PrototypeViewerPage() {
             </p>
             <div className="card-actions justify-center">
               <button 
-                onClick={() => navigate(`/prd/${prototype.prdId}`)} 
+                onClick={() => navigate(`/prd/view/${prototype.prdId}`)} 
                 className="btn btn-primary"
               >
                 Back to PRD
@@ -107,7 +107,7 @@ export function PrototypeViewerPage() {
             </p>
             <div className="card-actions justify-center">
               <button 
-                onClick={() => navigate(`/prd/${prototype.prdId}`)} 
+                onClick={() => navigate(`/prd/view/${prototype.prdId}`)} 
                 className="btn btn-primary"
               >
                 Back to PRD
@@ -134,7 +134,7 @@ export function PrototypeViewerPage() {
             </p>
             <div className="card-actions justify-center">
               <button 
-                onClick={() => navigate(`/prd/${prototype.prdId}`)} 
+                onClick={() => navigate(`/prd/view/${prototype.prdId}`)} 
                 className="btn btn-primary"
               >
                 Back to PRD

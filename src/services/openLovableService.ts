@@ -54,18 +54,28 @@ export const openLovableService = {
     prdContent: PrdContent
   ): Promise<ServiceResponse<GeneratePrototypeResponse>> {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
+      console.log('[openLovableService] generate() called with:', { prdId, ideaId });
+      
+      // Don't call getSession() here - it can trigger auth state changes
+      // The Supabase client automatically includes the auth token in function calls
+      console.log('[openLovableService] Calling Edge Function prototype-generate...');
+      const response = await supabase.functions.invoke('prototype-generate', {
+        body: { prdId, ideaId, prdContent },
+      });
+      
+      console.log('[openLovableService] Edge Function response:', {
+        hasData: !!response.data,
+        error: response.error?.message,
+        status: response.error?.status,
+      });
+      
+      // Check for auth error from the Edge Function
+      if (response.error?.status === 401) {
         return {
           data: null,
           error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
         };
       }
-
-      const response = await supabase.functions.invoke('prototype-generate', {
-        body: { prdId, ideaId, prdContent },
-      });
 
       if (response.error) {
         console.error('Prototype generation error:', response.error);
@@ -101,18 +111,21 @@ export const openLovableService = {
     refinementPrompt: string
   ): Promise<ServiceResponse<GeneratePrototypeResponse>> {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
+      console.log('[openLovableService] refine() called with:', { prototypeId });
+      
+      // Don't call getSession() here - it can trigger auth state changes
+      // The Supabase client automatically includes the auth token in function calls
+      const response = await supabase.functions.invoke('prototype-generate', {
+        body: { prototypeId, refinementPrompt },
+      });
+      
+      // Check for auth error from the Edge Function
+      if (response.error?.status === 401) {
         return {
           data: null,
           error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
         };
       }
-
-      const response = await supabase.functions.invoke('prototype-generate', {
-        body: { prototypeId, refinementPrompt },
-      });
 
       if (response.error) {
         console.error('Prototype refinement error:', response.error);

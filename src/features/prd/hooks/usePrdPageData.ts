@@ -26,6 +26,11 @@ export function usePrdPageData(ideaId: string | undefined): UsePrdPageDataReturn
     queryFn: async () => {
       if (!ideaId) return null;
       const result = await ideaService.getIdeaById(ideaId);
+      // For "not found" cases, return null instead of throwing
+      // This allows isIdeaNotFound to be properly detected
+      if (result.error?.code === 'NOT_FOUND') {
+        return null;
+      }
       if (result.error) {
         throw new Error(result.error.message);
       }

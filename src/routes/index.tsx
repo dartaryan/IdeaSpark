@@ -85,12 +85,12 @@ export const router = createBrowserRouter([
         element: <NewIdeaPage />,
       },
       {
-        path: ROUTES.PRD_BUILDER,
-        element: <PrdBuilderPage />,
+        path: ROUTES.PRD_VIEW,
+        element: <PrdViewPage />,
       },
       {
-        path: '/prd/:prdId',
-        element: <PrdViewPage />,
+        path: ROUTES.PRD_BUILDER,
+        element: <PrdBuilderPage />,
       },
       {
         path: '/prototypes/:prototypeId',

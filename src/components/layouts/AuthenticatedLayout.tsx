@@ -16,6 +16,7 @@ export function AuthenticatedLayout() {
 
   // Show loading spinner while checking auth state
   if (isLoading) {
+    console.log('[AuthenticatedLayout] Showing loading spinner, isLoading=true');
     return (
       <div className="min-h-screen flex items-center justify-center bg-base-200">
         <span className="loading loading-spinner loading-lg text-primary"></span>
@@ -25,8 +26,12 @@ export function AuthenticatedLayout() {
 
   // Redirect to login if not authenticated
   if (!user) {
+    console.log('[AuthenticatedLayout] REDIRECTING TO LOGIN! user is null, isLoading=false');
+    console.log('[AuthenticatedLayout] Stack trace:', new Error().stack);
     return <Navigate to="/login" replace />;
   }
+  
+  console.log('[AuthenticatedLayout] Rendering content, user:', user?.email);
 
   const handleMenuClick = () => {
     setSidebarOpen(true);

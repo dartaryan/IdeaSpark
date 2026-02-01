@@ -94,6 +94,13 @@ export function useAuth() {
       currentSession = session;
       
       console.log('[useAuth] Auth state changed:', event, session ? 'has session' : 'no session');
+      console.log('[useAuth] Event details:', { 
+        event, 
+        hasSession: !!session, 
+        userId: session?.user?.id,
+        expiresAt: session?.expires_at,
+        stack: new Error().stack 
+      });
       
       if (session?.user) {
         const user = await fetchUserWithTimeout(session);

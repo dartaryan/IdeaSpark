@@ -28,7 +28,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={false}
         onClose={vi.fn()}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     expect(container.firstChild).toBeNull();
@@ -41,7 +43,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={vi.fn()}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -55,7 +59,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={vi.fn()}
         breakdown={[]}
-        isLoading={true}`n        dateRange={mockDateRange}`n      />
+        isLoading={true}
+        dateRange={mockDateRange}
+      />
     );
 
     const spinner = screen.getByLabelText('Loading breakdown data');
@@ -70,7 +76,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={vi.fn()}
         breakdown={[]}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     expect(screen.getByText('No ideas submitted in this period.')).toBeInTheDocument();
@@ -84,7 +92,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={vi.fn()}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     // Check table headers
@@ -112,7 +122,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={mockOnClose}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     const closeButton = screen.getByLabelText('Close modal');
@@ -129,7 +141,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={mockOnClose}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     const modalBackground = screen.getByRole('dialog');
@@ -146,7 +160,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={mockOnClose}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     const modalContent = screen.getByText('Ideas Breakdown');
@@ -163,7 +179,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={mockOnClose}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     // Get the action button (not the X button) by its text content
@@ -196,7 +214,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={vi.fn()}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     expect(screen.getByText('Last 30 days')).toBeInTheDocument();
@@ -209,7 +229,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={vi.fn()}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     const dialog = screen.getByRole('dialog');
@@ -224,7 +246,9 @@ describe('IdeaBreakdownModal', () => {
         isOpen={true}
         onClose={vi.fn()}
         breakdown={mockBreakdown}
-        isLoading={false}`n        dateRange={mockDateRange}`n      />
+        isLoading={false}
+        dateRange={mockDateRange}
+      />
     );
 
     const modalBox = container.querySelector('.modal-box');

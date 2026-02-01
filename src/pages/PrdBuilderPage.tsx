@@ -116,7 +116,7 @@ export function PrdBuilderPage() {
           ideaId={idea.id}
           ideaTitle={idea.title || idea.problem.substring(0, 50)}
           completedAt={prd.completed_at!}
-          onViewPrd={() => navigate(`/prd/${prd.id}`)}
+          onViewPrd={() => navigate(`/prd/view/${prd.id}`)}
         />
       ) : (
         <div className="border-b border-base-300 bg-base-100">
