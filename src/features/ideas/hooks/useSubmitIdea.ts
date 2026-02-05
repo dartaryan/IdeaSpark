@@ -109,7 +109,10 @@ export function useSubmitIdea(options?: UseSubmitIdeaOptions) {
       navigate(ROUTES.IDEAS);
     },
     onError: (error: Error) => {
-      console.error('Submit idea error:', error);
+      // Only log errors in development to avoid exposing internals in production
+      if (import.meta.env.DEV) {
+        console.error('Submit idea error:', error);
+      }
 
       // Show error toast with user-friendly message
       toast({

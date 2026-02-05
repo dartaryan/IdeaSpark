@@ -531,7 +531,7 @@ export const geminiService = {
     impact: string
   ): Promise<ServiceResponse<EnhancedIdea>> {
     try {
-      // TODO: Story 2.6 - Replace with actual Edge Function call:
+      // NOTE: Story 2.6 implements the actual Supabase Edge Function call:
       // const { data, error } = await supabase.functions.invoke('gemini-enhance', {
       //   body: { problem, solution, impact }
       // });

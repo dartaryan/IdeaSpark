@@ -129,7 +129,10 @@ export const ideaService = {
 
       return { data, error: null };
     } catch (error) {
-      console.error('createIdea error:', error);
+      // Only log errors in development to avoid exposing internals in production
+      if (import.meta.env.DEV) {
+        console.error('createIdea error:', error);
+      }
       return {
         data: null,
         error: { message: 'Failed to create idea', code: 'UNKNOWN_ERROR' },
