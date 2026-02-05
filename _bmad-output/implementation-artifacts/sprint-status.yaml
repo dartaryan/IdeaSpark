@@ -41,76 +41,76 @@ story_location: c:\Users\ben.akiva\Documents\Repos\IdeaSpark\_bmad-output\implem
 
 development_status:
   # Epic 1: Project Foundation & User Authentication
-  epic-1: in-progress
-  1-1-initialize-project-with-vite-and-core-dependencies: review
-  1-2-configure-passportcard-daisyui-theme: review
-  1-3-set-up-supabase-project-and-database-schema: review
-  1-4-user-registration-flow: review
-  1-5-user-login-flow: review
-  1-6-user-logout-and-session-management: review
-  1-7-password-reset-flow: review
-  1-8-protected-routes-and-role-based-access: review
-  1-9-application-shell-and-navigation: review
-  1-10-deploy-to-vercel: review
+  epic-1: done
+  1-1-initialize-project-with-vite-and-core-dependencies: done
+  1-2-configure-passportcard-daisyui-theme: done
+  1-3-set-up-supabase-project-and-database-schema: done
+  1-4-user-registration-flow: done
+  1-5-user-login-flow: done
+  1-6-user-logout-and-session-management: done
+  1-7-password-reset-flow: done
+  1-8-protected-routes-and-role-based-access: done
+  1-9-application-shell-and-navigation: done
+  1-10-deploy-to-vercel: done
   epic-1-retrospective: optional
 
   # Epic 2: Idea Submission with AI Enhancement
-  epic-2: in-progress
-  2-1-create-ideas-database-table-and-service-layer: review
-  2-2-idea-wizard-step-1-problem-definition: review
-  2-3-idea-wizard-step-2-solution-description: review
-  2-4-idea-wizard-step-3-impact-assessment: review
-  2-5-idea-wizard-step-4-review-and-ai-enhancement: review
-  2-6-gemini-edge-function-for-idea-enhancement: review
-  2-7-submit-idea-and-save-to-database: review
-  2-8-my-ideas-list-view: review
-  2-9-idea-detail-view: review
+  epic-2: done
+  2-1-create-ideas-database-table-and-service-layer: done
+  2-2-idea-wizard-step-1-problem-definition: done
+  2-3-idea-wizard-step-2-solution-description: done
+  2-4-idea-wizard-step-3-impact-assessment: done
+  2-5-idea-wizard-step-4-review-and-ai-enhancement: done
+  2-6-gemini-edge-function-for-idea-enhancement: done
+  2-7-submit-idea-and-save-to-database: done
+  2-8-my-ideas-list-view: done
+  2-9-idea-detail-view: done
   epic-2-retrospective: optional
 
   # Epic 3: AI-Powered PRD Development
-  epic-3: in-progress
-  3-1-create-prd-database-tables-and-service-layer: review
-  3-2-prd-builder-page-layout: review
-  3-3-gemini-edge-function-for-prd-chat: review
-  3-4-chat-interface-with-ai-assistant: review
-  3-5-real-time-prd-section-generation: review
-  3-6-prd-auto-save-functionality: review
-  3-7-prd-section-structure-and-content: review
-  3-8-mark-prd-as-complete: review
-  3-9-view-completed-prd: review
+  epic-3: done
+  3-1-create-prd-database-tables-and-service-layer: done
+  3-2-prd-builder-page-layout: done
+  3-3-gemini-edge-function-for-prd-chat: done
+  3-4-chat-interface-with-ai-assistant: done
+  3-5-real-time-prd-section-generation: done
+  3-6-prd-auto-save-functionality: done
+  3-7-prd-section-structure-and-content: done
+  3-8-mark-prd-as-complete: done
+  3-9-view-completed-prd: done
   epic-3-retrospective: optional
 
   # Epic 4: Prototype Generation & Refinement
-  epic-4: in-progress
-  4-1-create-prototypes-database-table-and-service-layer: review
-  4-2-open-lovable-edge-function-for-prototype-generation: review
-  4-3-trigger-prototype-generation-from-completed-prd: review
-  4-4-prototype-viewer-with-responsive-preview: review
-  4-5-chat-based-prototype-refinement: review
-  4-6-prototype-refinement-history: review
-  4-7-shareable-prototype-urls: review
-  4-8-prototype-status-integration-with-idea: review
+  epic-4: done
+  4-1-create-prototypes-database-table-and-service-layer: done
+  4-2-open-lovable-edge-function-for-prototype-generation: done
+  4-3-trigger-prototype-generation-from-completed-prd: done
+  4-4-prototype-viewer-with-responsive-preview: done
+  4-5-chat-based-prototype-refinement: done
+  4-6-prototype-refinement-history: done
+  4-7-shareable-prototype-urls: done
+  4-8-prototype-status-integration-with-idea: done
   epic-4-retrospective: optional
 
   # Epic 5: Admin Pipeline & Triage Workflow
-  epic-5: in-progress
-  5-1-admin-dashboard-layout: review
-  5-2-all-ideas-list-with-filtering-and-sorting: review
-  5-3-idea-pipeline-kanban-view: review
-  5-4-approve-idea-for-prd-development: review
-  5-5-reject-idea-with-feedback: review
-  5-6-view-any-users-idea-prd-and-prototype: review
-  5-7-user-list-and-activity-overview: review
-  5-8-real-time-dashboard-updates: review
+  epic-5: done
+  5-1-admin-dashboard-layout: done
+  5-2-all-ideas-list-with-filtering-and-sorting: done
+  5-3-idea-pipeline-kanban-view: done
+  5-4-approve-idea-for-prd-development: done
+  5-5-reject-idea-with-feedback: done
+  5-6-view-any-users-idea-prd-and-prototype: done
+  5-7-user-list-and-activity-overview: done
+  5-8-real-time-dashboard-updates: done
   epic-5-retrospective: optional
 
   # Epic 6: Analytics & Innovation Metrics
-  epic-6: in-progress
-  6-1-analytics-dashboard-layout: review
-  6-2-total-ideas-submitted-metric: review
-  6-3-pipeline-stage-breakdown-chart: review
-  6-4-completion-rates-metrics: review
-  6-5-time-to-decision-metrics: review
-  6-6-user-activity-overview: review
-  6-7-date-range-filtering-for-analytics: review
+  epic-6: done
+  6-1-analytics-dashboard-layout: done
+  6-2-total-ideas-submitted-metric: done
+  6-3-pipeline-stage-breakdown-chart: done
+  6-4-completion-rates-metrics: done
+  6-5-time-to-decision-metrics: done
+  6-6-user-activity-overview: done
+  6-7-date-range-filtering-for-analytics: done
   epic-6-retrospective: optional
