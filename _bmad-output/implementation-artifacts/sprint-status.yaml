@@ -1,4 +1,4 @@
-# generated: 2026-01-29
+# generated: 2026-02-05
 # project: IdeaSpark
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,84 +33,117 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-01-29
+generated: 2026-02-05
 project: IdeaSpark
 project_key: NOKEY
 tracking_system: file-system
 story_location: c:\Users\ben.akiva\Documents\Repos\IdeaSpark\_bmad-output\implementation-artifacts
 
 development_status:
+  # Epic 0: Cleanup and Documentation Tasks
+  epic-0: in-progress
+  0-4-verify-idea-submission-database-integration: review
+  0-5-implement-analytics-chart-components: backlog
+  0-6-implement-analytics-drill-down-modals: backlog
+  0-7-create-user-detail-pages-and-fix-navigation-placeholders: backlog
+  0-8-remove-outdated-todo-comments-and-documentation: backlog
+  0-9-verify-ideas-routes-and-remove-placeholder-comments: backlog
+  epic-0-retrospective: optional
+
   # Epic 1: Project Foundation & User Authentication
   epic-1: done
   1-1-initialize-project-with-vite-and-core-dependencies: done
   1-2-configure-passportcard-daisyui-theme: done
-  1-3-set-up-supabase-project-and-database-schema: done
+  1-3-set-up-supabase-client-and-configuration: done
   1-4-user-registration-flow: done
   1-5-user-login-flow: done
   1-6-user-logout-and-session-management: done
-  1-7-password-reset-flow: done
-  1-8-protected-routes-and-role-based-access: done
-  1-9-application-shell-and-navigation: done
-  1-10-deploy-to-vercel: done
+  1-7-protected-routes-and-role-based-access: done
+  1-8-supabase-row-level-security-rls-policies: done
   epic-1-retrospective: optional
 
-  # Epic 2: Idea Submission with AI Enhancement
+  # Epic 2: Idea Submission & Management
   epic-2: done
-  2-1-create-ideas-database-table-and-service-layer: done
-  2-2-idea-wizard-step-1-problem-definition: done
-  2-3-idea-wizard-step-2-solution-description: done
-  2-4-idea-wizard-step-3-impact-assessment: done
-  2-5-idea-wizard-step-4-review-and-ai-enhancement: done
-  2-6-gemini-edge-function-for-idea-enhancement: done
-  2-7-submit-idea-and-save-to-database: done
-  2-8-my-ideas-list-view: done
-  2-9-idea-detail-view: done
+  2-1-idea-wizard-step-1-problem-definition: done
+  2-2-idea-wizard-step-2-solution-proposal: done
+  2-3-idea-wizard-step-3-impact-assessment: done
+  2-4-idea-wizard-step-4-review-and-ai-enhancement: done
+  2-5-implement-ai-enhancement-edge-function: done
+  2-6-my-ideas-list-page: done
+  2-7-idea-detail-page: done
   epic-2-retrospective: optional
 
-  # Epic 3: AI-Powered PRD Development
+  # Epic 3: PRD Development with AI Assistant
   epic-3: done
-  3-1-create-prd-database-tables-and-service-layer: done
-  3-2-prd-builder-page-layout: done
-  3-3-gemini-edge-function-for-prd-chat: done
-  3-4-chat-interface-with-ai-assistant: done
-  3-5-real-time-prd-section-generation: done
-  3-6-prd-auto-save-functionality: done
-  3-7-prd-section-structure-and-content: done
-  3-8-mark-prd-as-complete: done
-  3-9-view-completed-prd: done
+  3-1-prd-builder-page-layout: done
+  3-2-prd-chat-interface-with-ai-assistant: done
+  3-3-real-time-prd-section-generation: done
+  3-4-implement-gemini-prd-chat-edge-function: done
+  3-5-prd-auto-save-functionality: done
+  3-6-mark-prd-as-complete: done
+  3-7-view-completed-prd: done
   epic-3-retrospective: optional
 
-  # Epic 4: Prototype Generation & Refinement
+  # Epic 4: Full-Featured Prototype Generation with Sandpack
   epic-4: done
-  4-1-create-prototypes-database-table-and-service-layer: done
-  4-2-open-lovable-edge-function-for-prototype-generation: done
-  4-3-trigger-prototype-generation-from-completed-prd: done
-  4-4-prototype-viewer-with-responsive-preview: done
-  4-5-chat-based-prototype-refinement: done
-  4-6-prototype-refinement-history: done
+  4-1-sandpack-integration-setup: done
+  4-2-prototype-generation-edge-function: done
+  4-3-automatic-prototype-generation-on-prd-completion: done
+  4-4-prototype-viewer-with-sandpack: done
+  4-5-prototype-refinement-chat-interface: done
+  4-6-passportcard-theme-enforcement-in-generated-prototypes: done
   4-7-shareable-prototype-urls: done
-  4-8-prototype-status-integration-with-idea: done
   epic-4-retrospective: optional
 
-  # Epic 5: Admin Pipeline & Triage Workflow
+  # Epic 5: Admin Dashboard & Pipeline Management
   epic-5: done
   5-1-admin-dashboard-layout: done
-  5-2-all-ideas-list-with-filtering-and-sorting: done
-  5-3-idea-pipeline-kanban-view: done
-  5-4-approve-idea-for-prd-development: done
-  5-5-reject-idea-with-feedback: done
-  5-6-view-any-users-idea-prd-and-prototype: done
-  5-7-user-list-and-activity-overview: done
-  5-8-real-time-dashboard-updates: done
+  5-2-view-all-ideas-in-pipeline: done
+  5-3-admin-idea-triage-approve-reject: done
+  5-4-filter-and-sort-ideas: done
+  5-5-view-user-list: done
   epic-5-retrospective: optional
 
   # Epic 6: Analytics & Innovation Metrics
   epic-6: done
   6-1-analytics-dashboard-layout: done
-  6-2-total-ideas-submitted-metric: done
-  6-3-pipeline-stage-breakdown-chart: done
-  6-4-completion-rates-metrics: done
-  6-5-time-to-decision-metrics: done
-  6-6-user-activity-overview: done
-  6-7-date-range-filtering-for-analytics: done
+  6-2-idea-count-metrics: done
+  6-3-completion-rate-metrics-with-charts: done
+  6-4-time-to-decision-metrics: done
+  6-5-user-activity-overview: done
+  6-6-recent-submissions-list: done
   epic-6-retrospective: optional
+
+  # Epic 7: Prototype Code Editor & Live Editing
+  epic-7: backlog
+  7-1-code-editor-integration-monaco-or-codemirror: backlog
+  7-2-view-generated-code-with-syntax-highlighting: backlog
+  7-3-edit-code-in-real-time-with-live-preview: backlog
+  7-4-save-edited-prototype-version: backlog
+  7-5-manage-multiple-prototype-versions: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Prototype State Persistence
+  epic-8: backlog
+  8-1-capture-prototype-state: backlog
+  8-2-save-prototype-state-to-database: backlog
+  8-3-restore-prototype-state-on-return: backlog
+  epic-8-retrospective: optional
+
+  # Epic 9: Public Prototype Sharing & Access Control
+  epic-9: backlog
+  9-1-generate-public-shareable-url: backlog
+  9-2-optional-password-protection: backlog
+  9-3-configurable-link-expiration: backlog
+  9-4-public-prototype-viewer-no-authentication: backlog
+  9-5-revoke-public-access: backlog
+  epic-9-retrospective: optional
+
+  # Epic 10: Prototype API Integration Layer
+  epic-10: backlog
+  10-1-api-configuration-interface: backlog
+  10-2-mock-api-response-system: backlog
+  10-3-real-api-calls-from-prototypes: backlog
+  10-4-ai-api-integration-in-prototypes: backlog
+  10-5-api-call-monitoring-and-debugging: backlog
+  epic-10-retrospective: optional

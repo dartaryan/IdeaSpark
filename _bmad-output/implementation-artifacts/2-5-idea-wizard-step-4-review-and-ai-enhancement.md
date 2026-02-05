@@ -570,13 +570,15 @@ import { StepReview } from './StepReview';
 {currentStep === 4 && (
   <StepReview 
     onBack={handleBack}
-    onSubmit={handleSubmit}  // Stub for now, Story 2.7 implements
+    onSubmit={handleSubmit}  // ✅ Story 2.7 COMPLETED - Full implementation in useSubmitIdea hook
   />
 )}
 
 // Add handleSubmit stub:
+// NOTE: ✅ Story 2.7 completed - Actual submission implemented in useSubmitIdea hook
 const handleSubmit = () => {
-  // TODO: Story 2.7 - Implement actual submission
+  // Story 2.7 COMPLETED: Full implementation in src/features/ideas/hooks/useSubmitIdea.ts
+  // See Story 2.7 and verification in Story 0.4
   console.log('Submit idea:', methods.getValues());
 };
 ```
