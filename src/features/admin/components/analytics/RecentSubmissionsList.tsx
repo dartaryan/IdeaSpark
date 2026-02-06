@@ -1,7 +1,9 @@
 // src/features/admin/components/analytics/RecentSubmissionsList.tsx
 // Story 6.6 Task 8: Recent Submissions List Component
+// Story 0.7: Replaced console.log navigation with useNavigate, onKeyPress → onKeyDown
 
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import type { RecentSubmissionData } from '../../analytics';
 
 /**
@@ -18,6 +20,8 @@ interface RecentSubmissionsListProps {
  * Subtask 8.3-8.10: List with title, submitter, status, date, clickable
  */
 export function RecentSubmissionsList({ submissions }: RecentSubmissionsListProps) {
+  const navigate = useNavigate();
+
   // Subtask 8.8: Empty state
   if (!submissions || submissions.length === 0) {
     return (
@@ -64,14 +68,15 @@ export function RecentSubmissionsList({ submissions }: RecentSubmissionsListProp
             key={submission.ideaId}
             className="p-3 rounded-lg border border-base-300 hover:bg-base-200 cursor-pointer transition-colors"
             onClick={() => {
-              // Subtask 8.5: Make clickable (placeholder for navigation)
-              console.log('Navigate to idea:', submission.ideaId);
+              navigate(`/admin/ideas/${submission.ideaId}`);
             }}
             role="button"
             tabIndex={0}
-            onKeyPress={(e) => {
+            aria-label={`View idea: ${submission.title || 'Untitled Idea'}`}
+            onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                console.log('Navigate to idea:', submission.ideaId);
+                e.preventDefault();
+                navigate(`/admin/ideas/${submission.ideaId}`);
               }
             }}
           >

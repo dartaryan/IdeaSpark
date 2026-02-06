@@ -1,6 +1,8 @@
 // src/features/admin/components/analytics/TopContributorsLeaderboard.tsx
 // Story 6.6 Task 7: Top Contributors Leaderboard Component
+// Story 0.7: Replaced console.log navigation with useNavigate, onKeyPress → onKeyDown
 
+import { useNavigate } from 'react-router-dom';
 import type { TopContributorData } from '../../analytics';
 
 /**
@@ -17,6 +19,8 @@ interface TopContributorsLeaderboardProps {
  * Subtask 7.3-7.11: Leaderboard with ranking, name, email, ideas count, interactive rows
  */
 export function TopContributorsLeaderboard({ contributors }: TopContributorsLeaderboardProps) {
+  const navigate = useNavigate();
+
   // Subtask 7.10: Empty state
   if (!contributors || contributors.length === 0) {
     return (
@@ -56,14 +60,15 @@ export function TopContributorsLeaderboard({ contributors }: TopContributorsLead
                 ${rank === 1 ? 'bg-base-200/50' : ''}
               `}
               onClick={() => {
-                // Subtask 7.7: Make row clickable (placeholder for navigation)
-                console.log('Navigate to user detail:', contributor.userId);
+                navigate(`/admin/users/${contributor.userId}`);
               }}
               role="button"
               tabIndex={0}
-              onKeyPress={(e) => {
+              aria-label={`View contributor: ${contributor.userName || 'Unknown User'}`}
+              onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  console.log('Navigate to user detail:', contributor.userId);
+                  e.preventDefault();
+                  navigate(`/admin/users/${contributor.userId}`);
                 }
               }}
             >
