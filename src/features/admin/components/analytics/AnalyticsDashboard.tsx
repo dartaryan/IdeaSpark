@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { useChartBreakdown } from '../../hooks/useChartBreakdown'; // Code Review Fix: Use React Query hook
 import { useDateRange } from '../../hooks/useDateRange'; // Story 6.7 Task 7: Use useDateRange hook
 import { MetricsCards } from './MetricsCards';
 import { SubmissionChart } from './SubmissionChart';
@@ -17,7 +18,6 @@ import { IdeaBreakdownModal } from './IdeaBreakdownModal';
 import { CompletionRatesCard } from './CompletionRatesCard';
 import { TimeToDecisionCard } from './TimeToDecisionCard';
 import { UserActivityCard } from './UserActivityCard';
-import { analyticsService } from '../../services/analyticsService';
 import { formatDistanceToNow } from 'date-fns';
 import type { IdeaBreakdown } from '../../analytics/types';
 
@@ -48,33 +48,22 @@ export function AnalyticsDashboard() {
   // Story 6.7 Task 7 Subtask 7.5: Pass currentRange to useAnalytics hook
   const { data: analytics, isLoading, error, refetch, dataUpdatedAt } = useAnalytics(currentRange);
 
-  // Task 7: Fetch breakdown data when modal opens
-  // Story 6.7 Task 7: Updated to use new DateRange type
+  // Code Review Fix: Use React Query hook for chart breakdown data (consistent with architecture)
+  const {
+    data: chartBreakdownData = [],
+    isLoading: isChartBreakdownLoading,
+    error: chartBreakdownError,
+    refetch: refetchChartBreakdown
+  } = useChartBreakdown(currentRange);
+
+  // Code Review Fix: Reuse chart data from React Query hook for modal
   useEffect(() => {
     if (isBreakdownOpen) {
-      setIsBreakdownLoading(true);
-      setBreakdownError(null);
-      analyticsService.getIdeasBreakdown(currentRange)
-        .then((result) => {
-          if (result.data) {
-            setBreakdownData(result.data);
-            setBreakdownError(null);
-          } else {
-            console.error('Failed to fetch breakdown:', result.error);
-            setBreakdownData([]);
-            setBreakdownError(result.error?.message || 'Failed to load breakdown data');
-          }
-        })
-        .catch((err) => {
-          console.error('Breakdown fetch error:', err);
-          setBreakdownData([]);
-          setBreakdownError('An unexpected error occurred while loading breakdown data');
-        })
-        .finally(() => {
-          setIsBreakdownLoading(false);
-        });
+      setBreakdownData(chartBreakdownData);
+      setIsBreakdownLoading(isChartBreakdownLoading);
+      setBreakdownError(chartBreakdownError?.message || null);
     }
-  }, [isBreakdownOpen, currentRange]);
+  }, [isBreakdownOpen, chartBreakdownData, isChartBreakdownLoading, chartBreakdownError]);
 
   // Task 10: Loading state with skeleton
   if (isLoading) {
@@ -263,9 +252,45 @@ export function AnalyticsDashboard() {
           />
         </div>
 
-        {/* Task 3: Placeholder chart components */}
-        <SubmissionChart />
-        <CompletionRateChart />
+        {/* Story 0.5 Task 3: Chart components with data props */}
+        {/* Code Review Fix: Added error handling UI for chart data */}
+        {chartBreakdownError ? (
+          <div className="lg:col-span-2">
+            <div className="alert alert-error">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="stroke-current shrink-0 h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>Failed to load chart data. {chartBreakdownError.message}</span>
+              <button className="btn btn-sm" onClick={() => refetchChartBreakdown()}>
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Subtask 3.1 & 3.4: Pass data and isLoading to SubmissionChart */}
+            {/* Code Review Fix: Using consistent loading states */}
+            <SubmissionChart
+              data={chartBreakdownData}
+              isLoading={isChartBreakdownLoading}
+            />
+            {/* Subtask 3.3 & 3.4: Pass pipelineBreakdown data and isLoading to CompletionRateChart */}
+            <CompletionRateChart
+              data={analytics?.pipelineBreakdown || []}
+              isLoading={isLoading}
+            />
+          </>
+        )}
       </div>
 
       {/* Task 7 & 9: Ideas Breakdown Modal */}
