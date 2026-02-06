@@ -17,18 +17,12 @@ export function GeneratePrototypeButton({
   
   const { generate, isGenerating, error } = useGeneratePrototype({
     onSuccess: (prototypeId) => {
-      console.log('[GeneratePrototypeButton-Header] Success! Navigating to:', prototypeId);
       navigate(`/prototypes/${prototypeId}`);
-    },
-    onError: (err) => {
-      console.error('[GeneratePrototypeButton-Header] Error:', err);
     },
   });
 
   const handleClick = async () => {
-    console.log('[GeneratePrototypeButton-Header] Button clicked!', { prdId, ideaId });
     if (!prdId || !ideaId) {
-      console.error('[GeneratePrototypeButton-Header] Missing prdId or ideaId!');
       return;
     }
     await generate(prdId, ideaId);

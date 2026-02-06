@@ -42,7 +42,6 @@ export function useAuth() {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     // Store session reference for timeout fallback
     let currentSession: Session | null = null;
-    console.log('[useAuth] Starting session check...');
     
     // Helper to create fallback user from session when database fetch fails/times out
     const createFallbackUser = (session: Session): User => ({
@@ -93,15 +92,6 @@ export function useAuth() {
       // Store session for potential timeout fallback
       currentSession = session;
       
-      console.log('[useAuth] Auth state changed:', event, session ? 'has session' : 'no session');
-      console.log('[useAuth] Event details:', { 
-        event, 
-        hasSession: !!session, 
-        userId: session?.user?.id,
-        expiresAt: session?.expires_at,
-        stack: new Error().stack 
-      });
-      
       if (session?.user) {
         const user = await fetchUserWithTimeout(session);
         if (!isMounted) return;
@@ -140,12 +130,9 @@ export function useAuth() {
         // Store session for potential timeout fallback
         currentSession = session;
         
-        console.log('[useAuth] Got session result:', session ? 'has session' : 'no session');
         if (session?.user) {
-          console.log('[useAuth] Fetching user data...');
           const user = await fetchUserWithTimeout(session);
           if (!isMounted) return;
-          console.log('[useAuth] Got user:', user ? 'success' : 'null');
           setState((prev) => ({
             ...prev,
             user,
@@ -154,7 +141,6 @@ export function useAuth() {
             isLoading: false,
           }));
         } else {
-          console.log('[useAuth] No session, setting isLoading to false');
           setState((prev) => ({ ...prev, isLoading: false }));
         }
       })
@@ -178,7 +164,6 @@ export function useAuth() {
       if (isMounted) {
         console.warn('[useAuth] Session check timed out after 10s');
         if (currentSession?.user) {
-          console.log('[useAuth] Using session fallback for user data');
           const fallbackUser = createFallbackUser(currentSession);
           setState((prev) => ({
             ...prev,

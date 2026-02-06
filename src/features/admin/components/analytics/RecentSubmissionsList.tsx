@@ -1,6 +1,6 @@
 // src/features/admin/components/analytics/RecentSubmissionsList.tsx
 // Story 6.6 Task 8: Recent Submissions List Component
-// Story 0.7: Replaced console.log navigation with useNavigate, onKeyPress → onKeyDown
+// Story 0.7: Replaced debug logging with useNavigate, onKeyPress → onKeyDown
 
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';

@@ -69,13 +69,8 @@ export function IdeaDetailActions({ idea }: IdeaDetailActionsProps) {
 
   const handleGeneratePrototype = () => {
     // Navigate to PRD view page which has the generate prototype button (AC 3, Task 3)
-    console.log('[IdeaDetailActions] handleGeneratePrototype called, prd:', prd);
     if (prd) {
-      const targetUrl = ROUTES.PRD_VIEW.replace(':prdId', prd.id);
-      console.log('[IdeaDetailActions] Navigating to:', targetUrl);
-      navigate(targetUrl);
-    } else {
-      console.error('[IdeaDetailActions] No PRD available!');
+      navigate(ROUTES.PRD_VIEW.replace(':prdId', prd.id));
     }
   };
 

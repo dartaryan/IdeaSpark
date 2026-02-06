@@ -18,45 +18,26 @@ export function GeneratePrototypeButton({
   onGenerationStart,
   onGenerationComplete,
 }: GeneratePrototypeButtonProps) {
-  // Log on every render
-  console.log('[GeneratePrototypeButton] RENDER', { prdId, ideaId, existingPrototypeId });
-  
   const navigate = useNavigate();
   const [showRegenerate, setShowRegenerate] = useState(false);
 
   const { generate, isGenerating, error, retry } = useGeneratePrototype({
     onSuccess: (prototypeId) => {
-      console.log('[GeneratePrototype] onSuccess called with prototypeId:', prototypeId);
       onGenerationComplete?.(prototypeId);
-      // Navigate to prototype viewer
-      const targetUrl = `/prototypes/${prototypeId}`;
-      console.log('[GeneratePrototype] Navigating to:', targetUrl);
-      navigate(targetUrl);
-    },
-    onError: (err) => {
-      console.error('[GeneratePrototype] onError called:', err);
+      navigate(`/prototypes/${prototypeId}`);
     },
   });
 
   const handleGenerate = async () => {
-    // Log immediately with timestamp
-    const startTime = Date.now();
-    console.log(`[GeneratePrototype] ${startTime} Button clicked!`);
-    console.log(`[GeneratePrototype] ${startTime} Props:`, { prdId, ideaId, existingPrototypeId });
-    console.log(`[GeneratePrototype] ${startTime} Current URL:`, window.location.href);
-    
     if (!prdId || !ideaId) {
-      console.error(`[GeneratePrototype] ${startTime} Missing prdId or ideaId!`, { prdId, ideaId });
       return;
     }
     
     try {
       onGenerationStart?.();
-      console.log(`[GeneratePrototype] ${startTime} About to call generate()...`);
       await generate(prdId, ideaId);
-      console.log(`[GeneratePrototype] ${startTime} generate() completed after ${Date.now() - startTime}ms`);
-    } catch (err) {
-      console.error(`[GeneratePrototype] ${startTime} Error:`, err);
+    } catch {
+      // Error handled by useGeneratePrototype hook
     }
   };
 

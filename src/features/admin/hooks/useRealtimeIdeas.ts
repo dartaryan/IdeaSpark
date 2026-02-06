@@ -40,8 +40,6 @@ export function useRealtimeIdeas() {
             table: 'ideas',
           },
           (payload) => {
-            console.log('[Realtime] Ideas table event:', payload.eventType, payload);
-            
             // Subtask 1.4: Invalidate React Query cache on realtime events
             // Invalidate all admin queries that depend on ideas data
             queryClient.invalidateQueries({ queryKey: ['admin', 'metrics'] });
@@ -51,8 +49,6 @@ export function useRealtimeIdeas() {
           }
         )
         .subscribe((status, err) => {
-          console.log('[Realtime] Subscription status:', status);
-          
           // Subtask 1.6: Add error handling for subscription failures
           if (status === 'SUBSCRIBED') {
             setIsConnected(true);
@@ -79,7 +75,6 @@ export function useRealtimeIdeas() {
     // Subtask 1.5: Handle subscription cleanup on component unmount
     return () => {
       if (channel) {
-        console.log('[Realtime] Cleaning up subscription');
         supabase.removeChannel(channel);
       }
     };

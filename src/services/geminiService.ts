@@ -57,8 +57,6 @@ export const geminiService = {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
 
-      console.log('Invoking gemini-enhance with auth:', !!accessToken);
-
       // Call Edge Function directly using fetch to have full control over headers
       const functionUrl = `${SUPABASE_URL}/functions/v1/gemini-enhance`;
       

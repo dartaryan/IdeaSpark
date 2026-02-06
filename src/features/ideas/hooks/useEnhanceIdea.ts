@@ -17,7 +17,7 @@ interface EnhanceIdeaOutput {
  * useEnhanceIdea - Hook for enhancing idea content with AI
  *
  * Uses React Query mutation pattern with automatic retry logic.
- * Calls geminiService.enhanceIdea() (stub until Story 2.6 implements the Edge Function)
+ * Calls geminiService.enhanceIdea() via Supabase Edge Function
  */
 export function useEnhanceIdea() {
   return useMutation<EnhanceIdeaOutput, Error, EnhanceIdeaInput>({

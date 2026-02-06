@@ -53,11 +53,6 @@ export function DashboardPage() {
               </div>
             </div>
 
-            <div className="divider my-6">Coming Soon</div>
-
-            <p className="text-center text-base-content/60">
-              The full dashboard will be available in Story 1.9 (Application Shell)
-            </p>
           </div>
         </div>
       </div>

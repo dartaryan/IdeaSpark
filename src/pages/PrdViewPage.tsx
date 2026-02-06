@@ -15,14 +15,10 @@ import { supabase } from '../lib/supabase';
 
 export function PrdViewPage() {
   const { prdId } = useParams<{ prdId: string }>();
-  console.log('[PrdViewPage] RENDER with prdId:', prdId, 'URL:', window.location.href);
-  
   const { data, isLoading, error, isDraft } = usePrdView({
     prdId: prdId ?? '',
     redirectIfDraft: true,
   });
-  
-  console.log('[PrdViewPage] usePrdView result:', { data: !!data, isLoading, error, isDraft });
   const [existingPrototypeId, setExistingPrototypeId] = useState<string>();
   const { isGenerating, startTime } = useGeneratePrototype();
 
@@ -72,13 +68,6 @@ export function PrdViewPage() {
 
   const { prd, idea } = data;
   const isPrdComplete = prd.status === 'complete';
-  
-  console.log('[PrdViewPage] PRD data:', { 
-    prdId: prd.id, 
-    ideaId: prd.idea_id, 
-    status: prd.status,
-    isPrdComplete 
-  });
 
   return (
     <div className="min-h-screen bg-base-100">

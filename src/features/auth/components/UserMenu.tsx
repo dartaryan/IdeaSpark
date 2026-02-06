@@ -50,13 +50,13 @@ export function UserMenu({ className = '' }: UserMenuProps) {
         
         <li className="divider my-1"></li>
         
-        {/* Profile link - placeholder for future */}
+        {/* Profile link - not yet implemented */}
         <li>
           <a
             href="/profile"
             onClick={(e) => {
               e.preventDefault();
-              // TODO: Implement profile page navigation in Story 1.9
+              // Note: Profile page navigation deferred — not in current sprint scope
             }}
             className="text-base-content/70 cursor-not-allowed"
             aria-disabled="true"

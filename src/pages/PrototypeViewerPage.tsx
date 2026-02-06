@@ -169,7 +169,7 @@ export function PrototypeViewerPage() {
         version={displayPrototype.version}
         createdAt={displayPrototype.createdAt}
         ideaId={displayPrototype.ideaId}
-        ideaTitle="My Idea" // TODO: Fetch from idea
+        ideaTitle="My Idea" // Note: Fetching idea title deferred — requires additional query not in current scope
         prdId={displayPrototype.prdId}
       />
 

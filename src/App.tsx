@@ -28,13 +28,11 @@ function App() {
           ) {
             // Connection works but table doesn't exist yet or RLS is blocking - that's expected
             setConnectionStatus('connected');
-            console.log('✅ Supabase connected (service is reachable)');
           } else {
             throw error;
           }
         } else {
           setConnectionStatus('connected');
-          console.log('✅ Supabase connected successfully');
         }
       } catch (error) {
         setConnectionStatus('error');

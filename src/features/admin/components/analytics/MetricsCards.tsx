@@ -62,8 +62,7 @@ export function MetricsCards({ analytics, onTotalIdeasClick, dateRange }: Metric
     return percentage > 0 ? `+${percentage}%` : `${percentage}%`;
   };
 
-  // Subtask 2.3: Implement 4 placeholder metric cards
-  // Updated in Story 6.2 to use real trend data
+  // Metric cards configuration (Total Ideas uses computed trend; others are static)
   const metrics = [
     {
       // Subtask 2.4: Use Heroicons for metric icons (light-bulb)

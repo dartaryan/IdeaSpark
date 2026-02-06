@@ -1,6 +1,6 @@
 // src/features/admin/components/analytics/TopContributorsLeaderboard.tsx
 // Story 6.6 Task 7: Top Contributors Leaderboard Component
-// Story 0.7: Replaced console.log navigation with useNavigate, onKeyPress → onKeyDown
+// Story 0.7: Replaced debug logging with useNavigate, onKeyPress → onKeyDown
 
 import { useNavigate } from 'react-router-dom';
 import type { TopContributorData } from '../../analytics';

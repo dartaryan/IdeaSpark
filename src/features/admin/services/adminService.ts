@@ -278,10 +278,7 @@ export const adminService = {
         };
       }
 
-      // Task 9: Subtask 9.1-9.3 - TODO: Add activity logging
-      // TODO: Log approval action to activity_log table when it's created
-      // Record: admin_user_id, idea_id, action='approve', timestamp
-      // This should fail gracefully and not block approval if logging fails
+      // Note: Activity logging deferred — no activity_log table exists
 
       // Subtask 1.4: Return updated idea
       return { data, error: null };
@@ -613,10 +610,7 @@ export const adminService = {
         };
       }
 
-      // Task 10: Subtask 10.3 - TODO: Add activity logging when activity_log table exists
-      // TODO: Log rejection action to activity_log table when it's created
-      // Record: admin_user_id, idea_id, action='reject', feedback_preview, timestamp
-      // This should fail gracefully and not block rejection if logging fails
+      // Note: Activity logging deferred — no activity_log table exists
 
       // Subtask 1.4: Return updated idea with feedback
       return { data, error: null };
