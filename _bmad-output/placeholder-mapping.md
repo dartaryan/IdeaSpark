@@ -218,13 +218,13 @@ These are legitimate placeholder attributes for form inputs:
 ## Category 5: Protected Route Placeholders
 
 ### 5.1 Ideas Routes Structure
-**Status:** Placeholder structure for future routes
+**Status:** ✅ VERIFIED COMPLETE (Story 0.9)
 
 | File | Line | Reference |
 |------|------|-----------|
-| `_bmad-output/implementation-artifacts/1-8-protected-routes-and-role-based-access.md` | Line 395 | `// Ideas routes (Story 2.x) - placeholder structure` |
+| `_bmad-output/implementation-artifacts/1-8-protected-routes-and-role-based-access.md` | Line 395 | `// Ideas routes - IMPLEMENTED (Story 2.x complete, verified in Story 0.9)` |
 
-**Action Required:** Verify if Ideas routes are now implemented and remove placeholder comment.
+**Action Required:** None — Routes verified and implemented. All three ideas routes (`/ideas`, `/ideas/:id`, `/ideas/new`) confirmed in `src/routes/index.tsx` (search for `ROUTES.IDEAS`, `ROUTES.IDEA_DETAIL`, `ROUTES.NEW_IDEA`), wrapped in `AuthenticatedLayout`.
 
 ---
 
@@ -239,7 +239,7 @@ These are legitimate placeholder attributes for form inputs:
 2. **Story 1.9 (Profile/App Shell)** - Check if implemented
 3. **Story 2.6 (AI Enhancement)** - Verify Edge Function exists
 4. ~~**Story 2.7 (Idea Submission)**~~ - ✅ VERIFIED COMPLETE (Story 0.4)
-5. **Story 2.x (Ideas Routes)** - Check route structure
+5. ~~**Story 2.x (Ideas Routes)**~~ - ✅ VERIFIED COMPLETE (Story 0.9)
 
 ### 🎯 FUTURE FEATURES - Decide on Implementation
 1. **Analytics Charts** - SubmissionChart, CompletionRateChart

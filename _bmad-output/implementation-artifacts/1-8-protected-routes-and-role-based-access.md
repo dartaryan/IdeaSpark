@@ -392,19 +392,8 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  // Ideas routes (Story 2.x) - placeholder structure
-  // {
-  //   path: ROUTES.IDEAS,
-  //   element: <ProtectedRoute><IdeasPage /></ProtectedRoute>,
-  // },
-  // {
-  //   path: ROUTES.IDEA_DETAIL,
-  //   element: <ProtectedRoute><IdeaDetailPage /></ProtectedRoute>,
-  // },
-  // {
-  //   path: ROUTES.NEW_IDEA,
-  //   element: <ProtectedRoute><NewIdeaPage /></ProtectedRoute>,
-  // },
+  // Ideas routes - IMPLEMENTED (Story 2.x complete, verified in Story 0.9)
+  // See src/routes/index.tsx — search for ROUTES.IDEAS, ROUTES.IDEA_DETAIL, ROUTES.NEW_IDEA
   
   // Admin routes (require admin role)
   // {
