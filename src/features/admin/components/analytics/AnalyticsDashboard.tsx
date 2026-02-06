@@ -2,7 +2,7 @@
 // Task 1: Create AnalyticsDashboard component with layout structure
 // Story 6.1 - Analytics Dashboard Layout
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useAnalytics } from '../../hooks/useAnalytics';
@@ -15,11 +15,14 @@ import { PipelineBreakdownChart } from './PipelineBreakdownChart';
 import { DateRangeFilter } from './DateRangeFilter';
 import { DateRangeInfo } from './DateRangeInfo'; // Story 6.7 Task 10
 import { IdeaBreakdownModal } from './IdeaBreakdownModal';
+import { DrillDownModal } from './DrillDownModal'; // Story 0.6 Task 4
+import type { DrillDownColumn } from './DrillDownModal'; // Story 0.6 Task 4
 import { CompletionRatesCard } from './CompletionRatesCard';
 import { TimeToDecisionCard } from './TimeToDecisionCard';
 import { UserActivityCard } from './UserActivityCard';
+import { analyticsService } from '../../services/analyticsService'; // Story 0.6 Task 4
 import { formatDistanceToNow } from 'date-fns';
-import type { IdeaBreakdown } from '../../analytics/types';
+import type { IdeaBreakdown, TimeToDecisionDrillDown, CompletionRateDrillDown } from '../../analytics/types';
 
 /**
  * AnalyticsDashboard component - displays innovation metrics and charts
@@ -45,6 +48,18 @@ export function AnalyticsDashboard() {
   const [isBreakdownLoading, setIsBreakdownLoading] = useState(false);
   const [breakdownError, setBreakdownError] = useState<string | null>(null);
 
+  // Story 0.6 Task 4: Time-to-Decision drill-down modal state
+  const [isTimeToDecisionModalOpen, setIsTimeToDecisionModalOpen] = useState(false);
+  const [timeToDecisionDrillDown, setTimeToDecisionDrillDown] = useState<TimeToDecisionDrillDown[]>([]);
+  const [isTimeToDecisionDrillDownLoading, setIsTimeToDecisionDrillDownLoading] = useState(false);
+  const [timeToDecisionDrillDownError, setTimeToDecisionDrillDownError] = useState<string | null>(null);
+
+  // Story 0.6 Task 5: Completion Rate drill-down modal state
+  const [isCompletionRateModalOpen, setIsCompletionRateModalOpen] = useState(false);
+  const [completionRateDrillDown, setCompletionRateDrillDown] = useState<CompletionRateDrillDown[]>([]);
+  const [isCompletionRateDrillDownLoading, setIsCompletionRateDrillDownLoading] = useState(false);
+  const [completionRateDrillDownError, setCompletionRateDrillDownError] = useState<string | null>(null);
+
   // Story 6.7 Task 7 Subtask 7.5: Pass currentRange to useAnalytics hook
   const { data: analytics, isLoading, error, refetch, dataUpdatedAt } = useAnalytics(currentRange);
 
@@ -64,6 +79,56 @@ export function AnalyticsDashboard() {
       setBreakdownError(chartBreakdownError?.message || null);
     }
   }, [isBreakdownOpen, chartBreakdownData, isChartBreakdownLoading, chartBreakdownError]);
+
+  // Story 0.6 Task 4: Fetch time-to-decision drill-down data when modal opens
+  const fetchTimeToDecisionDrillDown = useCallback(async () => {
+    setIsTimeToDecisionDrillDownLoading(true);
+    setTimeToDecisionDrillDownError(null);
+    try {
+      const result = await analyticsService.getTimeToDecisionDrillDown(currentRange);
+      if (result.error) {
+        setTimeToDecisionDrillDownError(result.error.message);
+      } else {
+        setTimeToDecisionDrillDown(result.data || []);
+      }
+    } catch {
+      setTimeToDecisionDrillDownError('An unexpected error occurred');
+    } finally {
+      setIsTimeToDecisionDrillDownLoading(false);
+    }
+  }, [currentRange]);
+
+  // Story 0.6 Task 5: Fetch completion rate drill-down data when modal opens
+  const fetchCompletionRateDrillDown = useCallback(async () => {
+    setIsCompletionRateDrillDownLoading(true);
+    setCompletionRateDrillDownError(null);
+    try {
+      const result = await analyticsService.getCompletionRateDrillDown(currentRange);
+      if (result.error) {
+        setCompletionRateDrillDownError(result.error.message);
+      } else {
+        setCompletionRateDrillDown(result.data || []);
+      }
+    } catch {
+      setCompletionRateDrillDownError('An unexpected error occurred');
+    } finally {
+      setIsCompletionRateDrillDownLoading(false);
+    }
+  }, [currentRange]);
+
+  // Story 0.6 Task 4: Trigger fetch when time-to-decision modal opens
+  useEffect(() => {
+    if (isTimeToDecisionModalOpen) {
+      fetchTimeToDecisionDrillDown();
+    }
+  }, [isTimeToDecisionModalOpen, fetchTimeToDecisionDrillDown]);
+
+  // Story 0.6 Task 5: Trigger fetch when completion rate modal opens
+  useEffect(() => {
+    if (isCompletionRateModalOpen) {
+      fetchCompletionRateDrillDown();
+    }
+  }, [isCompletionRateModalOpen, fetchCompletionRateDrillDown]);
 
   // Task 10: Loading state with skeleton
   if (isLoading) {
@@ -218,6 +283,7 @@ export function AnalyticsDashboard() {
             <CompletionRatesCard 
               data={analytics.completionRates}
               isLoading={isLoading}
+              onMetricClick={() => setIsCompletionRateModalOpen(true)}
             />
           </div>
         )}
@@ -234,6 +300,7 @@ export function AnalyticsDashboard() {
             <TimeToDecisionCard 
               data={analytics.timeToDecision}
               isLoading={isLoading}
+              onDrillDown={() => setIsTimeToDecisionModalOpen(true)}
             />
           </div>
         )}
@@ -308,6 +375,97 @@ export function AnalyticsDashboard() {
           setTimeout(() => setIsBreakdownOpen(true), 100);
         }}
       />
+
+      {/* Story 0.6 Task 4: Time-to-Decision Drill-Down Modal */}
+      <DrillDownModal<TimeToDecisionDrillDown>
+        isOpen={isTimeToDecisionModalOpen}
+        onClose={() => setIsTimeToDecisionModalOpen(false)}
+        title="Time-to-Decision Details"
+        data={timeToDecisionDrillDown}
+        isLoading={isTimeToDecisionDrillDownLoading}
+        error={timeToDecisionDrillDownError}
+        onRetry={fetchTimeToDecisionDrillDown}
+        columns={timeToDecisionColumns}
+      />
+
+      {/* Story 0.6 Task 5: Completion Rate Drill-Down Modal */}
+      <DrillDownModal<CompletionRateDrillDown>
+        isOpen={isCompletionRateModalOpen}
+        onClose={() => setIsCompletionRateModalOpen(false)}
+        title="Completion Rate Details"
+        data={completionRateDrillDown}
+        isLoading={isCompletionRateDrillDownLoading}
+        error={completionRateDrillDownError}
+        onRetry={fetchCompletionRateDrillDown}
+        columns={completionRateColumns}
+      />
     </div>
   );
 }
+
+// Story 0.6 Task 4: Column definitions for Time-to-Decision drill-down
+const timeToDecisionColumns: DrillDownColumn<TimeToDecisionDrillDown>[] = [
+  { key: 'title', label: 'Idea Title' },
+  { key: 'statusLabel', label: 'Status' },
+  {
+    key: 'submittedAt',
+    label: 'Submitted',
+    render: (value) => value ? new Date(value as string).toLocaleDateString() : '-',
+  },
+  {
+    key: 'approvedAt',
+    label: 'Approved',
+    render: (value) => value ? new Date(value as string).toLocaleDateString() : '-',
+  },
+  {
+    key: 'prdCompletedAt',
+    label: 'PRD Complete',
+    render: (value) => value ? new Date(value as string).toLocaleDateString() : '-',
+  },
+  {
+    key: 'totalDays',
+    label: 'Total Days',
+    render: (value) => {
+      const days = value as number;
+      if (days === 0) return '-';
+      return `${days.toFixed(1)}d`;
+    },
+  },
+];
+
+// Story 0.6 Task 5: Column definitions for Completion Rate drill-down
+const completionRateColumns: DrillDownColumn<CompletionRateDrillDown>[] = [
+  { key: 'title', label: 'Idea Title' },
+  { key: 'statusLabel', label: 'Status' },
+  {
+    key: 'stagesCompleted',
+    label: 'Stages',
+    render: (value, row) => `${value}/${row.totalStages}`,
+  },
+  {
+    key: 'completionPercentage',
+    label: 'Completion',
+    render: (value) => {
+      const pct = value as number;
+      return (
+        <div className="flex items-center gap-2">
+          <div className="w-20 bg-base-200 rounded-full h-2">
+            <div
+              className="h-2 rounded-full"
+              style={{
+                width: `${pct}%`,
+                backgroundColor: pct === 100 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#E10514',
+              }}
+            />
+          </div>
+          <span className="text-sm">{pct}%</span>
+        </div>
+      );
+    },
+  },
+  {
+    key: 'submittedAt',
+    label: 'Submitted',
+    render: (value) => value ? new Date(value as string).toLocaleDateString() : '-',
+  },
+];

@@ -44,7 +44,7 @@ development_status:
   epic-0: in-progress
   0-4-verify-idea-submission-database-integration: done
   0-5-implement-analytics-chart-components: done
-  0-6-implement-analytics-drill-down-modals: backlog
+  0-6-implement-analytics-drill-down-modals: done
   0-7-create-user-detail-pages-and-fix-navigation-placeholders: backlog
   0-8-remove-outdated-todo-comments-and-documentation: backlog
   0-9-verify-ideas-routes-and-remove-placeholder-comments: backlog

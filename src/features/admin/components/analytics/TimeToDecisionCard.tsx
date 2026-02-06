@@ -7,17 +7,19 @@ import { TimeMetricDisplay } from './TimeMetricDisplay';
 
 /**
  * Subtask 4.2: TimeToDecisionCard props interface
+ * Story 0.6 Task 4: Added onDrillDown callback
  */
 interface TimeToDecisionCardProps {
   data: TimeToDecisionMetrics | undefined; // Time metrics data
   isLoading?: boolean; // Loading state
+  onDrillDown?: () => void; // Story 0.6: Drill-down modal trigger
 }
 
 /**
  * Story 6.5 Task 4 & Task 6: TimeToDecisionCard component with delay detection
  * Subtask 4.1: Create TimeToDecisionCard.tsx
  */
-export function TimeToDecisionCard({ data, isLoading }: TimeToDecisionCardProps) {
+export function TimeToDecisionCard({ data, isLoading, onDrillDown }: TimeToDecisionCardProps) {
   const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
 
   // Task 6 Subtask 6.2-6.3: Identify metrics that are behind schedule
@@ -67,12 +69,12 @@ export function TimeToDecisionCard({ data, isLoading }: TimeToDecisionCardProps)
     );
   }
 
-  // Subtask 4.5: Handle metric click for drill-down (placeholder for Task 10)
+  // Story 0.6 Task 4: Handle metric click for drill-down
   const handleMetricClick = (metricKey: string) => {
-    // Subtask 10.1: Make each TimeMetricDisplay clickable
-    // TODO: Implement drill-down modal (Task 10)
-    console.log('Metric clicked:', metricKey);
     setExpandedMetric(expandedMetric === metricKey ? null : metricKey);
+    if (onDrillDown) {
+      onDrillDown();
+    }
   };
 
   return (
@@ -146,7 +148,7 @@ export function TimeToDecisionCard({ data, isLoading }: TimeToDecisionCardProps)
         {/* Helpful note about benchmark targets */}
         <div className="mt-4 text-xs text-gray-500 text-center">
           <p>Green: On track | Yellow: At risk | Red: Behind target</p>
-          <p className="mt-1">Click any metric for detailed breakdown (coming soon)</p>
+          <p className="mt-1">Click any metric for detailed breakdown</p>
         </div>
       </div>
     </div>

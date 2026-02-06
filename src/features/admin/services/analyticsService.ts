@@ -3,7 +3,7 @@
 
 import { supabase } from '../../../lib/supabase';
 import type { ServiceResponse } from '../../../types/service';
-import type { AnalyticsData, IdeaBreakdown, PipelineStatus, PipelineStageData, CompletionRates, ConversionRate, TrendData, TimeToDecisionMetrics, TimeMetric, BenchmarkData, UserActivityMetrics, TopContributorData, RecentSubmissionData } from '../analytics/types';
+import type { AnalyticsData, IdeaBreakdown, PipelineStatus, PipelineStageData, CompletionRates, ConversionRate, TrendData, TimeToDecisionMetrics, TimeMetric, BenchmarkData, UserActivityMetrics, TopContributorData, RecentSubmissionData, TimeToDecisionDrillDown, CompletionRateDrillDown } from '../analytics/types';
 import type { DateRange } from '../types'; // Story 6.7 Task 5: Use DateRange from admin types
 import { TIME_BENCHMARKS, TIME_FORMAT_THRESHOLDS } from '../../../lib/constants';
 
@@ -857,6 +857,171 @@ export const analyticsService = {
       return {
         data: null,
         error: { message: 'Failed to fetch breakdown', code: 'UNKNOWN_ERROR' },
+      };
+    }
+  },
+
+  /**
+   * Story 0.6 Task 2: Get time-to-decision drill-down data
+   * Subtask 2.1-2.5: Query individual idea timelines with stage time deltas
+   *
+   * @param dateRange Date range filter
+   * @returns TimeToDecisionDrillDown[] with individual idea timelines
+   */
+  async getTimeToDecisionDrillDown(dateRange: DateRange): Promise<ServiceResponse<TimeToDecisionDrillDown[]>> {
+    try {
+      // Subtask 2.5: Auth check
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return {
+          data: null,
+          error: { message: 'User not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      // Subtask 2.2: Query Supabase for individual idea timelines within date range
+      let query = supabase
+        .from('ideas')
+        .select('id, title, status, created_at, updated_at, status_updated_at')
+        .order('created_at', { ascending: false });
+
+      if (dateRange.start !== null) {
+        query = query.gte('created_at', dateRange.start.toISOString());
+      }
+      query = query.lt('created_at', dateRange.end.toISOString());
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('getTimeToDecisionDrillDown error:', error);
+        return {
+          data: null,
+          error: { message: 'Failed to fetch time-to-decision drill-down', code: 'DB_ERROR' },
+        };
+      }
+
+      if (!data || data.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Subtask 2.3-2.4: Calculate time deltas and build drill-down data
+      const drillDown: TimeToDecisionDrillDown[] = data.map((idea: any) => {
+        const submittedAt = idea.created_at;
+        const currentStatus = idea.status || 'submitted';
+        const updatedAt = idea.updated_at || idea.created_at;
+
+        // Calculate total days from submission to last update
+        const submittedDate = new Date(submittedAt);
+        const updatedDate = new Date(updatedAt);
+        const totalDays = Math.round(((updatedDate.getTime() - submittedDate.getTime()) / (1000 * 60 * 60 * 24)) * 10) / 10;
+
+        return {
+          id: idea.id,
+          title: idea.title || 'Untitled',
+          submittedAt,
+          approvedAt: currentStatus !== 'submitted' && currentStatus !== 'rejected'
+            ? idea.status_updated_at || updatedAt
+            : null,
+          prdCompletedAt: (currentStatus === 'prd_development' || currentStatus === 'prototype_complete')
+            ? idea.status_updated_at || updatedAt
+            : null,
+          prototypeCompletedAt: currentStatus === 'prototype_complete'
+            ? idea.status_updated_at || updatedAt
+            : null,
+          totalDays: Math.max(totalDays, 0),
+          currentStatus: currentStatus as PipelineStatus,
+          statusLabel: getStatusLabel(currentStatus),
+        };
+      });
+
+      return { data: drillDown, error: null };
+    } catch (error) {
+      console.error('getTimeToDecisionDrillDown error:', error);
+      return {
+        data: null,
+        error: { message: 'Failed to fetch time-to-decision drill-down', code: 'UNKNOWN_ERROR' },
+      };
+    }
+  },
+
+  /**
+   * Story 0.6 Task 3: Get completion rate drill-down data
+   * Subtask 3.1-3.5: Query ideas with their full pipeline history
+   *
+   * @param dateRange Date range filter
+   * @returns CompletionRateDrillDown[] with individual idea completion data
+   */
+  async getCompletionRateDrillDown(dateRange: DateRange): Promise<ServiceResponse<CompletionRateDrillDown[]>> {
+    try {
+      // Subtask 3.5: Auth check
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return {
+          data: null,
+          error: { message: 'User not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      // Subtask 3.2: Query Supabase for ideas with their current status
+      let query = supabase
+        .from('ideas')
+        .select('id, title, status, created_at')
+        .order('created_at', { ascending: false });
+
+      if (dateRange.start !== null) {
+        query = query.gte('created_at', dateRange.start.toISOString());
+      }
+      query = query.lt('created_at', dateRange.end.toISOString());
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('getCompletionRateDrillDown error:', error);
+        return {
+          data: null,
+          error: { message: 'Failed to fetch completion rate drill-down', code: 'DB_ERROR' },
+        };
+      }
+
+      if (!data || data.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Pipeline stages in order for calculating completion
+      const pipelineStages: PipelineStatus[] = [
+        'submitted',
+        'approved',
+        'prd_development',
+        'prototype_complete',
+      ];
+      const totalStages = pipelineStages.length;
+
+      // Subtask 3.3-3.4: Calculate completion percentages per idea
+      const drillDown: CompletionRateDrillDown[] = data.map((idea: any) => {
+        const currentStatus = (idea.status || 'submitted') as PipelineStatus;
+        const stageIndex = pipelineStages.indexOf(currentStatus);
+        // rejected ideas get 0 stages completed
+        const stagesCompleted = currentStatus === 'rejected' ? 0 : (stageIndex >= 0 ? stageIndex + 1 : 1);
+        const completionPercentage = Math.round((stagesCompleted / totalStages) * 100);
+
+        return {
+          id: idea.id,
+          title: idea.title || 'Untitled',
+          currentStatus,
+          statusLabel: getStatusLabel(currentStatus),
+          stagesCompleted,
+          totalStages,
+          completionPercentage,
+          submittedAt: idea.created_at,
+        };
+      });
+
+      return { data: drillDown, error: null };
+    } catch (error) {
+      console.error('getCompletionRateDrillDown error:', error);
+      return {
+        data: null,
+        error: { message: 'Failed to fetch completion rate drill-down', code: 'UNKNOWN_ERROR' },
       };
     }
   },

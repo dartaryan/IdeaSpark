@@ -1985,7 +1985,7 @@ describe('analyticsService', () => {
         expect(secondSubmission?.userEmail).toBe('user2@example.com');
       });
 
-      // Subtask 15.9: Test empty state displays correctly
+      // Subtask 15.9: Test empty state displays correctly  
       it('should handle empty user activity gracefully', async () => {
         vi.mocked(supabase.auth.getUser).mockResolvedValue({
           data: { user: { id: 'admin-123', email: 'admin@example.com' } },
@@ -2021,6 +2021,186 @@ describe('analyticsService', () => {
       });
     });
   });
+
+  // Story 0.6 Task 6 Subtask 6.4: Tests for drill-down service methods
+  // Helper: create mock query builder that supports .select().order().gte().lt() chain
+  function createDrillDownMockBuilder(data: any, error: any = null) {
+    const mockResult = Promise.resolve({ data, error });
+    const resultLike: any = {
+      then: mockResult.then.bind(mockResult),
+      catch: mockResult.catch.bind(mockResult),
+      finally: mockResult.finally.bind(mockResult),
+    };
+
+    const ltResult: any = { ...resultLike };
+    const gteResult: any = { ...resultLike, lt: vi.fn().mockReturnValue(ltResult) };
+    const orderResult: any = { ...resultLike, gte: vi.fn().mockReturnValue(gteResult), lt: vi.fn().mockReturnValue(ltResult) };
+    const selectResult: any = { ...resultLike, order: vi.fn().mockReturnValue(orderResult) };
+    const builder: any = { select: vi.fn().mockReturnValue(selectResult) };
+    return builder;
+  }
+
+  describe('getTimeToDecisionDrillDown', () => {
+    it('should return time-to-decision drill-down data', async () => {
+      const mockIdeas = [
+        { id: '1', title: 'Idea Alpha', status: 'approved', created_at: '2026-01-10T00:00:00Z', updated_at: '2026-01-12T00:00:00Z', status_updated_at: '2026-01-12T00:00:00Z' },
+        { id: '2', title: 'Idea Beta', status: 'prototype_complete', created_at: '2026-01-05T00:00:00Z', updated_at: '2026-01-18T00:00:00Z', status_updated_at: '2026-01-18T00:00:00Z' },
+      ];
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      vi.mocked(supabase.from).mockReturnValue(createDrillDownMockBuilder(mockIdeas) as any);
+
+      const result = await analyticsService.getTimeToDecisionDrillDown(createTestDateRange());
+
+      expect(result.data).toHaveLength(2);
+      expect(result.error).toBeNull();
+      expect(result.data?.[0].title).toBe('Idea Alpha');
+      expect(result.data?.[0].currentStatus).toBe('approved');
+      expect(result.data?.[0].statusLabel).toBe('Approved');
+      expect(result.data?.[0].totalDays).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should return empty array when no ideas exist', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      vi.mocked(supabase.from).mockReturnValue(createDrillDownMockBuilder([]) as any);
+
+      const result = await analyticsService.getTimeToDecisionDrillDown(createTestDateRange());
+
+      expect(result.data).toEqual([]);
+      expect(result.error).toBeNull();
+    });
+
+    it('should handle database errors gracefully', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      vi.mocked(supabase.from).mockReturnValue(
+        createDrillDownMockBuilder(null, { message: 'Database error', code: '500' }) as any
+      );
+
+      const result = await analyticsService.getTimeToDecisionDrillDown(createTestDateRange());
+
+      expect(result.data).toBeNull();
+      expect(result.error?.message).toBe('Failed to fetch time-to-decision drill-down');
+    });
+
+    it('should require authentication', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: null },
+        error: null,
+      } as any);
+
+      const result = await analyticsService.getTimeToDecisionDrillDown(createTestDateRange());
+
+      expect(result.data).toBeNull();
+      expect(result.error?.message).toBe('User not authenticated');
+    });
+  });
+
+  describe('getCompletionRateDrillDown', () => {
+    it('should return completion rate drill-down data', async () => {
+      const mockIdeas = [
+        { id: '1', title: 'Completed Idea', status: 'prototype_complete', created_at: '2026-01-01T00:00:00Z' },
+        { id: '2', title: 'In Progress', status: 'approved', created_at: '2026-01-05T00:00:00Z' },
+        { id: '3', title: 'New Idea', status: 'submitted', created_at: '2026-01-10T00:00:00Z' },
+      ];
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      vi.mocked(supabase.from).mockReturnValue(createDrillDownMockBuilder(mockIdeas) as any);
+
+      const result = await analyticsService.getCompletionRateDrillDown(createTestDateRange());
+
+      expect(result.data).toHaveLength(3);
+      expect(result.error).toBeNull();
+
+      // Prototype complete = 4/4 = 100%
+      expect(result.data?.[0].title).toBe('Completed Idea');
+      expect(result.data?.[0].completionPercentage).toBe(100);
+      expect(result.data?.[0].stagesCompleted).toBe(4);
+
+      // Approved = 2/4 = 50%
+      expect(result.data?.[1].title).toBe('In Progress');
+      expect(result.data?.[1].completionPercentage).toBe(50);
+      expect(result.data?.[1].stagesCompleted).toBe(2);
+
+      // Submitted = 1/4 = 25%
+      expect(result.data?.[2].title).toBe('New Idea');
+      expect(result.data?.[2].completionPercentage).toBe(25);
+      expect(result.data?.[2].stagesCompleted).toBe(1);
+    });
+
+    it('should handle rejected ideas with 0 stages completed', async () => {
+      const mockIdeas = [
+        { id: '1', title: 'Rejected Idea', status: 'rejected', created_at: '2026-01-01T00:00:00Z' },
+      ];
+
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      vi.mocked(supabase.from).mockReturnValue(createDrillDownMockBuilder(mockIdeas) as any);
+
+      const result = await analyticsService.getCompletionRateDrillDown(createTestDateRange());
+
+      expect(result.data?.[0].stagesCompleted).toBe(0);
+      expect(result.data?.[0].completionPercentage).toBe(0);
+    });
+
+    it('should return empty array when no ideas exist', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      vi.mocked(supabase.from).mockReturnValue(createDrillDownMockBuilder([]) as any);
+
+      const result = await analyticsService.getCompletionRateDrillDown(createTestDateRange());
+
+      expect(result.data).toEqual([]);
+      expect(result.error).toBeNull();
+    });
+
+    it('should handle database errors gracefully', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
+        error: null,
+      } as any);
+
+      vi.mocked(supabase.from).mockReturnValue(
+        createDrillDownMockBuilder(null, { message: 'Database error', code: '500' }) as any
+      );
+
+      const result = await analyticsService.getCompletionRateDrillDown(createTestDateRange());
+
+      expect(result.data).toBeNull();
+      expect(result.error?.message).toBe('Failed to fetch completion rate drill-down');
+    });
+
+    it('should require authentication', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: null },
+        error: null,
+      } as any);
+
+      const result = await analyticsService.getCompletionRateDrillDown(createTestDateRange());
+
+      expect(result.data).toBeNull();
+      expect(result.error?.message).toBe('User not authenticated');
+    });
+  });
 });
-
-

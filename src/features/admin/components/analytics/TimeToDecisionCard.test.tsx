@@ -1,8 +1,8 @@
 // Story 6.5 Task 13 Subtask 13.7: Create TimeToDecisionCard.test.tsx
 // Test TimeToDecisionCard component rendering and warning indicators
 
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { TimeToDecisionCard } from './TimeToDecisionCard';
 import type { TimeToDecisionMetrics } from '../../analytics/types';
 
@@ -166,13 +166,13 @@ describe('TimeToDecisionCard', () => {
     expect(screen.getByText(/Red: Behind target/i)).toBeInTheDocument();
   });
 
-  it('should show drill-down placeholder message', () => {
+  // Story 0.6 Task 6: Test drill-down message (no longer "coming soon")
+  it('should show drill-down message', () => {
     const metrics = createMockMetrics();
     
     render(<TimeToDecisionCard data={metrics} />);
 
-    // Verify placeholder message for drill-down (Task 10)
-    expect(screen.getByText(/Click any metric for detailed breakdown \(coming soon\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Click any metric for detailed breakdown/i)).toBeInTheDocument();
   });
 
   it('should not show warning when metrics have 0 count', () => {
@@ -223,5 +223,29 @@ describe('TimeToDecisionCard', () => {
 
     const card = container.querySelector('.card');
     expect(card).toHaveStyle({ borderRadius: '20px' });
+  });
+
+  // Story 0.6 Task 6 Subtask 6.2: Test onDrillDown callback
+  it('should call onDrillDown when a metric is clicked', () => {
+    const mockDrillDown = vi.fn();
+    const metrics = createMockMetrics();
+
+    render(<TimeToDecisionCard data={metrics} onDrillDown={mockDrillDown} />);
+
+    // Click on the first metric
+    const metricElement = screen.getByText('Submission → Decision');
+    fireEvent.click(metricElement.closest('[role="button"]') || metricElement);
+
+    expect(mockDrillDown).toHaveBeenCalled();
+  });
+
+  // Story 0.6 AC2: Console.log removed, replaced with modal logic
+  it('should not have console.log placeholder', () => {
+    const metrics = createMockMetrics();
+    
+    render(<TimeToDecisionCard data={metrics} />);
+
+    // Verify "coming soon" is no longer displayed
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
   });
 });

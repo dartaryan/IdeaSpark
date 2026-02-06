@@ -150,9 +150,6 @@ export function CompletionRatesCard({ data, isLoading, onMetricClick }: Completi
             onClick={onMetricClick ? () => onMetricClick('overall') : undefined}
           />
         </div>
-
-        {/* Subtask 4.8: DaisyUI card with PassportCard styling applied */}
-        {/* (handled by card classes above) */}
       </div>
     </div>
   );

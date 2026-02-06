@@ -217,3 +217,39 @@ export interface UserActivityMetrics {
   topContributors: TopContributorData[]; // Top 10 contributors
   recentSubmissions: RecentSubmissionData[]; // Most recent 5 submissions
 }
+
+/**
+ * Story 0.6 Task 1: Time-to-Decision drill-down data
+ * Individual idea timeline data for drill-down modal
+ */
+export interface TimeToDecisionDrillDown {
+  id: string;
+  title: string;
+  submittedAt: string;        // ISO date string
+  approvedAt: string | null;  // ISO date string or null
+  prdCompletedAt: string | null;
+  prototypeCompletedAt: string | null;
+  totalDays: number;          // Days from submission to current stage
+  currentStatus: PipelineStatus;
+  statusLabel: string;        // Human-readable status
+}
+
+/**
+ * Story 0.6 Task 1: Completion Rate drill-down data
+ * Individual idea completion data for drill-down modal
+ */
+export interface CompletionRateDrillDown {
+  id: string;
+  title: string;
+  currentStatus: PipelineStatus;
+  statusLabel: string;
+  stagesCompleted: number;    // e.g., 3 out of 5
+  totalStages: number;        // e.g., 5
+  completionPercentage: number; // e.g., 60
+  submittedAt: string;        // ISO date string
+}
+
+/**
+ * Story 0.6 Task 1: Generic drill-down data (union type for modal)
+ */
+export type DrillDownData = TimeToDecisionDrillDown | CompletionRateDrillDown;
