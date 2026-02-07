@@ -118,7 +118,7 @@ development_status:
   epic-7: in-progress
   7-1-code-editor-integration-monaco-or-codemirror: done
   7-2-view-generated-code-with-syntax-highlighting: done
-  7-3-edit-code-in-real-time-with-live-preview: backlog
+  7-3-edit-code-in-real-time-with-live-preview: done
   7-4-save-edited-prototype-version: backlog
   7-5-manage-multiple-prototype-versions: backlog
   epic-7-retrospective: optional

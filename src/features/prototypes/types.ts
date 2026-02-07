@@ -118,6 +118,7 @@ export interface CodeEditorPanelProps {
   onClose?: () => void;
   initialFile?: string;      // Optional initial file to open
   readOnly?: boolean;        // When true, editor is view-only (auto-detected when onCodeChange is absent)
+  hasCompilationError?: boolean; // Show compilation error indicator from Sandpack
 }
 
 /** Props for the FileTree component */
@@ -259,6 +260,18 @@ export function buildFileTree(files: Record<string, EditorFile>): FileTreeNode[]
   }
 
   return root;
+}
+
+/**
+ * Serialize editor files back to JSON string format for database storage.
+ * Inverse of parsePrototypeCode: files → JSON string.
+ */
+export function serializeFiles(files: Record<string, EditorFile>): string {
+  const serialized: Record<string, string> = {};
+  for (const [path, file] of Object.entries(files)) {
+    serialized[path] = file.content;
+  }
+  return JSON.stringify(serialized);
 }
 
 // Helper to convert DB row to app format

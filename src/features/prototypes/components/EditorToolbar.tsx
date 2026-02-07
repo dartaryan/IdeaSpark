@@ -19,6 +19,8 @@ interface EditorToolbarProps {
   lineCount?: number;
   onCopy?: () => void;
   copyState?: 'idle' | 'success' | 'error';
+  /** Show compilation error indicator (from Sandpack live preview) */
+  hasCompilationError?: boolean;
 }
 
 /** Keyboard shortcuts help tooltip content (platform-aware) */
@@ -49,6 +51,7 @@ export function EditorToolbar({
   lineCount,
   onCopy,
   copyState = 'idle',
+  hasCompilationError = false,
 }: EditorToolbarProps) {
   const [isFormatting, setIsFormatting] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -87,6 +90,16 @@ export function EditorToolbar({
         )}
         {readOnly && (
           <span className="badge badge-xs badge-outline text-base-content/40">read-only</span>
+        )}
+        {hasCompilationError && (
+          <span
+            className="badge badge-xs badge-error gap-1"
+            aria-label="Compilation error detected"
+            data-testid="compilation-error-badge"
+          >
+            <AlertCircle className="w-3 h-3" />
+            Error
+          </span>
         )}
       </div>
 

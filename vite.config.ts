@@ -9,6 +9,16 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Code-split Sandpack into its own chunk (only loaded in edit mode)
+          sandpack: ['@codesandbox/sandpack-react'],
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

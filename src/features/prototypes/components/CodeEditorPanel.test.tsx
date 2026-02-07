@@ -430,4 +430,57 @@ describe('CodeEditorPanel', () => {
       });
     });
   });
+
+  describe('Edit Mode (Story 7.3)', () => {
+    it('should enable editing when onCodeChange is provided', async () => {
+      const onCodeChange = vi.fn();
+      render(<CodeEditorPanel code={singleFileCode} onCodeChange={onCodeChange} />);
+
+      await waitFor(() => {
+        const editor = screen.getByTestId('codemirror-editor');
+        expect(editor.dataset.readonly).toBe('false');
+      });
+    });
+
+    it('should be read-only when onCodeChange is absent', async () => {
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        const editor = screen.getByTestId('codemirror-editor');
+        expect(editor.dataset.readonly).toBe('true');
+      });
+    });
+
+    it('should show compilation error badge when hasCompilationError is true', async () => {
+      render(
+        <CodeEditorPanel
+          code={singleFileCode}
+          onCodeChange={vi.fn()}
+          hasCompilationError={true}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('compilation-error-badge')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Error')).toBeInTheDocument();
+    });
+
+    it('should not show compilation error badge when hasCompilationError is false', async () => {
+      render(
+        <CodeEditorPanel
+          code={singleFileCode}
+          onCodeChange={vi.fn()}
+          hasCompilationError={false}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('code-editor-panel')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByTestId('compilation-error-badge')).not.toBeInTheDocument();
+    });
+  });
 });

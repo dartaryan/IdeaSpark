@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePrototype, useVersionHistory } from '../features/prototypes/hooks/usePrototype';
 import { PrototypeFrame } from '../features/prototypes/components/PrototypeFrame';
@@ -8,8 +8,74 @@ import { RefinementChat } from '../features/prototypes/components/RefinementChat
 import { VersionHistoryPanel } from '../features/prototypes/components/VersionHistoryPanel';
 import { ShareButton } from '../features/prototypes/components/ShareButton';
 import { CodeEditorPanel } from '../features/prototypes/components/CodeEditorPanel';
-import { AlertCircle, Code2, EyeOff } from 'lucide-react';
+import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2 } from 'lucide-react';
 import { loadEditorWidth, saveEditorWidth } from '../features/prototypes/utils/editorHelpers';
+import { useCodePersistence } from '../features/prototypes/hooks/useCodePersistence';
+import type { SaveStatus } from '../features/prototypes/hooks/useCodePersistence';
+
+// Lazy load SandpackLivePreview - only loads when edit mode is activated
+const SandpackLivePreview = lazy(() =>
+  import('../features/prototypes/components/SandpackLivePreview').then((m) => ({
+    default: m.SandpackLivePreview,
+  })),
+);
+
+/** Save status indicator component */
+function SaveStatusBadge({ status, onRetry }: { status: SaveStatus; onRetry?: () => void }) {
+  const [showSaved, setShowSaved] = useState(false);
+
+  useEffect(() => {
+    if (status === 'saved') {
+      setShowSaved(true);
+      const timer = setTimeout(() => setShowSaved(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    setShowSaved(false);
+    return undefined;
+  }, [status]);
+
+  switch (status) {
+    case 'saving':
+      return (
+        <span className="flex items-center gap-1 text-xs text-base-content/60" aria-live="polite">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Saving...
+        </span>
+      );
+    case 'saved':
+      if (!showSaved) return null;
+      return (
+        <span className="flex items-center gap-1 text-xs text-success" aria-live="polite">
+          <Check className="w-3 h-3" />
+          All changes saved
+        </span>
+      );
+    case 'error':
+      return (
+        <span className="flex items-center gap-1 text-xs text-error" aria-live="polite">
+          <AlertTriangle className="w-3 h-3" />
+          Save failed
+          {onRetry && (
+            <button
+              className="btn btn-ghost btn-xs ml-1"
+              onClick={onRetry}
+              aria-label="Retry save"
+            >
+              Retry
+            </button>
+          )}
+        </span>
+      );
+    case 'idle':
+      return (
+        <span className="text-xs text-base-content/50" aria-live="polite">
+          Editing
+        </span>
+      );
+    default:
+      return null;
+  }
+}
 
 export function PrototypeViewerPage() {
   const { prototypeId } = useParams<{ prototypeId: string }>();
@@ -17,8 +83,10 @@ export function PrototypeViewerPage() {
   const [selectedDevice, setSelectedDevice] = useState<DevicePreset>(DEVICE_PRESETS[0]); // Default to desktop
   const [activePrototypeId, setActivePrototypeId] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [editorWidthPercent, setEditorWidthPercent] = useState(() => loadEditorWidth());
   const [mobileView, setMobileView] = useState<'preview' | 'code'>('preview');
+  const [hasCompilationError, setHasCompilationError] = useState(false);
 
   // Handle editor width resize via drag
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -54,6 +122,62 @@ export function PrototypeViewerPage() {
   
   // Get version history if we have a prototype with prdId
   const { data: versionHistory } = useVersionHistory(prototype?.prdId || '');
+
+  // Determine which prototype to display (before early returns for hooks compliance)
+  const currentPrototype = activePrototypeId
+    ? versionHistory?.find((p) => p.id === activePrototypeId)
+    : prototype;
+  const displayPrototype = currentPrototype || prototype;
+
+  // Code persistence for edit mode (AC: #3, #4, #5)
+  const {
+    files: editedFiles,
+    updateFile: updateEditedFile,
+    saveStatus,
+    hasUnsavedChanges,
+    flushSave,
+  } = useCodePersistence({
+    prototypeId: displayPrototype?.id ?? '',
+    initialCode: displayPrototype?.code ?? null,
+  });
+
+  // Handle entering edit mode
+  const handleEnterEditMode = useCallback(() => {
+    setEditMode(true);
+    setShowEditor(true);
+  }, []);
+
+  // Handle exiting edit mode (AC: #4)
+  const handleExitEditMode = useCallback(async () => {
+    await flushSave();
+    setEditMode(false);
+  }, [flushSave]);
+
+  // Handle code changes from editor in edit mode
+  const handleCodeChange = useCallback(
+    (path: string, content: string) => {
+      updateEditedFile(path, content);
+    },
+    [updateEditedFile],
+  );
+
+  // Handle Sandpack compilation errors (AC: #2)
+  const handleSandpackError = useCallback((error: Error | null) => {
+    setHasCompilationError(error !== null);
+  }, []);
+
+  // Warn about unsaved changes on navigation (AC: #4)
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Loading State (AC 6)
   if (isLoading) {
@@ -181,19 +305,13 @@ export function PrototypeViewerPage() {
     );
   }
 
-  // Determine which prototype to display (active selection or current)
-  const currentPrototype = activePrototypeId
-    ? versionHistory?.find((p) => p.id === activePrototypeId)
-    : prototype;
-
-  // Use current prototype if active not found
-  const displayPrototype = currentPrototype || prototype;
-
   // Handler for refinement completion
   const handleRefinementComplete = (newPrototypeId: string) => {
     setActivePrototypeId(newPrototypeId);
-    // The query will auto-invalidate and refetch
   };
+
+  // After early returns, displayPrototype is guaranteed non-null
+  if (!displayPrototype) return null;
 
   // Success State (AC 1, 5)
   const hasCode = !!displayPrototype.code;
@@ -241,7 +359,7 @@ export function PrototypeViewerPage() {
         <div className="container mx-auto max-w-full px-4 py-6 flex-1">
           <div className="flex flex-col lg:flex-row gap-6 h-full">
             {/* LEFT SIDE: Code Editor (when visible) */}
-            {showEditor && (
+            {(showEditor || editMode) && (
               <>
                 {/* Desktop: side-by-side editor */}
                 <div
@@ -250,7 +368,9 @@ export function PrototypeViewerPage() {
                 >
                   <CodeEditorPanel
                     code={displayPrototype.code}
-                    onClose={() => setShowEditor(false)}
+                    onCodeChange={editMode ? handleCodeChange : undefined}
+                    onClose={editMode ? handleExitEditMode : () => setShowEditor(false)}
+                    hasCompilationError={editMode ? hasCompilationError : false}
                   />
                 </div>
 
@@ -271,7 +391,12 @@ export function PrototypeViewerPage() {
                   <div className="md:hidden flex-1 min-h-[400px] rounded-lg overflow-hidden shadow-lg border border-primary/20">
                     <CodeEditorPanel
                       code={displayPrototype.code}
-                      onClose={() => { setShowEditor(false); setMobileView('preview'); }}
+                      onCodeChange={editMode ? handleCodeChange : undefined}
+                      onClose={editMode
+                        ? handleExitEditMode
+                        : () => { setShowEditor(false); setMobileView('preview'); }
+                      }
+                      hasCompilationError={editMode ? hasCompilationError : false}
                     />
                   </div>
                 )}
@@ -287,10 +412,40 @@ export function PrototypeViewerPage() {
                 <div className="lg:col-span-2">
                   {/* Viewer Controls (AC 2) */}
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                    <h2 className="text-lg font-semibold">Preview</h2>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-lg font-semibold">
+                        {editMode ? 'Live Edit' : 'Preview'}
+                      </h2>
+                      {/* Save status indicator (visible in edit mode) */}
+                      {editMode && <SaveStatusBadge status={saveStatus} onRetry={() => flushSave()} />}
+                    </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      {/* View Code / Hide Code toggle */}
-                      {hasCode && (
+                      {/* Exit Edit Mode button */}
+                      {editMode && (
+                        <button
+                          className="btn btn-sm btn-outline btn-warning gap-2"
+                          onClick={handleExitEditMode}
+                          aria-label="Exit edit mode and return to deployed preview"
+                          data-testid="exit-edit-mode-btn"
+                        >
+                          <X className="w-4 h-4" />
+                          <span className="hidden sm:inline">Exit Edit Mode</span>
+                        </button>
+                      )}
+                      {/* Edit Code button (enters edit mode with Sandpack live preview) */}
+                      {hasCode && !editMode && (
+                        <button
+                          className="btn btn-sm btn-outline btn-accent gap-2"
+                          onClick={handleEnterEditMode}
+                          aria-label="Edit prototype code with live preview"
+                          data-testid="edit-code-btn"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span className="hidden sm:inline">Edit Code</span>
+                        </button>
+                      )}
+                      {/* View Code / Hide Code toggle (read-only mode, hidden in edit mode) */}
+                      {hasCode && !editMode && (
                         <button
                           className={`btn btn-sm gap-2 ${showEditor ? 'btn-primary' : 'btn-outline btn-primary'}`}
                           onClick={() => setShowEditor((p) => !p)}
@@ -309,10 +464,12 @@ export function PrototypeViewerPage() {
                           )}
                         </button>
                       )}
-                      <DeviceSelector
-                        selectedDevice={selectedDevice}
-                        onDeviceChange={setSelectedDevice}
-                      />
+                      {!editMode && (
+                        <DeviceSelector
+                          selectedDevice={selectedDevice}
+                          onDeviceChange={setSelectedDevice}
+                        />
+                      )}
                       <ShareButton
                         prototypeId={displayPrototype.id}
                         prdId={displayPrototype.prdId}
@@ -320,12 +477,35 @@ export function PrototypeViewerPage() {
                     </div>
                   </div>
 
-                  {/* Prototype Frame (AC 1, 3, 4) */}
-                  <PrototypeFrame
-                    url={displayPrototype.url!}
-                    device={selectedDevice}
-                    className="mb-6"
-                  />
+                  {/* Preview Area: Sandpack (edit mode) or PrototypeFrame (view mode) */}
+                  {editMode ? (
+                    <div className="mb-6">
+                      <Suspense
+                        fallback={
+                          <div className="flex items-center justify-center bg-base-200 rounded-lg min-h-[400px]">
+                            <div className="text-center">
+                              <span className="loading loading-spinner loading-lg" />
+                              <p className="mt-2 text-sm text-base-content/50">
+                                Loading live preview...
+                              </p>
+                            </div>
+                          </div>
+                        }
+                      >
+                        <SandpackLivePreview
+                          files={editedFiles}
+                          className="min-h-[500px]"
+                          onError={handleSandpackError}
+                        />
+                      </Suspense>
+                    </div>
+                  ) : (
+                    <PrototypeFrame
+                      url={displayPrototype.url!}
+                      device={selectedDevice}
+                      className="mb-6"
+                    />
+                  )}
 
                   {/* Info Card */}
                   <div className="card bg-base-100 shadow-lg">

@@ -14,3 +14,5 @@ export { CodeEditorPanel } from './CodeEditorPanel';
 export { FileTree } from './FileTree';
 export { EditorSettings } from './EditorSettings';
 export { EditorToolbar } from './EditorToolbar';
+// Live Preview (Story 7.3)
+export { SandpackLivePreview } from './SandpackLivePreview';

@@ -6,8 +6,10 @@ import {
   detectLanguage,
   parsePrototypeCode,
   buildFileTree,
+  serializeFiles,
   DEFAULT_EDITOR_CONFIG,
 } from './types';
+import type { EditorFile } from './types';
 
 describe('detectLanguage', () => {
   it('should detect TypeScript from .ts extension', () => {
@@ -196,6 +198,54 @@ describe('buildFileTree', () => {
     const file = components.children![0];
     expect(file.name).toBe('CodeEditorPanel.tsx');
     expect(file.type).toBe('file');
+  });
+});
+
+describe('serializeFiles', () => {
+  it('should serialize files back to JSON string', () => {
+    const files: Record<string, EditorFile> = {
+      '/App.tsx': { path: '/App.tsx', content: 'function App() {}', language: 'typescript' },
+      '/styles.css': { path: '/styles.css', content: 'body { margin: 0; }', language: 'css' },
+    };
+
+    const serialized = serializeFiles(files);
+    const parsed = JSON.parse(serialized);
+
+    expect(parsed['/App.tsx']).toBe('function App() {}');
+    expect(parsed['/styles.css']).toBe('body { margin: 0; }');
+  });
+
+  it('should handle empty files', () => {
+    const serialized = serializeFiles({});
+    expect(serialized).toBe('{}');
+  });
+
+  it('should be inverse of parsePrototypeCode (roundtrip)', () => {
+    const originalCode = JSON.stringify({
+      '/App.tsx': 'function App() { return <div>Hello</div>; }',
+      '/index.css': '.app { color: red; }',
+      '/utils/helpers.ts': 'export const add = (a: number, b: number) => a + b;',
+    });
+
+    // Parse → Serialize → Parse roundtrip
+    const parsed = parsePrototypeCode(originalCode);
+    const serialized = serializeFiles(parsed);
+    const reparsed = parsePrototypeCode(serialized);
+
+    // Content should be preserved
+    expect(reparsed['/App.tsx'].content).toBe(parsed['/App.tsx'].content);
+    expect(reparsed['/index.css'].content).toBe(parsed['/index.css'].content);
+    expect(reparsed['/utils/helpers.ts'].content).toBe(parsed['/utils/helpers.ts'].content);
+  });
+
+  it('should preserve single-file content through roundtrip', () => {
+    const singleFileCode = 'export default function App() { return <div>Hello</div>; }';
+
+    const parsed = parsePrototypeCode(singleFileCode);
+    const serialized = serializeFiles(parsed);
+    const reparsed = parsePrototypeCode(serialized);
+
+    expect(reparsed['/App.tsx'].content).toBe(singleFileCode);
   });
 });
 
