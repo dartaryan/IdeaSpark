@@ -16,3 +16,5 @@ export { EditorSettings } from './EditorSettings';
 export { EditorToolbar } from './EditorToolbar';
 // Live Preview (Story 7.3)
 export { SandpackLivePreview } from './SandpackLivePreview';
+// Save Version Modal (Story 7.4)
+export { SaveVersionModal } from './SaveVersionModal';

@@ -14,6 +14,12 @@ export interface UseCodePersistenceOptions {
   prototypeId: string;
   /** Initial prototype code from database (JSON string or single file) */
   initialCode: string | null;
+  /**
+   * When true, auto-save is paused (debounced saves are skipped).
+   * Local state continues to update so editor remains responsive.
+   * Used during version save to prevent race conditions.
+   */
+  pauseAutoSave?: boolean;
 }
 
 export interface UseCodePersistenceReturn {
@@ -43,6 +49,7 @@ const DB_SAVE_DEBOUNCE_MS = 2000;
 export function useCodePersistence({
   prototypeId,
   initialCode,
+  pauseAutoSave = false,
 }: UseCodePersistenceOptions): UseCodePersistenceReturn {
   const [files, setFiles] = useState<Record<string, EditorFile>>(() =>
     parsePrototypeCode(initialCode),
@@ -132,12 +139,16 @@ export function useCodePersistence({
         clearTimeout(debounceTimerRef.current);
       }
 
+      // Skip scheduling DB save when auto-save is paused (version save in progress).
+      // Local state still updates so the editor remains responsive.
+      if (pauseAutoSave) return;
+
       // Start new debounce timer for DB save
       debounceTimerRef.current = setTimeout(() => {
         performSave(filesRef.current);
       }, DB_SAVE_DEBOUNCE_MS);
     },
-    [performSave],
+    [performSave, pauseAutoSave],
   );
 
   // Flush pending save (called on unmount or exit edit mode)

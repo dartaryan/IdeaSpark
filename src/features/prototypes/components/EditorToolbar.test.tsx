@@ -206,4 +206,70 @@ describe('EditorToolbar', () => {
       });
     });
   });
+
+  describe('Save Version Button (Story 7.4)', () => {
+    it('should show Save Version button when onSaveVersion is provided', () => {
+      const onSaveVersion = vi.fn();
+      render(<EditorToolbar {...defaultProps} onSaveVersion={onSaveVersion} />);
+
+      expect(screen.getByTestId('toolbar-save-version')).toBeInTheDocument();
+    });
+
+    it('should not show Save Version button when onSaveVersion is not provided', () => {
+      render(<EditorToolbar {...defaultProps} />);
+
+      expect(screen.queryByTestId('toolbar-save-version')).not.toBeInTheDocument();
+    });
+
+    it('should not show Save Version button in read-only mode', () => {
+      const onSaveVersion = vi.fn();
+      render(<EditorToolbar {...defaultProps} onSaveVersion={onSaveVersion} readOnly />);
+
+      expect(screen.queryByTestId('toolbar-save-version')).not.toBeInTheDocument();
+    });
+
+    it('should call onSaveVersion when button is clicked', () => {
+      const onSaveVersion = vi.fn();
+      render(<EditorToolbar {...defaultProps} onSaveVersion={onSaveVersion} />);
+
+      fireEvent.click(screen.getByTestId('toolbar-save-version'));
+      expect(onSaveVersion).toHaveBeenCalledOnce();
+    });
+
+    it('should disable button when isSavingVersion is true', () => {
+      const onSaveVersion = vi.fn();
+      render(
+        <EditorToolbar
+          {...defaultProps}
+          onSaveVersion={onSaveVersion}
+          isSavingVersion={true}
+        />,
+      );
+
+      expect(screen.getByTestId('toolbar-save-version')).toBeDisabled();
+    });
+
+    it('should show loading spinner when isSavingVersion is true', () => {
+      const onSaveVersion = vi.fn();
+      render(
+        <EditorToolbar
+          {...defaultProps}
+          onSaveVersion={onSaveVersion}
+          isSavingVersion={true}
+        />,
+      );
+
+      const button = screen.getByTestId('toolbar-save-version');
+      expect(button.querySelector('.animate-spin')).toBeInTheDocument();
+    });
+
+    it('should have correct aria-label', () => {
+      const onSaveVersion = vi.fn();
+      render(<EditorToolbar {...defaultProps} onSaveVersion={onSaveVersion} />);
+
+      expect(
+        screen.getByLabelText('Save prototype as new version'),
+      ).toBeInTheDocument();
+    });
+  });
 });

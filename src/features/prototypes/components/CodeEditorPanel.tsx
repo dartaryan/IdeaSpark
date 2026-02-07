@@ -72,6 +72,8 @@ export function CodeEditorPanel({
   initialFile,
   readOnly: readOnlyProp,
   hasCompilationError = false,
+  onSaveVersion,
+  isSavingVersion = false,
 }: CodeEditorPanelProps) {
   const {
     files,
@@ -251,6 +253,8 @@ export function CodeEditorPanel({
         onCopy={handleCopy}
         copyState={copyState}
         hasCompilationError={hasCompilationError}
+        onSaveVersion={onSaveVersion}
+        isSavingVersion={isSavingVersion}
       />
 
       {/* Body: file tree + editor */}

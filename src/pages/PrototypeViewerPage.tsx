@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect, Suspense, lazy } from 'react';
+import { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { usePrototype, useVersionHistory } from '../features/prototypes/hooks/usePrototype';
 import { PrototypeFrame } from '../features/prototypes/components/PrototypeFrame';
 import { DeviceSelector, DEVICE_PRESETS, type DevicePreset } from '../features/prototypes/components/DeviceSelector';
@@ -8,10 +9,12 @@ import { RefinementChat } from '../features/prototypes/components/RefinementChat
 import { VersionHistoryPanel } from '../features/prototypes/components/VersionHistoryPanel';
 import { ShareButton } from '../features/prototypes/components/ShareButton';
 import { CodeEditorPanel } from '../features/prototypes/components/CodeEditorPanel';
-import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2 } from 'lucide-react';
+import { SaveVersionModal } from '../features/prototypes/components/SaveVersionModal';
+import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save } from 'lucide-react';
 import { loadEditorWidth, saveEditorWidth } from '../features/prototypes/utils/editorHelpers';
 import { useCodePersistence } from '../features/prototypes/hooks/useCodePersistence';
 import type { SaveStatus } from '../features/prototypes/hooks/useCodePersistence';
+import { useSaveVersion } from '../features/prototypes/hooks/useSaveVersion';
 
 // Lazy load SandpackLivePreview - only loads when edit mode is activated
 const SandpackLivePreview = lazy(() =>
@@ -87,6 +90,13 @@ export function PrototypeViewerPage() {
   const [editorWidthPercent, setEditorWidthPercent] = useState(() => loadEditorWidth());
   const [mobileView, setMobileView] = useState<'preview' | 'code'>('preview');
   const [hasCompilationError, setHasCompilationError] = useState(false);
+  const [showSaveVersionModal, setShowSaveVersionModal] = useState(false);
+  // Ref (not state) to avoid unnecessary re-renders during save flow.
+  // Works because: handleSaveVersion sets ref → flushSave() triggers re-render
+  // (via setSaveStatus) → useCodePersistence picks up new ref value at next render.
+  // No auto-save can fire between ref set and flushSave because flushSave
+  // synchronously clears the debounce timer before awaiting the save.
+  const autoSavePausedRef = useRef(false);
 
   // Handle editor width resize via drag
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -139,7 +149,39 @@ export function PrototypeViewerPage() {
   } = useCodePersistence({
     prototypeId: displayPrototype?.id ?? '',
     initialCode: displayPrototype?.code ?? null,
+    pauseAutoSave: autoSavePausedRef.current,
   });
+
+  // Save version hook (Story 7.4)
+  const {
+    saveVersion,
+    status: saveVersionStatus,
+    isSaving: isSavingVersion,
+  } = useSaveVersion({
+    prototypeId: displayPrototype?.id ?? '',
+    currentFiles: editedFiles,
+    prdId: displayPrototype?.prdId ?? '',
+    ideaId: displayPrototype?.ideaId ?? '',
+  });
+
+  // Handle Save Version flow (AC: #1, #3, #4)
+  const handleSaveVersion = useCallback(
+    async (note?: string) => {
+      autoSavePausedRef.current = true; // Pause auto-save
+      await flushSave(); // Flush any pending auto-save first
+
+      const newVersionId = await saveVersion(note);
+      if (newVersionId) {
+        setShowSaveVersionModal(false);
+        toast.success(`Version ${(displayPrototype?.version ?? 0) + 1} saved successfully`);
+        autoSavePausedRef.current = false; // Resume before navigation
+        navigate(`/prototypes/${newVersionId}`);
+      } else {
+        autoSavePausedRef.current = false; // Resume on failure
+      }
+    },
+    [saveVersion, flushSave, navigate, displayPrototype?.version],
+  );
 
   // Handle entering edit mode
   const handleEnterEditMode = useCallback(() => {
@@ -165,6 +207,23 @@ export function PrototypeViewerPage() {
   const handleSandpackError = useCallback((error: Error | null) => {
     setHasCompilationError(error !== null);
   }, []);
+
+  // Keyboard shortcut: Ctrl+Shift+S to open Save Version modal (Story 7.4, Subtask 9.4)
+  useEffect(() => {
+    if (!editMode) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        if (!isSavingVersion) {
+          setShowSaveVersionModal(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editMode, isSavingVersion]);
 
   // Warn about unsaved changes on navigation (AC: #4)
   useEffect(() => {
@@ -371,6 +430,8 @@ export function PrototypeViewerPage() {
                     onCodeChange={editMode ? handleCodeChange : undefined}
                     onClose={editMode ? handleExitEditMode : () => setShowEditor(false)}
                     hasCompilationError={editMode ? hasCompilationError : false}
+                    onSaveVersion={editMode ? () => setShowSaveVersionModal(true) : undefined}
+                    isSavingVersion={isSavingVersion}
                   />
                 </div>
 
@@ -397,6 +458,8 @@ export function PrototypeViewerPage() {
                         : () => { setShowEditor(false); setMobileView('preview'); }
                       }
                       hasCompilationError={editMode ? hasCompilationError : false}
+                      onSaveVersion={editMode ? () => setShowSaveVersionModal(true) : undefined}
+                      isSavingVersion={isSavingVersion}
                     />
                   </div>
                 )}
@@ -416,6 +479,13 @@ export function PrototypeViewerPage() {
                       <h2 className="text-lg font-semibold">
                         {editMode ? 'Live Edit' : 'Preview'}
                       </h2>
+                      {/* Version badge (Story 7.4) */}
+                      <span
+                        className="badge badge-outline badge-sm"
+                        data-testid="version-badge"
+                      >
+                        v{displayPrototype.version}
+                      </span>
                       {/* Save status indicator (visible in edit mode) */}
                       {editMode && <SaveStatusBadge status={saveStatus} onRetry={() => flushSave()} />}
                     </div>
@@ -430,6 +500,23 @@ export function PrototypeViewerPage() {
                         >
                           <X className="w-4 h-4" />
                           <span className="hidden sm:inline">Exit Edit Mode</span>
+                        </button>
+                      )}
+                      {/* Save Version button (visible in edit mode) */}
+                      {editMode && (
+                        <button
+                          className="btn btn-sm btn-primary gap-2"
+                          onClick={() => setShowSaveVersionModal(true)}
+                          disabled={isSavingVersion}
+                          aria-label="Save prototype as new version"
+                          data-testid="save-version-btn"
+                        >
+                          {isSavingVersion ? (
+                            <span className="loading loading-spinner loading-xs" />
+                          ) : (
+                            <Save className="w-4 h-4" />
+                          )}
+                          <span className="hidden sm:inline">Save Version</span>
                         </button>
                       )}
                       {/* Edit Code button (enters edit mode with Sandpack live preview) */}
@@ -548,6 +635,16 @@ export function PrototypeViewerPage() {
           </div>
         </div>
       </div>
+
+      {/* Save Version Modal (Story 7.4) */}
+      <SaveVersionModal
+        isOpen={showSaveVersionModal}
+        onClose={() => setShowSaveVersionModal(false)}
+        onSave={handleSaveVersion}
+        isSaving={isSavingVersion}
+        currentVersion={displayPrototype.version}
+        nextVersion={displayPrototype.version + 1}
+      />
     </div>
   );
 }

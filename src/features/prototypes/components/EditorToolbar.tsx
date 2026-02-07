@@ -1,7 +1,7 @@
 // src/features/prototypes/components/EditorToolbar.tsx
 
 import { useState, useCallback } from 'react';
-import { Wand2, X, Keyboard, Copy, Check, AlertCircle } from 'lucide-react';
+import { Wand2, X, Keyboard, Copy, Check, AlertCircle, Save, Loader2 } from 'lucide-react';
 import { EditorSettings } from './EditorSettings';
 import type { EditorConfig } from '../types';
 import { formatCode } from '../utils/editorHelpers';
@@ -21,6 +21,10 @@ interface EditorToolbarProps {
   copyState?: 'idle' | 'success' | 'error';
   /** Show compilation error indicator (from Sandpack live preview) */
   hasCompilationError?: boolean;
+  /** Callback to trigger Save Version flow (only shown in edit mode) */
+  onSaveVersion?: () => void;
+  /** Whether a version save is in progress */
+  isSavingVersion?: boolean;
 }
 
 /** Keyboard shortcuts help tooltip content (platform-aware) */
@@ -52,6 +56,8 @@ export function EditorToolbar({
   onCopy,
   copyState = 'idle',
   hasCompilationError = false,
+  onSaveVersion,
+  isSavingVersion = false,
 }: EditorToolbarProps) {
   const [isFormatting, setIsFormatting] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -169,6 +175,25 @@ export function EditorToolbar({
             </>
           )}
         </div>
+
+        {/* Save Version (visible when in edit mode and callback provided) */}
+        {onSaveVersion && !readOnly && (
+          <button
+            className="btn btn-ghost btn-sm gap-1 text-primary"
+            onClick={onSaveVersion}
+            disabled={isSavingVersion}
+            aria-label="Save prototype as new version"
+            title="Save as new version (Ctrl+Shift+S)"
+            data-testid="toolbar-save-version"
+          >
+            {isSavingVersion ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span className="hidden lg:inline text-xs">Save Version</span>
+          </button>
+        )}
 
         {/* Settings */}
         <EditorSettings

@@ -119,6 +119,10 @@ export interface CodeEditorPanelProps {
   initialFile?: string;      // Optional initial file to open
   readOnly?: boolean;        // When true, editor is view-only (auto-detected when onCodeChange is absent)
   hasCompilationError?: boolean; // Show compilation error indicator from Sandpack
+  /** Callback to trigger Save Version flow (only shown in edit mode) */
+  onSaveVersion?: () => void;
+  /** Whether a version save is in progress */
+  isSavingVersion?: boolean;
 }
 
 /** Props for the FileTree component */

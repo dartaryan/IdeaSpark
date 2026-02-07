@@ -314,6 +314,125 @@ describe('useCodePersistence', () => {
     });
   });
 
+  describe('Pause Auto-Save (Story 7.4)', () => {
+    it('should not trigger debounced save when pauseAutoSave is true', async () => {
+      const { result } = renderHook(() =>
+        useCodePersistence({
+          prototypeId: 'proto-1',
+          initialCode: mockPrototype.code!,
+          pauseAutoSave: true,
+        }),
+      );
+
+      act(() => {
+        result.current.updateFile('/App.tsx', 'edited during pause');
+      });
+
+      // Advance well past debounce timer
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      // Should NOT have auto-saved
+      expect(prototypeService.update).not.toHaveBeenCalled();
+    });
+
+    it('should still update local file state when paused', () => {
+      const { result } = renderHook(() =>
+        useCodePersistence({
+          prototypeId: 'proto-1',
+          initialCode: mockPrototype.code!,
+          pauseAutoSave: true,
+        }),
+      );
+
+      act(() => {
+        result.current.updateFile('/App.tsx', 'local update while paused');
+      });
+
+      expect(result.current.files['/App.tsx'].content).toBe('local update while paused');
+      expect(result.current.hasUnsavedChanges).toBe(true);
+    });
+
+    it('should still mark hasUnsavedChanges when paused', () => {
+      const { result } = renderHook(() =>
+        useCodePersistence({
+          prototypeId: 'proto-1',
+          initialCode: mockPrototype.code!,
+          pauseAutoSave: true,
+        }),
+      );
+
+      act(() => {
+        result.current.updateFile('/App.tsx', 'change');
+      });
+
+      expect(result.current.hasUnsavedChanges).toBe(true);
+    });
+
+    it('should resume auto-save when pauseAutoSave switches to false', async () => {
+      const { result, rerender } = renderHook(
+        ({ pause }) =>
+          useCodePersistence({
+            prototypeId: 'proto-1',
+            initialCode: mockPrototype.code!,
+            pauseAutoSave: pause,
+          }),
+        { initialProps: { pause: true } },
+      );
+
+      // Edit while paused
+      act(() => {
+        result.current.updateFile('/App.tsx', 'paused edit');
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+      });
+      expect(prototypeService.update).not.toHaveBeenCalled();
+
+      // Resume auto-save
+      rerender({ pause: false });
+
+      // New edit should trigger auto-save
+      act(() => {
+        result.current.updateFile('/App.tsx', 'resumed edit');
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(2100);
+      });
+
+      expect(prototypeService.update).toHaveBeenCalledTimes(1);
+      expect(prototypeService.update).toHaveBeenCalledWith('proto-1', {
+        code: expect.stringContaining('resumed edit'),
+      });
+    });
+
+    it('should allow manual flushSave even when paused', async () => {
+      const { result } = renderHook(() =>
+        useCodePersistence({
+          prototypeId: 'proto-1',
+          initialCode: mockPrototype.code!,
+          pauseAutoSave: true,
+        }),
+      );
+
+      act(() => {
+        result.current.updateFile('/App.tsx', 'manual flush');
+      });
+
+      await act(async () => {
+        await result.current.flushSave();
+      });
+
+      expect(prototypeService.update).toHaveBeenCalledTimes(1);
+      expect(prototypeService.update).toHaveBeenCalledWith('proto-1', {
+        code: expect.stringContaining('manual flush'),
+      });
+    });
+  });
+
   describe('Serialization Roundtrip', () => {
     it('preserves file content through parse → edit → serialize cycle', async () => {
       const originalCode = JSON.stringify({
