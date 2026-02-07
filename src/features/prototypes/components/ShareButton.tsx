@@ -5,7 +5,15 @@ import { useQuery } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSharePrototype } from '../hooks/useSharePrototype';
 import { useShareStats } from '../hooks/useShareStats';
+import { useSetSharePassword } from '../hooks/useSetSharePassword';
 import { prototypeService } from '../services/prototypeService';
+import {
+  passwordSchema,
+  calculatePasswordStrength,
+  strengthBadgeClass,
+  strengthLabel,
+} from '../schemas/passwordSchemas';
+import toast from 'react-hot-toast';
 
 interface ShareButtonProps {
   prototypeId: string;
@@ -17,13 +25,24 @@ const shareUrlKeys = {
   detail: (prototypeId: string) => ['shareUrl', prototypeId] as const,
 };
 
+/** Query keys for password status */
+const passwordStatusKeys = {
+  detail: (prototypeId: string) => ['passwordStatus', prototypeId] as const,
+};
+
 export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Password protection state
+  const [passwordEnabled, setPasswordEnabled] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
   const shareMutation = useSharePrototype();
   const { data: shareStats } = useShareStats(prototypeId);
+  const setPasswordMutation = useSetSharePassword();
 
   // Check if prototype is already shared (React Query for caching & consistency)
   const { data: existingShareUrl } = useQuery({
@@ -34,6 +53,23 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
     },
     enabled: !!prototypeId,
   });
+
+  // Check if prototype has password protection enabled
+  const { data: hasPassword } = useQuery({
+    queryKey: passwordStatusKeys.detail(prototypeId),
+    queryFn: async () => {
+      const result = await prototypeService.getPasswordStatus(prototypeId);
+      return result.data ?? false;
+    },
+    enabled: !!prototypeId && !!existingShareUrl,
+  });
+
+  // Sync toggle state with server-side password status
+  useEffect(() => {
+    if (hasPassword !== undefined) {
+      setPasswordEnabled(hasPassword);
+    }
+  }, [hasPassword]);
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -93,7 +129,58 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
     handleShare();
   };
 
+  const handleTogglePassword = (enabled: boolean) => {
+    if (!enabled && hasPassword) {
+      // Confirmation dialog before removing password protection
+      const confirmed = window.confirm(
+        'Remove password protection? Anyone with the link will be able to access this prototype.'
+      );
+      if (!confirmed) return; // User cancelled, don't change toggle
+
+      setPasswordEnabled(false);
+      // Remove password protection
+      setPasswordMutation.mutate(
+        { prototypeId, password: null },
+        {
+          onSuccess: () => {
+            toast.success('Password protection removed');
+            setPasswordInput('');
+          },
+          onError: () => {
+            toast.error('Failed to remove password protection');
+            setPasswordEnabled(true); // Revert toggle
+          },
+        }
+      );
+    } else {
+      setPasswordEnabled(enabled);
+    }
+  };
+
+  const handleUpdatePassword = () => {
+    const validation = passwordSchema.safeParse(passwordInput);
+    if (!validation.success) return;
+
+    setPasswordMutation.mutate(
+      { prototypeId, password: passwordInput },
+      {
+        onSuccess: () => {
+          toast.success('Password protection enabled');
+          setPasswordInput('');
+        },
+        onError: () => {
+          toast.error('Failed to set password');
+        },
+      }
+    );
+  };
+
   const shareUrl = existingShareUrl || shareMutation.data;
+  const passwordValidation = passwordSchema.safeParse(passwordInput);
+  const isPasswordValid = passwordValidation.success;
+  const passwordStrength = passwordInput.length > 0
+    ? calculatePasswordStrength(passwordInput)
+    : null;
 
   return (
     <>
@@ -244,7 +331,138 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
                   </p>
                 </div>
 
-                {/* Section 3: Stats */}
+                {/* Section 3: Password Protection */}
+                <div className="form-control mb-4 p-4 bg-base-200 rounded-lg">
+                  <label className="label cursor-pointer">
+                    <span className="label-text font-medium flex items-center gap-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
+                      </svg>
+                      Password Protection
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="toggle toggle-primary"
+                      checked={passwordEnabled}
+                      onChange={(e) => handleTogglePassword(e.target.checked)}
+                      disabled={setPasswordMutation.isPending}
+                      data-testid="password-toggle"
+                    />
+                  </label>
+
+                  {/* Password Input - shown when toggle is enabled */}
+                  {passwordEnabled && (
+                    <div className="mt-3 space-y-2">
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Enter password (min 8 characters)"
+                          className="input input-bordered w-full pr-12"
+                          value={passwordInput}
+                          onChange={(e) => setPasswordInput(e.target.value)}
+                          maxLength={72}
+                          data-testid="password-input"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={1.5}
+                              stroke="currentColor"
+                              className="w-5 h-5"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={1.5}
+                              stroke="currentColor"
+                              className="w-5 h-5"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Password Strength Indicator */}
+                      {passwordStrength && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-base-content/70">Strength:</span>
+                          <span
+                            className={`badge badge-sm ${strengthBadgeClass[passwordStrength]}`}
+                            data-testid="password-strength"
+                          >
+                            {strengthLabel[passwordStrength]}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Validation Error */}
+                      {passwordInput.length > 0 && !isPasswordValid && (
+                        <p className="text-xs text-error">
+                          {(passwordValidation.error?.issues ?? passwordValidation.error?.errors)?.[0]?.message}
+                        </p>
+                      )}
+
+                      {/* Update Password Button */}
+                      <button
+                        className="btn btn-sm btn-primary w-full"
+                        onClick={handleUpdatePassword}
+                        disabled={
+                          !isPasswordValid ||
+                          passwordInput.length === 0 ||
+                          setPasswordMutation.isPending
+                        }
+                      >
+                        {setPasswordMutation.isPending ? (
+                          <>
+                            <span className="loading loading-spinner loading-xs"></span>
+                            Updating...
+                          </>
+                        ) : (
+                          'Update Password'
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 4: Stats */}
                 {shareStats && shareStats.isPublic && (
                   <div className="stats stats-horizontal shadow w-full mb-4">
                     <div className="stat place-items-center py-2">
@@ -256,6 +474,31 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
                         <div className="stat-title text-xs">Shared</div>
                         <div className="stat-value text-sm">
                           {new Date(shareStats.sharedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    )}
+                    {/* Password Protected Badge */}
+                    {hasPassword && (
+                      <div className="stat place-items-center py-2">
+                        <div className="stat-title text-xs">Access</div>
+                        <div className="stat-value text-sm flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                            />
+                          </svg>
+                          <span className="badge badge-sm badge-warning" data-testid="password-protected-badge">
+                            Password Protected
+                          </span>
                         </div>
                       </div>
                     )}

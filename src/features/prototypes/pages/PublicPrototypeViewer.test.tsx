@@ -5,17 +5,32 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { PublicPrototypeViewer } from './PublicPrototypeViewer';
 import { prototypeService } from '../services/prototypeService';
+import { supabase } from '../../../lib/supabase';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../services/prototypeService');
+
+vi.mock('../../../lib/supabase', () => ({
+  supabase: {
+    functions: {
+      invoke: vi.fn(),
+    },
+  },
+}));
 
 const mockPublicPrototype = {
   id: 'proto-123',
   url: 'https://preview.example.com/proto-123',
   version: 2,
   status: 'ready' as const,
-  created_at: '2024-01-15T10:00:00Z',
-  share_id: 'share-uuid-123',
+  createdAt: '2024-01-15T10:00:00Z',
+  shareId: 'share-uuid-123',
+  hasPassword: false,
+};
+
+const mockPasswordProtectedPrototype = {
+  ...mockPublicPrototype,
+  hasPassword: true,
 };
 
 describe('PublicPrototypeViewer', () => {
@@ -40,6 +55,7 @@ describe('PublicPrototypeViewer', () => {
       },
     });
     vi.clearAllMocks();
+    sessionStorage.clear();
   });
 
   it('should show loading state while fetching prototype', () => {
@@ -224,5 +240,124 @@ describe('PublicPrototypeViewer', () => {
 
     const headerLink = screen.getAllByRole('link', { name: /ideaspark/i })[0];
     expect(headerLink).toHaveAttribute('href', '/');
+  });
+
+  // =============================================
+  // Story 9.2 - Password Protection Tests
+  // =============================================
+
+  describe('Password Protection', () => {
+    it('should show password prompt for password-protected prototype', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: mockPasswordProtectedPrototype,
+        error: null,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('This prototype is password protected')).toBeInTheDocument();
+      });
+
+      expect(screen.getByTestId('verify-password-input')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /unlock/i })).toBeInTheDocument();
+    });
+
+    it('should show prototype viewer for non-password-protected prototype', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: mockPublicPrototype,
+        error: null,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.queryByText('This prototype is password protected')).not.toBeInTheDocument();
+        expect(screen.getByText('View Only')).toBeInTheDocument();
+      });
+    });
+
+    it('should show prototype after successful password verification', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: mockPasswordProtectedPrototype,
+        error: null,
+      });
+
+      vi.mocked(supabase.functions.invoke).mockResolvedValue({
+        data: { verified: true },
+        error: null,
+      });
+
+      renderComponent();
+
+      // Wait for password prompt
+      await waitFor(() => {
+        expect(screen.getByText('This prototype is password protected')).toBeInTheDocument();
+      });
+
+      // Enter password
+      const passwordInput = screen.getByTestId('verify-password-input');
+      fireEvent.change(passwordInput, { target: { value: 'correct-password' } });
+
+      // Click unlock
+      const unlockButton = screen.getByRole('button', { name: /unlock/i });
+      fireEvent.click(unlockButton);
+
+      // Should show prototype viewer
+      await waitFor(() => {
+        expect(screen.getByText('View Only')).toBeInTheDocument();
+      });
+    });
+
+    it('should bypass password prompt when already verified in sessionStorage', async () => {
+      // Pre-set sessionStorage verification
+      sessionStorage.setItem('verified_prototype_share-uuid-123', 'true');
+
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: mockPasswordProtectedPrototype,
+        error: null,
+      });
+
+      renderComponent();
+
+      // Should NOT show password prompt, should show prototype directly
+      await waitFor(() => {
+        expect(screen.queryByText('This prototype is password protected')).not.toBeInTheDocument();
+        expect(screen.getByText('View Only')).toBeInTheDocument();
+      });
+    });
+
+    it('should show error for incorrect password without blocking retry', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: mockPasswordProtectedPrototype,
+        error: null,
+      });
+
+      vi.mocked(supabase.functions.invoke).mockResolvedValue({
+        data: { verified: false },
+        error: null,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('This prototype is password protected')).toBeInTheDocument();
+      });
+
+      // Enter wrong password
+      const passwordInput = screen.getByTestId('verify-password-input');
+      fireEvent.change(passwordInput, { target: { value: 'wrong-password' } });
+
+      const unlockButton = screen.getByRole('button', { name: /unlock/i });
+      fireEvent.click(unlockButton);
+
+      // Should show error
+      await waitFor(() => {
+        expect(screen.getByText('Incorrect password')).toBeInTheDocument();
+      });
+
+      // Should still be on password page, not prototype viewer
+      expect(screen.queryByText('View Only')).not.toBeInTheDocument();
+    });
   });
 });

@@ -8,11 +8,14 @@ import type {
   CreatePrototypeInput, 
   CreateVersionInput,
   UpdatePrototypeInput,
-  PrototypeStatus 
+  PrototypeStatus,
+  PublicPrototype 
 } from '../types';
 import { mapPrototypeRow } from '../types';
 import type { PrototypeState } from '../types/prototypeState';
 import { validateStateSchema } from '../types/prototypeState';
+import { hashPassword } from './passwordService';
+import { passwordSchema } from '../schemas/passwordSchemas';
 
 export const prototypeService = {
   /**
@@ -397,11 +400,11 @@ export const prototypeService = {
    * @param shareId - The share_id from the URL
    * @returns Public prototype data
    */
-  async getPublicPrototype(shareId: string): Promise<ServiceResponse<any>> {
+  async getPublicPrototype(shareId: string): Promise<ServiceResponse<PublicPrototype>> {
     try {
       const { data, error } = await supabase
         .from('prototypes')
-        .select('id, url, version, status, created_at, share_id')
+        .select('id, url, version, status, created_at, share_id, view_count, password_hash')
         .eq('share_id', shareId)
         .eq('is_public', true)
         .eq('status', 'ready') // Only show successful prototypes
@@ -424,7 +427,7 @@ export const prototypeService = {
         try {
           supabase
             .from('prototypes')
-            .update({ view_count: (data.view_count || 0) + 1 })
+            .update({ view_count: (data.view_count ?? 0) + 1 })
             .eq('id', data.id)
             .then(() => {})
             .catch((err) => console.warn('Failed to increment view count:', err));
@@ -433,7 +436,18 @@ export const prototypeService = {
         }
       }, 0);
 
-      return { data, error: null };
+      // Map to PublicPrototype - NEVER expose password_hash to client
+      const publicPrototype: PublicPrototype = {
+        id: data.id,
+        url: data.url,
+        version: data.version,
+        status: data.status,
+        createdAt: data.created_at,
+        shareId: data.share_id,
+        hasPassword: data.password_hash !== null && data.password_hash !== undefined,
+      };
+
+      return { data: publicPrototype, error: null };
     } catch (error) {
       console.error('Get public prototype error:', error);
       return {
@@ -640,6 +654,129 @@ export const prototypeService = {
         error: { 
           message: 'Failed to get prototypes', 
           code: 'UNKNOWN_ERROR' 
+        },
+      };
+    }
+  },
+
+  // =========================================================================
+  // Password Protection (Story 9.2)
+  // =========================================================================
+
+  /**
+   * Set or remove a password on a shared prototype.
+   * Hashes password client-side before storing to prevent plaintext in Supabase logs.
+   *
+   * @param prototypeId - The prototype ID
+   * @param password - Plaintext password to set, or null to remove password protection
+   * @returns ServiceResponse with void data
+   */
+  async setSharePassword(prototypeId: string, password: string | null): Promise<ServiceResponse<void>> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      let passwordHash: string | null = null;
+
+      if (password !== null) {
+        // Validate password before hashing
+        const validation = passwordSchema.safeParse(password);
+        if (!validation.success) {
+          return {
+            data: null,
+            error: {
+              message: (validation.error.issues ?? validation.error.errors)?.[0]?.message || 'Invalid password',
+              code: 'VALIDATION_ERROR',
+            },
+          };
+        }
+
+        // Hash password client-side (prevents plaintext from appearing in Supabase logs)
+        passwordHash = await hashPassword(password);
+      }
+
+      const { error } = await supabase
+        .from('prototypes')
+        .update({ password_hash: passwordHash })
+        .eq('id', prototypeId)
+        .eq('user_id', session.user.id); // Ensure ownership
+
+      if (error) {
+        console.error('Set share password error:', error);
+        return {
+          data: null,
+          error: {
+            message: 'Failed to update password protection',
+            code: 'DB_ERROR',
+          },
+        };
+      }
+
+      return { data: undefined, error: null };
+    } catch (error) {
+      console.error('Set share password error:', error);
+      return {
+        data: null,
+        error: {
+          message: 'Failed to update password protection',
+          code: 'UNKNOWN_ERROR',
+        },
+      };
+    }
+  },
+
+  /**
+   * Check if a prototype has password protection enabled.
+   *
+   * @param prototypeId - The prototype ID
+   * @returns ServiceResponse with boolean indicating if password is set
+   */
+  async getPasswordStatus(prototypeId: string): Promise<ServiceResponse<boolean>> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      const { data, error } = await supabase
+        .from('prototypes')
+        .select('password_hash')
+        .eq('id', prototypeId)
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return { data: false, error: null };
+        }
+        console.error('Get password status error:', error);
+        return {
+          data: null,
+          error: {
+            message: 'Failed to get password status',
+            code: 'DB_ERROR',
+          },
+        };
+      }
+
+      return { data: data.password_hash !== null, error: null };
+    } catch (error) {
+      console.error('Get password status error:', error);
+      return {
+        data: null,
+        error: {
+          message: 'Failed to get password status',
+          code: 'UNKNOWN_ERROR',
         },
       };
     }

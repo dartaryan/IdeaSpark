@@ -1,8 +1,9 @@
 // src/features/prototypes/pages/PublicPrototypeViewer.tsx
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePublicPrototype } from '../hooks/usePublicPrototype';
+import { PasswordProtectedViewer } from './PasswordProtectedViewer';
 
 type DeviceSize = 'desktop' | 'tablet' | 'mobile';
 
@@ -15,8 +16,19 @@ const DEVICE_SIZES = {
 export function PublicPrototypeViewer() {
   const { shareId } = useParams<{ shareId: string }>();
   const [deviceSize, setDeviceSize] = useState<DeviceSize>('desktop');
-  
+  const [passwordVerified, setPasswordVerified] = useState(() => {
+    // Check sessionStorage for previously verified state
+    if (shareId) {
+      return sessionStorage.getItem(`verified_prototype_${shareId}`) === 'true';
+    }
+    return false;
+  });
+
   const { data: prototype, isLoading, error } = usePublicPrototype(shareId);
+
+  const handlePasswordVerified = useCallback(() => {
+    setPasswordVerified(true);
+  }, []);
 
   if (isLoading) {
     return (
@@ -34,18 +46,18 @@ export function PublicPrototypeViewer() {
       <div className="flex items-center justify-center min-h-screen bg-base-200">
         <div className="card bg-base-100 shadow-xl max-w-md">
           <div className="card-body text-center">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-16 w-16 mx-auto text-error" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-16 w-16 mx-auto text-error"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
               />
             </svg>
             <h2 className="card-title justify-center mt-4">Prototype Not Found</h2>
@@ -60,6 +72,16 @@ export function PublicPrototypeViewer() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Check if prototype is password-protected and not yet verified
+  if (prototype.hasPassword && !passwordVerified && shareId) {
+    return (
+      <PasswordProtectedViewer
+        shareId={shareId}
+        onVerified={handlePasswordVerified}
+      />
     );
   }
 
@@ -105,7 +127,7 @@ export function PublicPrototypeViewer() {
       {/* Prototype Preview */}
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center min-h-[600px]">
-          <div 
+          <div
             className="bg-base-100 shadow-2xl rounded-lg overflow-hidden transition-all duration-300"
             style={{
               width: currentSize.width,
@@ -138,7 +160,7 @@ export function PublicPrototypeViewer() {
             </a>
           </p>
           <p className="mt-2">
-            Created {new Date(prototype.created_at).toLocaleDateString()}
+            Created {new Date(prototype.createdAt).toLocaleDateString()}
           </p>
         </div>
       </div>

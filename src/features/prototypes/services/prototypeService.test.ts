@@ -317,6 +317,7 @@ describe('prototypeService', () => {
       created_at: '2024-01-01T00:00:00Z',
       share_id: 'share-uuid-123',
       view_count: 5,
+      password_hash: null,
     };
 
     it('fetches public prototype by share_id successfully', async () => {
@@ -334,9 +335,18 @@ describe('prototypeService', () => {
       const result = await prototypeService.getPublicPrototype('share-uuid-123');
 
       expect(result.error).toBeNull();
-      expect(result.data).toEqual(mockPublicPrototypeRow);
+      // Should return mapped PublicPrototype (camelCase, hasPassword boolean, no password_hash)
+      expect(result.data).toEqual({
+        id: 'proto-789',
+        url: 'https://preview.example.com/proto-789',
+        version: 2,
+        status: 'ready',
+        createdAt: '2024-01-01T00:00:00Z',
+        shareId: 'share-uuid-123',
+        hasPassword: false,
+      });
       expect(mockFromChain.select).toHaveBeenCalledWith(
-        'id, url, version, status, created_at, share_id'
+        'id, url, version, status, created_at, share_id, view_count, password_hash'
       );
       expect(mockFromChain.eq).toHaveBeenCalledWith('share_id', 'share-uuid-123');
       expect(mockFromChain.eq).toHaveBeenCalledWith('is_public', true);

@@ -79,6 +79,8 @@ export interface PublicPrototype {
   status: PrototypeStatus;
   createdAt: string;
   shareId: string;
+  /** Whether the prototype is password-protected (derived from password_hash !== null) */
+  hasPassword: boolean;
 }
 
 // =============================================

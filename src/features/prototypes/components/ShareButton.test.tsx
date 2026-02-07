@@ -15,6 +15,14 @@ vi.mock('qrcode.react', () => ({
   ),
 }));
 
+// Mock react-hot-toast
+vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 // Mock clipboard API
 Object.assign(navigator, {
   clipboard: {
@@ -47,6 +55,10 @@ describe('ShareButton', () => {
     });
     vi.mocked(prototypeService.getShareStats).mockResolvedValue({
       data: null,
+      error: null,
+    });
+    vi.mocked(prototypeService.getPasswordStatus).mockResolvedValue({
+      data: false,
       error: null,
     });
   });
@@ -409,6 +421,213 @@ describe('ShareButton', () => {
     // Should now show the share URL from the successful retry
     await waitFor(() => {
       expect(screen.getByDisplayValue('https://ideaspark.example.com/share/prototype/retried-uuid')).toBeInTheDocument();
+    });
+  });
+
+  // =============================================
+  // Story 9.2 - Password Protection Tests
+  // =============================================
+
+  describe('Password Protection', () => {
+    const setupSharedPrototype = () => {
+      const shareUrl = 'https://ideaspark.example.com/share/prototype/share-uuid-123';
+      vi.mocked(prototypeService.getShareUrl).mockResolvedValue({
+        data: shareUrl,
+        error: null,
+      });
+      vi.mocked(prototypeService.getShareStats).mockResolvedValue({
+        data: { viewCount: 5, sharedAt: '2026-01-15T10:00:00Z', isPublic: true },
+        error: null,
+      });
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+      queryClient.setQueryData(['shareUrl', 'proto-123'], shareUrl);
+      return shareUrl;
+    };
+
+    /** Helper to open the share modal with shared URL loaded */
+    const openShareModal = async () => {
+      renderComponent();
+
+      // Wait for share URL query to resolve
+      await waitFor(() => {
+        expect(prototypeService.getShareUrl).toHaveBeenCalledWith('proto-123');
+      });
+
+      const shareButton = screen.getByRole('button', { name: /share publicly/i });
+      fireEvent.click(shareButton);
+
+      // Wait for share content including password protection section
+      await waitFor(() => {
+        expect(screen.getByText('Password Protection')).toBeInTheDocument();
+      });
+    };
+
+    it('should show password protection toggle in share modal', async () => {
+      setupSharedPrototype();
+      await openShareModal();
+
+      // Toggle should be present
+      const toggle = screen.getByTestId('password-toggle');
+      expect(toggle).toBeInTheDocument();
+    });
+
+    it('should show password input when toggle is enabled', async () => {
+      setupSharedPrototype();
+      await openShareModal();
+
+      // Enable the toggle
+      const toggle = screen.getByTestId('password-toggle');
+      fireEvent.click(toggle);
+
+      // Password input should appear
+      await waitFor(() => {
+        expect(screen.getByTestId('password-input')).toBeInTheDocument();
+      });
+
+      // Update Password button should appear
+      expect(screen.getByText('Update Password')).toBeInTheDocument();
+    });
+
+    it('should hide password input when toggle is disabled', async () => {
+      setupSharedPrototype();
+      await openShareModal();
+
+      // Password input should not be visible by default
+      expect(screen.queryByTestId('password-input')).not.toBeInTheDocument();
+    });
+
+    it('should show password strength indicator', async () => {
+      setupSharedPrototype();
+      await openShareModal();
+
+      // Enable toggle
+      const toggle = screen.getByTestId('password-toggle');
+      fireEvent.click(toggle);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('password-input')).toBeInTheDocument();
+      });
+
+      // Type a password
+      const passwordInput = screen.getByTestId('password-input');
+      fireEvent.change(passwordInput, { target: { value: 'abcDEF123456' } });
+
+      // Should show strength indicator
+      await waitFor(() => {
+        expect(screen.getByTestId('password-strength')).toBeInTheDocument();
+        expect(screen.getByText('Strong')).toBeInTheDocument();
+      });
+    });
+
+    it('should disable Update Password button when password is invalid', async () => {
+      setupSharedPrototype();
+      await openShareModal();
+
+      const toggle = screen.getByTestId('password-toggle');
+      fireEvent.click(toggle);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('password-input')).toBeInTheDocument();
+      });
+
+      // Type short password
+      const passwordInput = screen.getByTestId('password-input');
+      fireEvent.change(passwordInput, { target: { value: 'short' } });
+
+      // Update button should be disabled
+      const updateButton = screen.getByText('Update Password');
+      expect(updateButton).toBeDisabled();
+    });
+
+    it('should enable Update Password button when password is valid', async () => {
+      setupSharedPrototype();
+      await openShareModal();
+
+      const toggle = screen.getByTestId('password-toggle');
+      fireEvent.click(toggle);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('password-input')).toBeInTheDocument();
+      });
+
+      // Type valid password
+      const passwordInput = screen.getByTestId('password-input');
+      fireEvent.change(passwordInput, { target: { value: 'ValidPassword123' } });
+
+      // Update button should be enabled
+      const updateButton = screen.getByText('Update Password');
+      expect(updateButton).not.toBeDisabled();
+    });
+
+    it('should show "Password Protected" badge when password is set', async () => {
+      setupSharedPrototype();
+      vi.mocked(prototypeService.getPasswordStatus).mockResolvedValue({
+        data: true,
+        error: null,
+      });
+      queryClient.setQueryData(['passwordStatus', 'proto-123'], true);
+
+      renderComponent();
+
+      // Wait for queries to resolve
+      await waitFor(() => {
+        expect(prototypeService.getShareUrl).toHaveBeenCalledWith('proto-123');
+      });
+
+      const shareButton = screen.getByRole('button', { name: /share publicly/i });
+      fireEvent.click(shareButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('password-protected-badge')).toBeInTheDocument();
+        expect(screen.getByText('Password Protected')).toBeInTheDocument();
+      });
+    });
+
+    it('should toggle show/hide password with eye icon', async () => {
+      setupSharedPrototype();
+      await openShareModal();
+
+      const toggle = screen.getByTestId('password-toggle');
+      fireEvent.click(toggle);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('password-input')).toBeInTheDocument();
+      });
+
+      const passwordInput = screen.getByTestId('password-input');
+      expect(passwordInput).toHaveAttribute('type', 'password');
+
+      // Click show password button
+      const showPasswordBtn = screen.getByLabelText('Show password');
+      fireEvent.click(showPasswordBtn);
+
+      expect(passwordInput).toHaveAttribute('type', 'text');
+
+      // Click hide password button
+      const hidePasswordBtn = screen.getByLabelText('Hide password');
+      fireEvent.click(hidePasswordBtn);
+
+      expect(passwordInput).toHaveAttribute('type', 'password');
+    });
+
+    it('should show validation error for short password', async () => {
+      setupSharedPrototype();
+      await openShareModal();
+
+      const toggle = screen.getByTestId('password-toggle');
+      fireEvent.click(toggle);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('password-input')).toBeInTheDocument();
+      });
+
+      const passwordInput = screen.getByTestId('password-input');
+      fireEvent.change(passwordInput, { target: { value: 'short' } });
+
+      // Should show validation error
+      await waitFor(() => {
+        expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
+      });
     });
   });
 });
