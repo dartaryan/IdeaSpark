@@ -233,6 +233,11 @@ describe('prototypeService', () => {
       expect(mockFromChain.update).toHaveBeenCalledWith({
         is_public: true,
         shared_at: expect.any(String),
+        share_revoked: false,
+        share_id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+        ),
+        view_count: 0,
       });
       expect(mockFromChain.eq).toHaveBeenCalledWith('id', 'proto-789');
       expect(mockFromChain.eq).toHaveBeenCalledWith('user_id', 'user-123');
@@ -467,6 +472,7 @@ describe('prototypeService', () => {
             shared_at: '2026-01-15T10:00:00Z',
             is_public: true,
             expires_at: '2026-02-15T10:00:00Z',
+            share_revoked: false,
           },
           error: null,
         }),
@@ -482,8 +488,9 @@ describe('prototypeService', () => {
         sharedAt: '2026-01-15T10:00:00Z',
         isPublic: true,
         expiresAt: '2026-02-15T10:00:00Z',
+        shareRevoked: false,
       });
-      expect(mockFromChain.select).toHaveBeenCalledWith('view_count, shared_at, is_public, expires_at');
+      expect(mockFromChain.select).toHaveBeenCalledWith('view_count, shared_at, is_public, expires_at, share_revoked');
       expect(mockFromChain.eq).toHaveBeenCalledWith('id', 'proto-789');
       expect(mockFromChain.eq).toHaveBeenCalledWith('user_id', 'user-123');
     });
@@ -566,7 +573,7 @@ describe('prototypeService', () => {
       });
     });
 
-    it('defaults view_count to 0 and is_public to false when null', async () => {
+    it('defaults view_count to 0, is_public to false, shareRevoked to false when null', async () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: { session: mockSession },
         error: null,
@@ -581,6 +588,7 @@ describe('prototypeService', () => {
             shared_at: null,
             is_public: null,
             expires_at: null,
+            share_revoked: null,
           },
           error: null,
         }),
@@ -596,6 +604,42 @@ describe('prototypeService', () => {
         sharedAt: null,
         isPublic: false,
         expiresAt: null,
+        shareRevoked: false,
+      });
+    });
+
+    it('returns shareRevoked as true when share_revoked is true', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            view_count: 10,
+            shared_at: '2026-01-15T10:00:00Z',
+            is_public: true,
+            expires_at: null,
+            share_revoked: true,
+          },
+          error: null,
+        }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getShareStats('proto-789');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual({
+        viewCount: 10,
+        sharedAt: '2026-01-15T10:00:00Z',
+        isPublic: true,
+        expiresAt: null,
+        shareRevoked: true,
       });
     });
   });
@@ -703,6 +747,96 @@ describe('prototypeService', () => {
       expect(result.error).toEqual({
         message: 'Failed to get share URL',
         code: 'DB_ERROR',
+      });
+    });
+  });
+
+  // =========================================================================
+  // Revoke Public Access (Story 9.5)
+  // =========================================================================
+
+  describe('revokePublicAccess', () => {
+    const mockSession = {
+      user: { id: 'user-123' },
+      access_token: 'token-123',
+    };
+
+    it('revokes public access for authenticated user', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const secondEq = vi.fn().mockResolvedValue({ data: null, error: null });
+      const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
+      const mockFromChain = {
+        update: vi.fn().mockReturnValue({ eq: firstEq }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.revokePublicAccess('proto-789');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBeUndefined();
+      expect(supabase.from).toHaveBeenCalledWith('prototypes');
+      expect(mockFromChain.update).toHaveBeenCalledWith({ share_revoked: true });
+      expect(firstEq).toHaveBeenCalledWith('id', 'proto-789');
+      expect(secondEq).toHaveBeenCalledWith('user_id', 'user-123');
+    });
+
+    it('returns error when not authenticated', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: null },
+        error: null,
+      } as any);
+
+      const result = await prototypeService.revokePublicAccess('proto-789');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Not authenticated',
+        code: 'AUTH_ERROR',
+      });
+    });
+
+    it('returns error when database update fails', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const secondEq = vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Update failed', code: 'DB_ERROR' },
+      });
+      const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
+      const mockFromChain = {
+        update: vi.fn().mockReturnValue({ eq: firstEq }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.revokePublicAccess('proto-789');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Failed to revoke public access',
+        code: 'DB_ERROR',
+      });
+    });
+
+    it('handles unexpected errors gracefully', async () => {
+      vi.mocked(supabase.auth.getSession).mockRejectedValue(
+        new Error('Network error')
+      );
+
+      const result = await prototypeService.revokePublicAccess('proto-789');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Failed to revoke public access',
+        code: 'UNKNOWN_ERROR',
       });
     });
   });

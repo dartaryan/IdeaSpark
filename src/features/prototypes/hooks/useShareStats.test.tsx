@@ -30,6 +30,8 @@ describe('useShareStats', () => {
       viewCount: 42,
       sharedAt: '2026-01-15T10:00:00Z',
       isPublic: true,
+      expiresAt: null,
+      shareRevoked: false,
     };
 
     vi.mocked(prototypeService.getShareStats).mockResolvedValue({
@@ -45,6 +47,29 @@ describe('useShareStats', () => {
 
     expect(result.current.data).toEqual(mockStats);
     expect(prototypeService.getShareStats).toHaveBeenCalledWith('proto-123');
+  });
+
+  it('should return shareRevoked field when access is revoked', async () => {
+    const mockStats = {
+      viewCount: 10,
+      sharedAt: '2026-01-15T10:00:00Z',
+      isPublic: true,
+      expiresAt: null,
+      shareRevoked: true,
+    };
+
+    vi.mocked(prototypeService.getShareStats).mockResolvedValue({
+      data: mockStats,
+      error: null,
+    });
+
+    const { result } = renderHook(() => useShareStats('proto-123'), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data?.shareRevoked).toBe(true);
   });
 
   it('should return null when prototype is not shared', async () => {
@@ -96,7 +121,7 @@ describe('useShareStats', () => {
 
   it('should show loading state while fetching', async () => {
     vi.mocked(prototypeService.getShareStats).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({ data: { viewCount: 0, sharedAt: null, isPublic: false }, error: null }), 100))
+      () => new Promise((resolve) => setTimeout(() => resolve({ data: { viewCount: 0, sharedAt: null, isPublic: false, expiresAt: null, shareRevoked: false }, error: null }), 100))
     );
 
     const { result } = renderHook(() => useShareStats('proto-123'), { wrapper });

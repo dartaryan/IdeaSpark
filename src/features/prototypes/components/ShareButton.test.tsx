@@ -278,7 +278,7 @@ describe('ShareButton', () => {
     });
 
     vi.mocked(prototypeService.getShareStats).mockResolvedValue({
-      data: { viewCount: 42, sharedAt: '2026-01-15T10:00:00Z', isPublic: true, expiresAt: null },
+      data: { viewCount: 42, sharedAt: '2026-01-15T10:00:00Z', isPublic: true, expiresAt: null, shareRevoked: false },
       error: null,
     });
 
@@ -308,7 +308,7 @@ describe('ShareButton', () => {
     });
 
     vi.mocked(prototypeService.getShareStats).mockResolvedValue({
-      data: { viewCount: 5, sharedAt: '2026-01-15T10:00:00Z', isPublic: true, expiresAt: null },
+      data: { viewCount: 5, sharedAt: '2026-01-15T10:00:00Z', isPublic: true, expiresAt: null, shareRevoked: false },
       error: null,
     });
 
@@ -356,7 +356,7 @@ describe('ShareButton', () => {
 
   it('should not display stats section when prototype is not shared', async () => {
     vi.mocked(prototypeService.getShareStats).mockResolvedValue({
-      data: { viewCount: 0, sharedAt: null, isPublic: false, expiresAt: null },
+      data: { viewCount: 0, sharedAt: null, isPublic: false, expiresAt: null, shareRevoked: false },
       error: null,
     });
 
@@ -429,14 +429,14 @@ describe('ShareButton', () => {
   // =============================================
 
   describe('Password Protection', () => {
-    const setupSharedPrototype = (overrides?: { expiresAt?: string | null }) => {
+    const setupSharedPrototype = (overrides?: { expiresAt?: string | null; shareRevoked?: boolean }) => {
       const shareUrl = 'https://ideaspark.example.com/share/prototype/share-uuid-123';
       vi.mocked(prototypeService.getShareUrl).mockResolvedValue({
         data: shareUrl,
         error: null,
       });
       vi.mocked(prototypeService.getShareStats).mockResolvedValue({
-        data: { viewCount: 5, sharedAt: '2026-01-15T10:00:00Z', isPublic: true, expiresAt: overrides?.expiresAt ?? null },
+        data: { viewCount: 5, sharedAt: '2026-01-15T10:00:00Z', isPublic: true, expiresAt: overrides?.expiresAt ?? null, shareRevoked: overrides?.shareRevoked ?? false },
         error: null,
       });
       vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
@@ -648,6 +648,7 @@ describe('ShareButton', () => {
           sharedAt: '2026-01-15T10:00:00Z',
           isPublic: true,
           expiresAt: overrides?.expiresAt ?? null,
+          shareRevoked: false,
         },
         error: null,
       });
@@ -767,6 +768,220 @@ describe('ShareButton', () => {
       const expirationInfo = screen.getByTestId('expiration-info');
       expect(expirationInfo).toBeInTheDocument();
       expect(expirationInfo.textContent).toMatch(/Expires:/);
+    });
+  });
+
+  // =============================================
+  // Story 9.5 - Revoke Public Access Tests
+  // =============================================
+
+  describe('Revoke Public Access', () => {
+    const setupSharedPrototypeForRevoke = (overrides?: { shareRevoked?: boolean }) => {
+      const shareUrl = 'https://ideaspark.example.com/share/prototype/share-uuid-123';
+      vi.mocked(prototypeService.getShareUrl).mockResolvedValue({
+        data: shareUrl,
+        error: null,
+      });
+      vi.mocked(prototypeService.getShareStats).mockResolvedValue({
+        data: {
+          viewCount: 5,
+          sharedAt: '2026-01-15T10:00:00Z',
+          isPublic: true,
+          expiresAt: null,
+          shareRevoked: overrides?.shareRevoked ?? false,
+        },
+        error: null,
+      });
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+      queryClient.setQueryData(['shareUrl', 'proto-123'], shareUrl);
+      queryClient.setQueryData(['shareStats', 'proto-123'], {
+        viewCount: 5,
+        sharedAt: '2026-01-15T10:00:00Z',
+        isPublic: true,
+        expiresAt: null,
+        shareRevoked: overrides?.shareRevoked ?? false,
+      });
+      return shareUrl;
+    };
+
+    const openShareModalForRevoke = async () => {
+      renderComponent();
+
+      await waitFor(() => {
+        expect(prototypeService.getShareUrl).toHaveBeenCalledWith('proto-123');
+      });
+
+      const shareButton = screen.getByRole('button', { name: /share publicly/i });
+      fireEvent.click(shareButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Share Prototype')).toBeInTheDocument();
+      });
+    };
+
+    it('should show revoke button when prototype is shared and not revoked', async () => {
+      setupSharedPrototypeForRevoke({ shareRevoked: false });
+      await openShareModalForRevoke();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('revoke-btn')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('revoke-btn')).toHaveTextContent('Revoke Public Access');
+    });
+
+    it('should not show revoke section when prototype is not shared', async () => {
+      vi.mocked(prototypeService.getShareUrl).mockResolvedValue({
+        data: null,
+        error: null,
+      });
+      vi.mocked(prototypeService.getShareStats).mockResolvedValue({
+        data: { viewCount: 0, sharedAt: null, isPublic: false, expiresAt: null, shareRevoked: false },
+        error: null,
+      });
+
+      // Generate a fresh share
+      vi.mocked(prototypeService.generateShareLink).mockResolvedValue({
+        data: 'https://ideaspark.example.com/share/prototype/new-uuid',
+        error: null,
+      });
+
+      renderComponent();
+
+      const shareButton = screen.getByRole('button', { name: /share publicly/i });
+      fireEvent.click(shareButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Share Prototype')).toBeInTheDocument();
+      });
+
+      // After generating a new link, the revoke section should appear
+      // But before generating, there's no revoke section since nothing is shared
+      expect(screen.queryByTestId('revoke-section')).not.toBeInTheDocument();
+    });
+
+    it('should show confirmation dialog when revoke button is clicked', async () => {
+      setupSharedPrototypeForRevoke({ shareRevoked: false });
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+      await openShareModalForRevoke();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('revoke-btn')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('revoke-btn'));
+
+      expect(confirmSpy).toHaveBeenCalledWith(
+        'Revoke public access? Anyone with the current link will no longer be able to view this prototype.'
+      );
+
+      confirmSpy.mockRestore();
+    });
+
+    it('should not revoke when user cancels confirmation', async () => {
+      setupSharedPrototypeForRevoke({ shareRevoked: false });
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+      await openShareModalForRevoke();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('revoke-btn')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('revoke-btn'));
+
+      expect(prototypeService.revokePublicAccess).not.toHaveBeenCalled();
+
+      confirmSpy.mockRestore();
+    });
+
+    it('should call revokePublicAccess when user confirms', async () => {
+      setupSharedPrototypeForRevoke({ shareRevoked: false });
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.mocked(prototypeService.revokePublicAccess).mockResolvedValue({
+        data: undefined,
+        error: null,
+      });
+
+      await openShareModalForRevoke();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('revoke-btn')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('revoke-btn'));
+
+      await waitFor(() => {
+        expect(prototypeService.revokePublicAccess).toHaveBeenCalledWith('proto-123');
+      });
+
+      confirmSpy.mockRestore();
+    });
+
+    it('should show revoked banner when prototype access is revoked', async () => {
+      setupSharedPrototypeForRevoke({ shareRevoked: true });
+      await openShareModalForRevoke();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('revoked-banner')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Public access has been revoked. The share link is no longer active.')).toBeInTheDocument();
+    });
+
+    it('should hide shareable link, QR code, password, expiration when revoked', async () => {
+      setupSharedPrototypeForRevoke({ shareRevoked: true });
+      await openShareModalForRevoke();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('revoked-banner')).toBeInTheDocument();
+      });
+
+      // These sections should NOT be visible when revoked
+      expect(screen.queryByText('Shareable Link')).not.toBeInTheDocument();
+      expect(screen.queryByText('QR Code')).not.toBeInTheDocument();
+      expect(screen.queryByText('Password Protection')).not.toBeInTheDocument();
+      expect(screen.queryByText('Link Expiration')).not.toBeInTheDocument();
+      expect(screen.queryByText('Open in New Tab')).not.toBeInTheDocument();
+    });
+
+    it('should show "Generate New Link" button when revoked', async () => {
+      setupSharedPrototypeForRevoke({ shareRevoked: true });
+      await openShareModalForRevoke();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('generate-new-link-btn')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('generate-new-link-btn')).toHaveTextContent('Generate New Link');
+    });
+
+    it('should show Revoked badge in stats when revoked', async () => {
+      setupSharedPrototypeForRevoke({ shareRevoked: true });
+      await openShareModalForRevoke();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('revoked-badge')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('revoked-badge')).toHaveTextContent('Revoked');
+    });
+
+    it('should call generateShareLink when Generate New Link is clicked after revocation', async () => {
+      setupSharedPrototypeForRevoke({ shareRevoked: true });
+      vi.mocked(prototypeService.generateShareLink).mockResolvedValue({
+        data: 'https://ideaspark.example.com/share/prototype/new-uuid',
+        error: null,
+      });
+
+      await openShareModalForRevoke();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('generate-new-link-btn')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('generate-new-link-btn'));
+
+      await waitFor(() => {
+        expect(prototypeService.generateShareLink).toHaveBeenCalledWith('proto-123');
+      });
     });
   });
 });

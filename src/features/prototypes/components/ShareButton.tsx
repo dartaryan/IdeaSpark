@@ -7,6 +7,7 @@ import { useSharePrototype } from '../hooks/useSharePrototype';
 import { useShareStats } from '../hooks/useShareStats';
 import { useSetSharePassword } from '../hooks/useSetSharePassword';
 import { useSetShareExpiration } from '../hooks/useSetShareExpiration';
+import { useRevokePublicAccess } from '../hooks/useRevokePublicAccess';
 import { prototypeService } from '../services/prototypeService';
 import {
   passwordSchema,
@@ -56,6 +57,7 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
   const { data: shareStats } = useShareStats(prototypeId);
   const setPasswordMutation = useSetSharePassword();
   const setExpirationMutation = useSetShareExpiration();
+  const revokeMutation = useRevokePublicAccess();
 
   // Check if prototype is already shared (React Query for caching & consistency)
   const { data: existingShareUrl } = useQuery({
@@ -204,6 +206,38 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
     );
   };
 
+  const handleRevoke = () => {
+    const confirmed = window.confirm(
+      'Revoke public access? Anyone with the current link will no longer be able to view this prototype.'
+    );
+    if (!confirmed) return;
+
+    revokeMutation.mutate(
+      { prototypeId },
+      {
+        onSuccess: () => {
+          toast.success('Public access revoked');
+        },
+        onError: () => {
+          toast.error('Failed to revoke access');
+        },
+      }
+    );
+  };
+
+  // Bypasses the existingShareUrl check in handleShare — calls generateShareLink
+  // directly so that a revoked prototype gets a fresh share_id and share_revoked=false.
+  const handleRegenerate = async () => {
+    try {
+      await shareMutation.mutateAsync({ prototypeId, prdId });
+      showCopiedFeedback();
+    } catch {
+      // Error handled by mutation
+    }
+  };
+
+  // Derived state
+  const isRevoked = shareStats?.shareRevoked === true;
   const shareUrl = existingShareUrl || shareMutation.data;
   const passwordValidation = passwordSchema.safeParse(passwordInput);
   const isPasswordValid = passwordValidation.success;
@@ -289,8 +323,65 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
               </div>
             )}
 
-            {/* Share URL Section */}
-            {shareUrl && (
+            {/* Revoked State Banner */}
+            {shareUrl && isRevoked && (
+              <div className="alert alert-warning mb-4" data-testid="revoked-banner">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="stroke-current shrink-0 h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                  />
+                </svg>
+                <span>Public access has been revoked. The share link is no longer active.</span>
+              </div>
+            )}
+
+            {/* Revoked: Generate New Link button */}
+            {shareUrl && isRevoked && (
+              <div className="mb-4">
+                <button
+                  className="btn btn-primary w-full"
+                  onClick={handleRegenerate}
+                  disabled={shareMutation.isPending}
+                  data-testid="generate-new-link-btn"
+                >
+                  {shareMutation.isPending ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate New Link'
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Revoked: Stats with Revoked badge */}
+            {shareUrl && isRevoked && shareStats && shareStats.isPublic && (
+              <div className="stats stats-horizontal shadow w-full mb-4">
+                <div className="stat place-items-center py-2">
+                  <div className="stat-title text-xs">Views</div>
+                  <div className="stat-value text-lg">{shareStats.viewCount}</div>
+                </div>
+                <div className="stat place-items-center py-2">
+                  <div className="stat-title text-xs">Status</div>
+                  <div className="stat-value text-sm">
+                    <span className="badge badge-error" data-testid="revoked-badge">Revoked</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Share URL Section (hidden when revoked) */}
+            {shareUrl && !isRevoked && (
               <>
                 <p className="text-sm text-base-content/70 mb-4">
                   Anyone with this link can view your prototype without logging in.
@@ -630,6 +721,46 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Section 6: Revoke Public Access */}
+                {(existingShareUrl || shareStats?.isPublic) && (
+                  <div className="form-control mb-4 p-4 bg-base-200 rounded-lg" data-testid="revoke-section">
+                    <label className="label">
+                      <span className="label-text font-medium flex items-center gap-2 text-error">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                          />
+                        </svg>
+                        Revoke Public Access
+                      </span>
+                    </label>
+                    <button
+                      className="btn btn-error btn-sm w-full"
+                      onClick={handleRevoke}
+                      disabled={revokeMutation.isPending}
+                      data-testid="revoke-btn"
+                    >
+                      {revokeMutation.isPending ? (
+                        <>
+                          <span className="loading loading-spinner loading-xs"></span>
+                          Revoking...
+                        </>
+                      ) : (
+                        'Revoke Public Access'
+                      )}
+                    </button>
                   </div>
                 )}
 

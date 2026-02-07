@@ -355,11 +355,15 @@ export const prototypeService = {
       }
 
       // Generate unique share_id and update prototype
+      // Always generates a new share_id so revoked links stay dead on re-share
       const { data: prototype, error } = await supabase
         .from('prototypes')
         .update({
           is_public: true,
           shared_at: new Date().toISOString(),
+          share_revoked: false,
+          share_id: crypto.randomUUID(),
+          view_count: 0,
         })
         .eq('id', prototypeId)
         .eq('user_id', session.user.id) // Ensure ownership
@@ -468,7 +472,7 @@ export const prototypeService = {
    * @param prototypeId - The prototype ID
    * @returns Share stats object or null if not shared
    */
-  async getShareStats(prototypeId: string): Promise<ServiceResponse<{ viewCount: number; sharedAt: string | null; isPublic: boolean; expiresAt: string | null } | null>> {
+  async getShareStats(prototypeId: string): Promise<ServiceResponse<{ viewCount: number; sharedAt: string | null; isPublic: boolean; expiresAt: string | null; shareRevoked: boolean } | null>> {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -481,7 +485,7 @@ export const prototypeService = {
 
       const { data, error } = await supabase
         .from('prototypes')
-        .select('view_count, shared_at, is_public, expires_at')
+        .select('view_count, shared_at, is_public, expires_at, share_revoked')
         .eq('id', prototypeId)
         .eq('user_id', session.user.id)
         .single();
@@ -506,6 +510,7 @@ export const prototypeService = {
           sharedAt: data.shared_at,
           isPublic: data.is_public ?? false,
           expiresAt: data.expires_at ?? null,
+          shareRevoked: data.share_revoked ?? false,
         },
         error: null,
       };
@@ -868,6 +873,58 @@ export const prototypeService = {
         data: null,
         error: {
           message: 'Failed to check link status',
+          code: 'UNKNOWN_ERROR',
+        },
+      };
+    }
+  },
+
+  // =========================================================================
+  // Revoke Public Access (Story 9.5)
+  // =========================================================================
+
+  /**
+   * Revoke public access to a shared prototype.
+   * Sets share_revoked = true, which causes RLS to block public access immediately.
+   *
+   * @param prototypeId - The prototype ID to revoke access for
+   * @returns ServiceResponse with void data
+   */
+  async revokePublicAccess(prototypeId: string): Promise<ServiceResponse<void>> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      const { error } = await supabase
+        .from('prototypes')
+        .update({ share_revoked: true })
+        .eq('id', prototypeId)
+        .eq('user_id', session.user.id); // Ensure ownership
+
+      if (error) {
+        console.error('Revoke public access error:', error);
+        return {
+          data: null,
+          error: {
+            message: 'Failed to revoke public access',
+            code: 'DB_ERROR',
+          },
+        };
+      }
+
+      return { data: undefined, error: null };
+    } catch (error) {
+      console.error('Revoke public access error:', error);
+      return {
+        data: null,
+        error: {
+          message: 'Failed to revoke public access',
           code: 'UNKNOWN_ERROR',
         },
       };

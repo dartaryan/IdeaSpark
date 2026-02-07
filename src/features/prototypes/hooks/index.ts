@@ -8,3 +8,4 @@ export { useRestoreVersion } from './useRestoreVersion';
 export { useSharePrototype } from './useSharePrototype';
 export { usePublicPrototype } from './usePublicPrototype';
 export { usePrototypeByIdeaId, usePrototypesByIdeaId } from './usePrototypeByIdeaId';
+export { useRevokePublicAccess } from './useRevokePublicAccess';

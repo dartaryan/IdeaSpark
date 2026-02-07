@@ -8,6 +8,7 @@ export interface ShareStats {
   sharedAt: string | null;
   isPublic: boolean;
   expiresAt: string | null;
+  shareRevoked: boolean;
 }
 
 export const shareStatsKeys = {
