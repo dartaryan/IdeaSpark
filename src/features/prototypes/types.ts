@@ -73,6 +73,193 @@ export interface PublicPrototype {
   shareId: string;
 }
 
+// =============================================
+// Code Editor Types (Story 7.1)
+// =============================================
+
+/** Represents a single file in the code editor */
+export interface EditorFile {
+  path: string;       // e.g., "/src/App.tsx"
+  content: string;    // File content
+  language: string;   // e.g., "typescript", "javascript", "css"
+}
+
+/** Represents a node in the file tree */
+export interface FileTreeNode {
+  name: string;              // File or directory name
+  path: string;              // Full path
+  type: 'file' | 'directory';
+  children?: FileTreeNode[]; // For directories
+  isOpen?: boolean;          // Expand/collapse state
+}
+
+/** User-configurable editor settings */
+export interface EditorConfig {
+  fontSize: number;          // 10-20px
+  theme: 'light' | 'dark';  // Editor theme
+  wordWrap: boolean;         // Enable word wrap
+  lineNumbers: boolean;      // Show line numbers
+  tabSize: number;           // Tab size (2 or 4)
+}
+
+/** Current state of the code editor */
+export interface EditorState {
+  activeFile: string;                    // Currently open file path
+  files: Record<string, EditorFile>;     // All files by path
+  config: EditorConfig;                  // User preferences
+  isLoading: boolean;                    // Editor initialization state
+  error: Error | null;                   // Editor error state
+}
+
+/** Props for the CodeEditorPanel component */
+export interface CodeEditorPanelProps {
+  code: string | null;       // Raw prototype code (JSON string or single file)
+  onCodeChange?: (path: string, content: string) => void;
+  onClose?: () => void;
+  initialFile?: string;      // Optional initial file to open
+}
+
+/** Props for the FileTree component */
+export interface FileTreeProps {
+  files: Record<string, EditorFile>;
+  activeFile: string;
+  onFileSelect: (path: string) => void;
+}
+
+/** Props for the EditorSettings component */
+export interface EditorSettingsProps {
+  config: EditorConfig;
+  onChange: (config: Partial<EditorConfig>) => void;
+  onReset: () => void;
+}
+
+/** Default editor configuration */
+export const DEFAULT_EDITOR_CONFIG: EditorConfig = {
+  fontSize: 14,
+  theme: 'dark',
+  wordWrap: false,
+  lineNumbers: true,
+  tabSize: 2,
+};
+
+/** localStorage key for editor preferences */
+export const EDITOR_STORAGE_KEY = 'ideaspark_editor_preferences';
+
+/**
+ * Detect language from file path extension
+ */
+export function detectLanguage(filePath: string): string {
+  const extension = filePath.split('.').pop()?.toLowerCase();
+
+  const languageMap: Record<string, string> = {
+    'ts': 'typescript',
+    'tsx': 'typescript',
+    'js': 'javascript',
+    'jsx': 'javascript',
+    'css': 'css',
+    'html': 'html',
+    'json': 'json',
+    'md': 'markdown',
+  };
+
+  return languageMap[extension || ''] || 'javascript';
+}
+
+/**
+ * Parse prototype code string into editor files.
+ * Handles both JSON object format (multi-file) and plain string (single file).
+ */
+export function parsePrototypeCode(code: string | null): Record<string, EditorFile> {
+  if (!code) return {};
+
+  // Try parsing as JSON (multi-file format: { "/path": "content", ... })
+  try {
+    const parsed = JSON.parse(code);
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      const files: Record<string, EditorFile> = {};
+      for (const [path, content] of Object.entries(parsed)) {
+        if (typeof content === 'string') {
+          files[path] = {
+            path,
+            content,
+            language: detectLanguage(path),
+          };
+        }
+      }
+      if (Object.keys(files).length > 0) {
+        return files;
+      }
+    }
+  } catch {
+    // Not JSON, treat as single file
+  }
+
+  // Fallback: single file
+  return {
+    '/App.tsx': {
+      path: '/App.tsx',
+      content: code,
+      language: 'typescript',
+    },
+  };
+}
+
+/**
+ * Build a file tree structure from flat file paths.
+ */
+export function buildFileTree(files: Record<string, EditorFile>): FileTreeNode[] {
+  const root: FileTreeNode[] = [];
+  const dirMap = new Map<string, FileTreeNode>();
+
+  const sortedPaths = Object.keys(files).sort();
+
+  for (const filePath of sortedPaths) {
+    const parts = filePath.split('/').filter(Boolean);
+    let currentPath = '';
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const parentPath = currentPath;
+      currentPath = currentPath ? `${currentPath}/${part}` : `/${part}`;
+
+      if (i === parts.length - 1) {
+        // File node
+        const fileNode: FileTreeNode = {
+          name: part,
+          path: filePath,
+          type: 'file',
+        };
+
+        if (parentPath && dirMap.has(parentPath)) {
+          dirMap.get(parentPath)!.children!.push(fileNode);
+        } else {
+          root.push(fileNode);
+        }
+      } else {
+        // Directory node
+        if (!dirMap.has(currentPath)) {
+          const dirNode: FileTreeNode = {
+            name: part,
+            path: currentPath,
+            type: 'directory',
+            children: [],
+            isOpen: true,
+          };
+          dirMap.set(currentPath, dirNode);
+
+          if (parentPath && dirMap.has(parentPath)) {
+            dirMap.get(parentPath)!.children!.push(dirNode);
+          } else {
+            root.push(dirNode);
+          }
+        }
+      }
+    }
+  }
+
+  return root;
+}
+
 // Helper to convert DB row to app format
 export function mapPrototypeRow(row: PrototypeRow): Prototype {
   return {
