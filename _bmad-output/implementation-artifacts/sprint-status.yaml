@@ -124,10 +124,10 @@ development_status:
   epic-7-retrospective: optional
 
   # Epic 8: Prototype State Persistence
-  epic-8: in-progress
+  epic-8: done
   8-1-capture-prototype-state: done
   8-2-save-prototype-state-to-database: done
-  8-3-restore-prototype-state-on-return: backlog
+  8-3-restore-prototype-state-on-return: done
   epic-8-retrospective: optional
 
   # Epic 9: Public Prototype Sharing & Access Control

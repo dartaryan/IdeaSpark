@@ -151,6 +151,24 @@ vi.mock('../features/prototypes/hooks/useStatePersistence', () => ({
   useStatePersistence: () => mockStatePersistence,
 }));
 
+// Mock state restoration hook (Story 8.3)
+const mockStateRestoration = {
+  restorationStatus: 'idle' as 'idle' | 'restoring' | 'restored' | 'error',
+  restorationError: null as Error | null,
+  restoreNow: vi.fn(),
+};
+vi.mock('../features/prototypes/hooks/useStateRestoration', () => ({
+  useStateRestoration: () => mockStateRestoration,
+}));
+
+// Mock prototypeService for reset state (Story 8.3)
+const mockDeleteState = vi.fn();
+vi.mock('../features/prototypes/services/prototypeService', () => ({
+  prototypeService: {
+    deleteState: (...args: unknown[]) => mockDeleteState(...args),
+  },
+}));
+
 // Mock StatePersistenceIndicator (Story 8.2)
 vi.mock('../features/prototypes/components/StatePersistenceIndicator', () => ({
   StatePersistenceIndicator: ({ status, lastSavedAt: _lastSavedAt }: { status: string; lastSavedAt: Date | null }) => (
@@ -205,6 +223,12 @@ describe('PrototypeViewerPage', () => {
     mockStateBridge.isListening = false;
     mockStateBridge.lastError = null;
     mockStateBridge.lastUpdateTime = null;
+    // Reset state restoration mock (Story 8.3)
+    mockStateRestoration.restorationStatus = 'idle';
+    mockStateRestoration.restorationError = null;
+    mockStateRestoration.restoreNow = vi.fn();
+    // Reset delete state mock
+    mockDeleteState.mockResolvedValue({ data: null, error: null });
     // Mock useVersionHistory to return empty array by default
     vi.mocked(useVersionHistory).mockReturnValue({
       data: [],
@@ -758,6 +782,255 @@ describe('PrototypeViewerPage', () => {
         expect(indicator).toHaveAttribute('data-status', 'error');
         expect(indicator).toHaveTextContent('State save failed');
       });
+    });
+  });
+
+  // ===========================================================================
+  // Story 8.3: State Restoration & Reset Integration Tests
+  // ===========================================================================
+
+  describe('State Restoration (Story 8.3)', () => {
+    const mockSavedState = {
+      version: '1.0',
+      timestamp: '2026-02-07T10:00:00Z',
+      prototypeId: 'proto-1',
+      route: { pathname: '/dashboard', search: '', hash: '', state: null },
+      forms: {},
+      components: {},
+      localStorage: {},
+      metadata: {
+        captureDurationMs: 5,
+        serializedSizeBytes: 200,
+        capturedAt: '2026-02-07T10:00:00Z',
+        captureMethod: 'auto' as const,
+      },
+    };
+
+    function renderWithSavedState(savedState = mockSavedState) {
+      vi.mocked(usePrototype).mockReturnValue({
+        data: { ...mockPrototype, code: '{"App.tsx":"console.log()"}' },
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+        savedState,
+        stateLoadStatus: 'loaded',
+      } as any);
+
+      vi.mocked(useVersionHistory).mockReturnValue({
+        data: [{ ...mockPrototype, code: '{"App.tsx":"console.log()"}' }],
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+      } as any);
+
+      return render(<PrototypeViewerPage />);
+    }
+
+    function renderWithoutSavedState() {
+      vi.mocked(usePrototype).mockReturnValue({
+        data: { ...mockPrototype, code: '{"App.tsx":"console.log()"}' },
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+        savedState: null,
+        stateLoadStatus: 'loaded',
+      } as any);
+
+      vi.mocked(useVersionHistory).mockReturnValue({
+        data: [{ ...mockPrototype, code: '{"App.tsx":"console.log()"}' }],
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+      } as any);
+
+      return render(<PrototypeViewerPage />);
+    }
+
+    it('should not show reset button in view mode', () => {
+      renderWithSavedState();
+
+      expect(screen.queryByTestId('reset-state-btn')).not.toBeInTheDocument();
+    });
+
+    it('should show reset button in edit mode when saved state exists', async () => {
+      const user = userEvent.setup();
+      renderWithSavedState();
+
+      // Enter edit mode
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('reset-state-btn')).toBeInTheDocument();
+      });
+    });
+
+    it('should not show reset button in edit mode when no saved state', async () => {
+      const user = userEvent.setup();
+      renderWithoutSavedState();
+
+      // Enter edit mode
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('reset-state-btn')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show confirmation dialog before reset', async () => {
+      const user = userEvent.setup();
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      renderWithSavedState();
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('reset-state-btn')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId('reset-state-btn'));
+
+      expect(confirmSpy).toHaveBeenCalledWith(
+        'This will clear your saved prototype state and reload. Continue?',
+      );
+
+      confirmSpy.mockRestore();
+    });
+
+    it('should not call deleteState when user cancels confirmation', async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      renderWithSavedState();
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('reset-state-btn')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId('reset-state-btn'));
+
+      expect(mockDeleteState).not.toHaveBeenCalled();
+
+      vi.restoreAllMocks();
+    });
+
+    it('should call deleteState when user confirms reset', async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      mockDeleteState.mockResolvedValue({ data: null, error: null });
+      renderWithSavedState();
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('reset-state-btn')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId('reset-state-btn'));
+
+      await waitFor(() => {
+        expect(mockDeleteState).toHaveBeenCalledWith('proto-1');
+      });
+
+      vi.restoreAllMocks();
+    });
+
+    it('should hide reset button after successful reset (review fix H1)', async () => {
+      const user = userEvent.setup();
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      mockDeleteState.mockResolvedValue({ data: null, error: null });
+
+      // Mock usePrototype with clearSavedState that updates savedState
+      const mockClearSavedState = vi.fn();
+      vi.mocked(usePrototype).mockReturnValue({
+        data: { ...mockPrototype, code: '{"App.tsx":"console.log()"}' },
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+        savedState: mockSavedState,
+        stateLoadStatus: 'loaded',
+        clearSavedState: mockClearSavedState,
+      } as any);
+
+      vi.mocked(useVersionHistory).mockReturnValue({
+        data: [{ ...mockPrototype, code: '{"App.tsx":"console.log()"}' }],
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+      } as any);
+
+      render(<PrototypeViewerPage />);
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('reset-state-btn')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId('reset-state-btn'));
+
+      await waitFor(() => {
+        expect(mockClearSavedState).toHaveBeenCalled();
+      });
+
+      vi.restoreAllMocks();
+    });
+
+    it('should show restoration indicator when restoring', async () => {
+      mockStateRestoration.restorationStatus = 'restoring';
+
+      const user = userEvent.setup();
+      renderWithSavedState();
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('restoration-indicator')).toBeInTheDocument();
+        expect(screen.getByText(/restoring session/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should not show restoration indicator when idle', async () => {
+      mockStateRestoration.restorationStatus = 'idle';
+
+      const user = userEvent.setup();
+      renderWithSavedState();
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('restoration-indicator')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should not show restoration indicator when restored', async () => {
+      mockStateRestoration.restorationStatus = 'restored';
+
+      const user = userEvent.setup();
+      renderWithSavedState();
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('restoration-indicator')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should load prototype normally when no saved state exists (AC #2)', async () => {
+      renderWithoutSavedState();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('prototype-frame')).toBeInTheDocument();
+      });
+
+      // No reset button should be visible (view mode, no saved state)
+      expect(screen.queryByTestId('reset-state-btn')).not.toBeInTheDocument();
     });
   });
 });

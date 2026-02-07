@@ -11,7 +11,7 @@ import { ShareButton } from '../features/prototypes/components/ShareButton';
 import { CodeEditorPanel } from '../features/prototypes/components/CodeEditorPanel';
 import { SaveVersionModal } from '../features/prototypes/components/SaveVersionModal';
 import { VersionCompareModal } from '../features/prototypes/components/VersionCompareModal';
-import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save, ArrowLeft, Database, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save, ArrowLeft, Database, CheckCircle2, RotateCcw } from 'lucide-react';
 import { loadEditorWidth, saveEditorWidth } from '../features/prototypes/utils/editorHelpers';
 import { useCodePersistence } from '../features/prototypes/hooks/useCodePersistence';
 import type { SaveStatus } from '../features/prototypes/hooks/useCodePersistence';
@@ -20,6 +20,8 @@ import { useSandpackStateBridge } from '../features/prototypes/hooks/useSandpack
 import { useStateCapturePerformance } from '../features/prototypes/hooks/useStateCapturePerformance';
 import { useStatePersistence } from '../features/prototypes/hooks/useStatePersistence';
 import { StatePersistenceIndicator } from '../features/prototypes/components/StatePersistenceIndicator';
+import { useStateRestoration } from '../features/prototypes/hooks/useStateRestoration';
+import { prototypeService } from '../features/prototypes/services/prototypeService';
 
 // Lazy load SandpackLivePreview - only loads when edit mode is activated
 const SandpackLivePreview = lazy(() =>
@@ -199,7 +201,10 @@ export function PrototypeViewerPage() {
     document.addEventListener('mouseup', onMouseUp);
   }, [editorWidthPercent]);
 
-  const { data: prototype, isLoading, error } = usePrototype(prototypeId!);
+  const [isResetting, setIsResetting] = useState(false);
+  const [iframeKey, setIframeKey] = useState(() => Date.now());
+
+  const { data: prototype, isLoading, error, savedState, stateLoadStatus, clearSavedState } = usePrototype(prototypeId!);
   
   // Get version history if we have a prototype with prdId
   const { data: versionHistory } = useVersionHistory(prototype?.prdId || '');
@@ -261,6 +266,55 @@ export function PrototypeViewerPage() {
     capturedState,
     enabled: editMode, // Only persist when in edit mode (Subtask 5.4)
   });
+
+  // State restoration (Story 8.3) - restores saved state into Sandpack iframe
+  // iframeReady is signaled by first state capture update (indicates injector script is running)
+  const iframeReady = !!stateLastUpdateTime;
+  const {
+    restorationStatus,
+    restorationError,
+  } = useStateRestoration({
+    prototypeId: displayPrototype?.id ?? '',
+    savedState: stateLoadStatus === 'loaded' ? savedState : null,
+    enabled: editMode,
+    iframeReady,
+  });
+
+  // Show restoration toasts (Story 8.3, Task 4)
+  useEffect(() => {
+    if (restorationStatus === 'restored') {
+      toast.success('Session restored');
+    } else if (restorationStatus === 'error' && restorationError) {
+      toast.error('Failed to restore session. Starting fresh.');
+    }
+  }, [restorationStatus, restorationError]);
+
+  // Handle Reset State (Story 8.3, Task 5)
+  const handleResetState = useCallback(async () => {
+    const confirmed = window.confirm(
+      'This will clear your saved prototype state and reload. Continue?',
+    );
+    if (!confirmed) return;
+
+    setIsResetting(true);
+    try {
+      const result = await prototypeService.deleteState(displayPrototype?.id ?? '');
+      if (result.error) {
+        toast.error(`Failed to reset state: ${result.error.message}`);
+        return;
+      }
+
+      toast.success('State reset. Reloading prototype...');
+      // Clear local savedState so Reset button hides immediately (review fix H1)
+      clearSavedState();
+      // Remount Sandpack iframe by changing key
+      setIframeKey(Date.now());
+    } catch {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsResetting(false);
+    }
+  }, [displayPrototype?.id, clearSavedState]);
 
   // Handle Save Version flow (AC: #1, #3, #4)
   const handleSaveVersion = useCallback(
@@ -666,8 +720,36 @@ export function PrototypeViewerPage() {
                           lastSavedAt={stateLastSavedAt}
                         />
                       )}
+                      {/* Restoration indicator (Story 8.3, Task 4) */}
+                      {editMode && restorationStatus === 'restoring' && (
+                        <span
+                          className="flex items-center gap-1 text-xs text-info"
+                          aria-live="polite"
+                          data-testid="restoration-indicator"
+                        >
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Restoring session...
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
+                      {/* Reset State button (Story 8.3, Task 5) */}
+                      {editMode && savedState && (
+                        <button
+                          className="btn btn-sm btn-ghost gap-2"
+                          onClick={handleResetState}
+                          disabled={isResetting}
+                          aria-label="Reset to initial state"
+                          data-testid="reset-state-btn"
+                        >
+                          {isResetting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RotateCcw className="w-4 h-4" />
+                          )}
+                          <span className="hidden sm:inline">Reset State</span>
+                        </button>
+                      )}
                       {/* Exit Edit Mode button */}
                       {editMode && (
                         <button
@@ -761,6 +843,7 @@ export function PrototypeViewerPage() {
                         }
                       >
                         <SandpackLivePreview
+                          key={iframeKey}
                           files={editedFiles}
                           className="min-h-[500px]"
                           onError={handleSandpackError}

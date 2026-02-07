@@ -346,6 +346,102 @@ export function generateStateCaptureScript(prototypeId: string): string {
     });
   }
 
+  // ---------- State restoration handler (Story 8.3) ----------
+  window.addEventListener('message', function(event) {
+    if (!event.data || event.data.type !== 'RESTORE_STATE' || event.data.source !== 'ideaspark-parent') {
+      return;
+    }
+
+    var state = event.data.payload;
+    try {
+      // 1. Restore route state
+      if (state.route && state.route.pathname && state.route.pathname !== window.location.pathname) {
+        try {
+          var routeUrl = state.route.pathname + (state.route.search || '') + (state.route.hash || '');
+          history.pushState(state.route.state || null, '', routeUrl);
+        } catch (routeErr) {
+          console.debug('[StateCapture] Route restoration failed:', routeErr);
+        }
+      }
+
+      // 2. Restore form fields
+      if (state.forms && typeof state.forms === 'object') {
+        var fieldKeys = Object.keys(state.forms);
+        for (var fi = 0; fi < fieldKeys.length; fi++) {
+          var fieldKey = fieldKeys[fi];
+          var fieldData = state.forms[fieldKey];
+          try {
+            // Sanitize fieldKey for safe CSS selector usage (review fix M2)
+            var safeKey = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(fieldKey) : fieldKey.replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^{|}~])/g, '\\\\$1');
+            var field = document.querySelector('[name="' + safeKey + '"], #' + safeKey);
+            if (field) {
+              if (fieldData.type === 'checkbox' || fieldData.type === 'radio') {
+                field.checked = fieldData.checked || false;
+              } else if (fieldData.type === 'select' && field.tagName === 'SELECT') {
+                if (Array.isArray(fieldData.selectedOptions)) {
+                  for (var si = 0; si < field.options.length; si++) {
+                    field.options[si].selected = fieldData.selectedOptions.indexOf(field.options[si].value) >= 0;
+                  }
+                } else {
+                  field.value = String(fieldData.value);
+                }
+              } else {
+                field.value = String(fieldData.value || '');
+              }
+              // Trigger input event so frameworks detect the change
+              field.dispatchEvent(new Event('input', { bubbles: true }));
+              field.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          } catch (fieldErr) {
+            console.debug('[StateCapture] Form field restoration failed for key:', fieldKey, fieldErr);
+          }
+        }
+      }
+
+      // 3. Restore localStorage
+      if (state.localStorage && typeof state.localStorage === 'object') {
+        var lsKeys = Object.keys(state.localStorage);
+        for (var li = 0; li < lsKeys.length; li++) {
+          try {
+            localStorage.setItem(lsKeys[li], state.localStorage[lsKeys[li]]);
+          } catch (lsErr) {
+            console.debug('[StateCapture] localStorage restoration failed for key:', lsKeys[li], lsErr);
+          }
+        }
+      }
+
+      // 4. Restore component states via custom events
+      if (state.components && typeof state.components === 'object') {
+        var compKeys = Object.keys(state.components);
+        for (var ci = 0; ci < compKeys.length; ci++) {
+          try {
+            window.dispatchEvent(new CustomEvent('restore-component-state', {
+              detail: { key: compKeys[ci], state: state.components[compKeys[ci]] }
+            }));
+          } catch (compErr) {
+            console.debug('[StateCapture] Component state restoration failed for key:', compKeys[ci], compErr);
+          }
+        }
+      }
+
+      // 5. Send success acknowledgment
+      parent.postMessage({
+        type: 'RESTORE_STATE_ACK',
+        success: true,
+        source: 'sandpack-state-capture'
+      }, '*');
+    } catch (e) {
+      // 6. Send error acknowledgment
+      console.debug('[StateCapture] State restoration error:', e);
+      parent.postMessage({
+        type: 'RESTORE_STATE_ACK',
+        success: false,
+        error: String(e),
+        source: 'sandpack-state-capture'
+      }, '*');
+    }
+  });
+
   // ---------- Initial capture after DOM settles ----------
   setTimeout(function() {
     captureAndSend('auto');

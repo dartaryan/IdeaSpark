@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import {
@@ -18,6 +18,7 @@ vi.mock('../services/prototypeService', () => ({
     getByPrdId: vi.fn(),
     getLatestVersion: vi.fn(),
     getVersionHistory: vi.fn(),
+    getState: vi.fn(),
   },
 }));
 
@@ -60,6 +61,8 @@ describe('usePrototype', () => {
       },
     });
     vi.clearAllMocks();
+    // Default mock for getState (Story 8.3) - no saved state
+    mockPrototypeService.getState.mockResolvedValue({ data: null, error: null });
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -220,5 +223,181 @@ describe('useVersionHistory', () => {
 
     expect(result.current.isPending).toBe(true);
     expect(prototypeService.getVersionHistory).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// Story 8.3: State loading tests for usePrototype
+// ===========================================================================
+
+describe('usePrototype - saved state loading (Story 8.3)', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    });
+    vi.clearAllMocks();
+  });
+
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+
+  const mockSavedState = {
+    version: '1.0',
+    timestamp: '2026-02-07T10:00:00Z',
+    prototypeId: 'proto-123',
+    route: { pathname: '/dashboard', search: '', hash: '', state: null },
+    forms: {},
+    components: {},
+    localStorage: {},
+    metadata: {
+      captureDurationMs: 5,
+      serializedSizeBytes: 200,
+      capturedAt: '2026-02-07T10:00:00Z',
+      captureMethod: 'auto' as const,
+    },
+  };
+
+  it('should load saved state via getState() on mount', async () => {
+    mockPrototypeService.getById.mockResolvedValue({
+      data: mockPrototype,
+      error: null,
+    });
+    mockPrototypeService.getState.mockResolvedValue({
+      data: mockSavedState,
+      error: null,
+    });
+
+    const { result } = renderHook(() => usePrototype('proto-123'), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.stateLoadStatus).toBe('loaded');
+    });
+
+    expect(prototypeService.getState).toHaveBeenCalledWith('proto-123');
+    expect(result.current.savedState).toEqual(mockSavedState);
+  });
+
+  it('should set stateLoadStatus to loading initially', async () => {
+    mockPrototypeService.getById.mockResolvedValue({
+      data: mockPrototype,
+      error: null,
+    });
+    // Delay getState resolution to observe loading state
+    mockPrototypeService.getState.mockReturnValue(new Promise(() => {}));
+
+    const { result } = renderHook(() => usePrototype('proto-123'), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.stateLoadStatus).toBe('loading');
+    });
+  });
+
+  it('should handle getState() error gracefully', async () => {
+    mockPrototypeService.getById.mockResolvedValue({
+      data: mockPrototype,
+      error: null,
+    });
+    mockPrototypeService.getState.mockResolvedValue({
+      data: null,
+      error: { message: 'DB connection failed', code: 'DB_ERROR' },
+    });
+
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { result } = renderHook(() => usePrototype('proto-123'), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.stateLoadStatus).toBe('error');
+    });
+
+    expect(result.current.savedState).toBeNull();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      'Failed to load saved state:',
+      'DB connection failed',
+    );
+
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('should return null savedState when no state exists', async () => {
+    mockPrototypeService.getById.mockResolvedValue({
+      data: mockPrototype,
+      error: null,
+    });
+    mockPrototypeService.getState.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
+    const { result } = renderHook(() => usePrototype('proto-123'), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.stateLoadStatus).toBe('loaded');
+    });
+
+    expect(result.current.savedState).toBeNull();
+  });
+
+  it('should not call getState when id is empty', () => {
+    const { result } = renderHook(() => usePrototype(''), { wrapper });
+
+    expect(result.current.stateLoadStatus).toBe('idle');
+    expect(prototypeService.getState).not.toHaveBeenCalled();
+  });
+
+  it('should discard state that fails schema validation (review fix H2)', async () => {
+    mockPrototypeService.getById.mockResolvedValue({
+      data: mockPrototype,
+      error: null,
+    });
+    // Return invalid state (missing required fields)
+    mockPrototypeService.getState.mockResolvedValue({
+      data: { version: '1.0', timestamp: 'now' } as any, // Invalid: missing route, forms, etc.
+      error: null,
+    });
+
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { result } = renderHook(() => usePrototype('proto-123'), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.stateLoadStatus).toBe('loaded');
+    });
+
+    expect(result.current.savedState).toBeNull();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      'Loaded state failed schema validation, discarding',
+    );
+
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('should expose clearSavedState that resets savedState to null (review fix H1)', async () => {
+    mockPrototypeService.getById.mockResolvedValue({
+      data: mockPrototype,
+      error: null,
+    });
+    mockPrototypeService.getState.mockResolvedValue({
+      data: mockSavedState,
+      error: null,
+    });
+
+    const { result } = renderHook(() => usePrototype('proto-123'), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.savedState).toEqual(mockSavedState);
+    });
+
+    // Call clearSavedState
+    act(() => {
+      result.current.clearSavedState();
+    });
+
+    expect(result.current.savedState).toBeNull();
   });
 });
