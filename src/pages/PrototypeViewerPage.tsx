@@ -18,6 +18,8 @@ import type { SaveStatus } from '../features/prototypes/hooks/useCodePersistence
 import { useSaveVersion } from '../features/prototypes/hooks/useSaveVersion';
 import { useSandpackStateBridge } from '../features/prototypes/hooks/useSandpackStateBridge';
 import { useStateCapturePerformance } from '../features/prototypes/hooks/useStateCapturePerformance';
+import { useStatePersistence } from '../features/prototypes/hooks/useStatePersistence';
+import { StatePersistenceIndicator } from '../features/prototypes/components/StatePersistenceIndicator';
 
 // Lazy load SandpackLivePreview - only loads when edit mode is activated
 const SandpackLivePreview = lazy(() =>
@@ -238,7 +240,7 @@ export function PrototypeViewerPage() {
 
   // State capture bridge (Story 8.1) - active in edit mode (Sandpack live preview)
   const {
-    capturedState: _capturedState, // Stored for future Story 8.2 (database persistence)
+    capturedState, // Used by Story 8.2 for database persistence
     isListening: isStateCaptureActive,
     lastError: stateCaptureError,
     lastUpdateTime: stateLastUpdateTime,
@@ -248,6 +250,16 @@ export function PrototypeViewerPage() {
     onError: (err) => {
       console.debug('[PrototypeViewer] State capture error:', err.message);
     },
+  });
+
+  // State persistence (Story 8.2) - auto-saves captured state to database
+  const {
+    saveStatus: statePersistenceStatus,
+    lastSavedAt: stateLastSavedAt,
+  } = useStatePersistence({
+    prototypeId: displayPrototype?.id ?? '',
+    capturedState,
+    enabled: editMode, // Only persist when in edit mode (Subtask 5.4)
   });
 
   // Handle Save Version flow (AC: #1, #3, #4)
@@ -645,6 +657,13 @@ export function PrototypeViewerPage() {
                           isActive={isStateCaptureActive}
                           lastUpdateTime={stateLastUpdateTime}
                           hasError={!!stateCaptureError}
+                        />
+                      )}
+                      {/* State persistence indicator (Story 8.2, Task 4) */}
+                      {editMode && (
+                        <StatePersistenceIndicator
+                          status={statePersistenceStatus}
+                          lastSavedAt={stateLastSavedAt}
                         />
                       )}
                     </div>

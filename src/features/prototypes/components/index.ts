@@ -20,3 +20,5 @@ export { SandpackLivePreview } from './SandpackLivePreview';
 export { SaveVersionModal } from './SaveVersionModal';
 // Version Compare Modal (Story 7.5)
 export { VersionCompareModal } from './VersionCompareModal';
+// State Persistence Indicator (Story 8.2)
+export { StatePersistenceIndicator } from './StatePersistenceIndicator';

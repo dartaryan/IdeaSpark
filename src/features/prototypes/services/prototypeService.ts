@@ -11,6 +11,8 @@ import type {
   PrototypeStatus 
 } from '../types';
 import { mapPrototypeRow } from '../types';
+import type { PrototypeState } from '../types/prototypeState';
+import { validateStateSchema } from '../types/prototypeState';
 
 export const prototypeService = {
   /**
@@ -579,6 +581,128 @@ export const prototypeService = {
           code: 'UNKNOWN_ERROR' 
         },
       };
+    }
+  },
+
+  // =========================================================================
+  // Prototype State Persistence (Story 8.2)
+  // =========================================================================
+
+  /**
+   * Save (upsert) prototype interaction state to the database.
+   * Uses upsert with onConflict on (prototype_id, user_id) to ensure
+   * only one state row exists per user per prototype.
+   *
+   * @param prototypeId - The prototype ID to save state for
+   * @param state - The captured PrototypeState to persist
+   * @returns ServiceResponse with void data on success
+   */
+  async saveState(prototypeId: string, state: PrototypeState): Promise<ServiceResponse<void>> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        return { data: null, error: { message: 'Not authenticated', code: 'AUTH_ERROR' } };
+      }
+
+      // Validate state schema before saving
+      if (!validateStateSchema(state)) {
+        return { data: null, error: { message: 'Invalid state schema', code: 'VALIDATION_ERROR' } };
+      }
+
+      const { error } = await supabase
+        .from('prototype_states')
+        .upsert(
+          {
+            prototype_id: prototypeId,
+            user_id: userData.user.id,
+            state: state as unknown as Record<string, unknown>,
+          },
+          { onConflict: 'prototype_id,user_id' }
+        );
+
+      if (error) {
+        console.error('Save prototype state error:', error);
+        return { data: null, error: { message: error.message, code: 'DB_ERROR' } };
+      }
+
+      return { data: null, error: null };
+    } catch (error) {
+      console.error('Save prototype state error:', error);
+      return { data: null, error: { message: 'Failed to save state', code: 'UNKNOWN_ERROR' } };
+    }
+  },
+
+  /**
+   * Load saved prototype interaction state for the current user.
+   *
+   * @param prototypeId - The prototype ID to load state for
+   * @returns ServiceResponse with PrototypeState or null if none saved
+   */
+  async getState(prototypeId: string): Promise<ServiceResponse<PrototypeState | null>> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        return { data: null, error: { message: 'Not authenticated', code: 'AUTH_ERROR' } };
+      }
+
+      const { data, error } = await supabase
+        .from('prototype_states')
+        .select('state')
+        .eq('prototype_id', prototypeId)
+        .eq('user_id', userData.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Get prototype state error:', error);
+        return { data: null, error: { message: error.message, code: 'DB_ERROR' } };
+      }
+
+      if (!data) {
+        return { data: null, error: null }; // No saved state — not an error
+      }
+
+      // Validate the loaded state schema
+      const parsed = data.state as unknown as PrototypeState;
+      if (!validateStateSchema(parsed)) {
+        return { data: null, error: { message: 'Saved state has invalid schema', code: 'VALIDATION_ERROR' } };
+      }
+
+      return { data: parsed, error: null };
+    } catch (error) {
+      console.error('Get prototype state error:', error);
+      return { data: null, error: { message: 'Failed to load state', code: 'UNKNOWN_ERROR' } };
+    }
+  },
+
+  /**
+   * Delete saved prototype interaction state for the current user.
+   * Useful when switching prototype versions or cleaning up.
+   *
+   * @param prototypeId - The prototype ID to delete state for
+   * @returns ServiceResponse with void data on success
+   */
+  async deleteState(prototypeId: string): Promise<ServiceResponse<void>> {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        return { data: null, error: { message: 'Not authenticated', code: 'AUTH_ERROR' } };
+      }
+
+      const { error } = await supabase
+        .from('prototype_states')
+        .delete()
+        .eq('prototype_id', prototypeId)
+        .eq('user_id', userData.user.id);
+
+      if (error) {
+        console.error('Delete prototype state error:', error);
+        return { data: null, error: { message: error.message, code: 'DB_ERROR' } };
+      }
+
+      return { data: null, error: null };
+    } catch (error) {
+      console.error('Delete prototype state error:', error);
+      return { data: null, error: { message: 'Failed to delete state', code: 'UNKNOWN_ERROR' } };
     }
   },
 };

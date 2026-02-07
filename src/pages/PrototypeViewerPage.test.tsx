@@ -140,6 +140,29 @@ vi.mock('../features/prototypes/hooks/useStateCapturePerformance', () => ({
   }),
 }));
 
+// Mock state persistence hook (Story 8.2)
+const mockStatePersistence = {
+  saveStatus: 'idle' as 'idle' | 'saving' | 'saved' | 'error',
+  lastSavedAt: null as Date | null,
+  lastError: null as Error | null,
+  saveNow: vi.fn(),
+};
+vi.mock('../features/prototypes/hooks/useStatePersistence', () => ({
+  useStatePersistence: () => mockStatePersistence,
+}));
+
+// Mock StatePersistenceIndicator (Story 8.2)
+vi.mock('../features/prototypes/components/StatePersistenceIndicator', () => ({
+  StatePersistenceIndicator: ({ status, lastSavedAt: _lastSavedAt }: { status: string; lastSavedAt: Date | null }) => (
+    <span data-testid="state-persistence-indicator" data-status={status}>
+      {status === 'saving' && 'Saving...'}
+      {status === 'saved' && 'State saved'}
+      {status === 'error' && 'State save failed'}
+      {status === 'idle' && 'State sync idle'}
+    </span>
+  ),
+}));
+
 const mockPrototype: Prototype = {
   id: 'proto-1',
   prdId: 'prd-1',
@@ -630,6 +653,110 @@ describe('PrototypeViewerPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/state capture paused/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ===========================================================================
+  // Story 8.2: State Persistence Integration Tests
+  // ===========================================================================
+
+  describe('State Persistence (Story 8.2)', () => {
+    function renderWithCodeForPersistence() {
+      vi.mocked(usePrototype).mockReturnValue({
+        data: { ...mockPrototype, code: '{"App.tsx":"console.log()"}' },
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+      } as any);
+
+      vi.mocked(useVersionHistory).mockReturnValue({
+        data: [{ ...mockPrototype, code: '{"App.tsx":"console.log()"}' }],
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+      } as any);
+
+      return render(<PrototypeViewerPage />);
+    }
+
+    beforeEach(() => {
+      // Reset state persistence mock
+      mockStatePersistence.saveStatus = 'idle';
+      mockStatePersistence.lastSavedAt = null;
+      mockStatePersistence.lastError = null;
+      mockStatePersistence.saveNow = vi.fn();
+
+      // Ensure edit mode mocks
+      mockStateBridge.isListening = true;
+      mockStateBridge.lastError = null;
+      mockStateBridge.lastUpdateTime = Date.now();
+    });
+
+    it('renders StatePersistenceIndicator in edit mode', async () => {
+      const user = userEvent.setup();
+      renderWithCodeForPersistence();
+
+      // Enter edit mode
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('state-persistence-indicator')).toBeInTheDocument();
+      });
+    });
+
+    it('does NOT render StatePersistenceIndicator in view mode', () => {
+      renderWithCodeForPersistence();
+
+      expect(screen.queryByTestId('state-persistence-indicator')).not.toBeInTheDocument();
+    });
+
+    it('shows "Saving..." when state is being saved', async () => {
+      mockStatePersistence.saveStatus = 'saving';
+
+      const user = userEvent.setup();
+      renderWithCodeForPersistence();
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        const indicator = screen.getByTestId('state-persistence-indicator');
+        expect(indicator).toHaveAttribute('data-status', 'saving');
+        expect(indicator).toHaveTextContent('Saving...');
+      });
+    });
+
+    it('shows "State saved" after successful save', async () => {
+      mockStatePersistence.saveStatus = 'saved';
+      mockStatePersistence.lastSavedAt = new Date();
+
+      const user = userEvent.setup();
+      renderWithCodeForPersistence();
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        const indicator = screen.getByTestId('state-persistence-indicator');
+        expect(indicator).toHaveAttribute('data-status', 'saved');
+        expect(indicator).toHaveTextContent('State saved');
+      });
+    });
+
+    it('shows "State save failed" on error', async () => {
+      mockStatePersistence.saveStatus = 'error';
+      mockStatePersistence.lastError = new Error('Save failed');
+
+      const user = userEvent.setup();
+      renderWithCodeForPersistence();
+
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        const indicator = screen.getByTestId('state-persistence-indicator');
+        expect(indicator).toHaveAttribute('data-status', 'error');
+        expect(indicator).toHaveTextContent('State save failed');
       });
     });
   });

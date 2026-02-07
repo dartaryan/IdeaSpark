@@ -3,6 +3,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { prototypeService } from './prototypeService';
 import { supabase } from '../../../lib/supabase';
+import { createEmptyPrototypeState } from '../types/prototypeState';
+import type { PrototypeState } from '../types/prototypeState';
 
 // Mock the supabase client
 vi.mock('../../../lib/supabase', () => ({
@@ -484,6 +486,301 @@ describe('prototypeService', () => {
       expect(result.error).toEqual({
         message: 'Failed to get share URL',
         code: 'DB_ERROR',
+      });
+    });
+  });
+
+  // =========================================================================
+  // State Persistence (Story 8.2)
+  // =========================================================================
+
+  describe('saveState', () => {
+    const mockValidState = createEmptyPrototypeState('proto-789');
+
+    it('upserts state to database for authenticated user', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: mockUser,
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.saveState('proto-789', mockValidState);
+
+      expect(result.error).toBeNull();
+      expect(supabase.from).toHaveBeenCalledWith('prototype_states');
+      expect(mockFromChain.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          prototype_id: 'proto-789',
+          user_id: 'user-123',
+          state: mockValidState,
+        }),
+        { onConflict: 'prototype_id,user_id' },
+      );
+    });
+
+    it('validates state schema before saving', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: mockUser,
+        error: null,
+      } as any);
+
+      const invalidState = { invalid: 'data' } as unknown as PrototypeState;
+      const result = await prototypeService.saveState('proto-789', invalidState);
+
+      expect(result.error).toEqual({
+        message: 'Invalid state schema',
+        code: 'VALIDATION_ERROR',
+      });
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
+    it('returns auth error when not authenticated', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: null },
+        error: null,
+      } as any);
+
+      const result = await prototypeService.saveState('proto-789', mockValidState);
+
+      expect(result.error).toEqual({
+        message: 'Not authenticated',
+        code: 'AUTH_ERROR',
+      });
+    });
+
+    it('returns DB error when upsert fails', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: mockUser,
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        upsert: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Upsert failed', code: 'DB_ERROR' },
+        }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.saveState('proto-789', mockValidState);
+
+      expect(result.error).toEqual({
+        message: 'Upsert failed',
+        code: 'DB_ERROR',
+      });
+    });
+
+    it('handles unexpected errors gracefully', async () => {
+      vi.mocked(supabase.auth.getUser).mockRejectedValue(new Error('Network error'));
+
+      const result = await prototypeService.saveState('proto-789', mockValidState);
+
+      expect(result.error).toEqual({
+        message: 'Failed to save state',
+        code: 'UNKNOWN_ERROR',
+      });
+    });
+  });
+
+  describe('getState', () => {
+    const mockValidState = createEmptyPrototypeState('proto-789');
+
+    it('loads saved state for authenticated user', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: mockUser,
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: { state: mockValidState },
+          error: null,
+        }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getState('proto-789');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual(mockValidState);
+      expect(supabase.from).toHaveBeenCalledWith('prototype_states');
+      expect(mockFromChain.eq).toHaveBeenCalledWith('prototype_id', 'proto-789');
+      expect(mockFromChain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+    });
+
+    it('returns null when no saved state exists', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: mockUser,
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: null,
+          error: null,
+        }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getState('proto-789');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBeNull();
+    });
+
+    it('validates schema of loaded state', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: mockUser,
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: { state: { corrupted: 'data' } },
+          error: null,
+        }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getState('proto-789');
+
+      expect(result.error).toEqual({
+        message: 'Saved state has invalid schema',
+        code: 'VALIDATION_ERROR',
+      });
+      expect(result.data).toBeNull();
+    });
+
+    it('returns auth error when not authenticated', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: null },
+        error: null,
+      } as any);
+
+      const result = await prototypeService.getState('proto-789');
+
+      expect(result.error).toEqual({
+        message: 'Not authenticated',
+        code: 'AUTH_ERROR',
+      });
+    });
+
+    it('returns DB error when query fails', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: mockUser,
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Query failed', code: 'DB_ERROR' },
+        }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getState('proto-789');
+
+      expect(result.error).toEqual({
+        message: 'Query failed',
+        code: 'DB_ERROR',
+      });
+    });
+
+    it('handles unexpected errors gracefully', async () => {
+      vi.mocked(supabase.auth.getUser).mockRejectedValue(new Error('Network error'));
+
+      const result = await prototypeService.getState('proto-789');
+
+      expect(result.error).toEqual({
+        message: 'Failed to load state',
+        code: 'UNKNOWN_ERROR',
+      });
+    });
+  });
+
+  describe('deleteState', () => {
+    it('deletes state row for authenticated user', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: mockUser,
+        error: null,
+      } as any);
+
+      // Chain: from().delete().eq('prototype_id', ...).eq('user_id', ...)
+      const secondEq = vi.fn().mockResolvedValue({ data: null, error: null });
+      const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
+      const mockFromChain = {
+        delete: vi.fn().mockReturnValue({ eq: firstEq }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.deleteState('proto-789');
+
+      expect(result.error).toBeNull();
+      expect(supabase.from).toHaveBeenCalledWith('prototype_states');
+      expect(mockFromChain.delete).toHaveBeenCalled();
+      expect(firstEq).toHaveBeenCalledWith('prototype_id', 'proto-789');
+      expect(secondEq).toHaveBeenCalledWith('user_id', 'user-123');
+    });
+
+    it('returns auth error when not authenticated', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: null },
+        error: null,
+      } as any);
+
+      const result = await prototypeService.deleteState('proto-789');
+
+      expect(result.error).toEqual({
+        message: 'Not authenticated',
+        code: 'AUTH_ERROR',
+      });
+    });
+
+    it('returns DB error when delete fails', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: mockUser,
+        error: null,
+      } as any);
+
+      const secondEq = vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Delete failed', code: 'DB_ERROR' },
+      });
+      const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
+      const mockFromChain = {
+        delete: vi.fn().mockReturnValue({ eq: firstEq }),
+      };
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.deleteState('proto-789');
+
+      expect(result.error).toEqual({
+        message: 'Delete failed',
+        code: 'DB_ERROR',
+      });
+    });
+
+    it('handles unexpected errors gracefully', async () => {
+      vi.mocked(supabase.auth.getUser).mockRejectedValue(new Error('Network error'));
+
+      const result = await prototypeService.deleteState('proto-789');
+
+      expect(result.error).toEqual({
+        message: 'Failed to delete state',
+        code: 'UNKNOWN_ERROR',
       });
     });
   });
