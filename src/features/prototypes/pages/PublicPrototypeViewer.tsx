@@ -1,11 +1,13 @@
 // src/features/prototypes/pages/PublicPrototypeViewer.tsx
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePublicPrototype } from '../hooks/usePublicPrototype';
+import { prototypeService } from '../services/prototypeService';
 import { PasswordProtectedViewer } from './PasswordProtectedViewer';
 
 type DeviceSize = 'desktop' | 'tablet' | 'mobile';
+type LinkStatus = 'loading' | 'expired' | 'revoked' | 'not_found' | 'not_public' | 'valid' | 'error';
 
 const DEVICE_SIZES = {
   desktop: { width: '100%', height: '100%', label: 'Desktop' },
@@ -23,14 +25,46 @@ export function PublicPrototypeViewer() {
     }
     return false;
   });
+  const [linkStatus, setLinkStatus] = useState<LinkStatus>('loading');
 
   const { data: prototype, isLoading, error } = usePublicPrototype(shareId);
+
+  // When the prototype fetch fails, check the link status to determine why
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (isLoading) {
+      setLinkStatus('loading');
+      return;
+    }
+
+    if (prototype) {
+      setLinkStatus('valid');
+      return;
+    }
+
+    if ((error || !prototype) && shareId) {
+      // Prototype not found via normal query — check link status via RPC
+      prototypeService.checkShareLinkStatus(shareId).then((result) => {
+        if (isCancelled) return; // Component unmounted or deps changed
+        if (result.error || !result.data) {
+          setLinkStatus('not_found');
+        } else {
+          setLinkStatus(result.data as LinkStatus);
+        }
+      });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [prototype, isLoading, error, shareId]);
 
   const handlePasswordVerified = useCallback(() => {
     setPasswordVerified(true);
   }, []);
 
-  if (isLoading) {
+  if (isLoading || linkStatus === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-base-200">
         <div className="text-center">
@@ -41,9 +75,82 @@ export function PublicPrototypeViewer() {
     );
   }
 
+  // Expired link page
+  if (linkStatus === 'expired') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-base-200" data-testid="expired-link-page">
+        <div className="card bg-base-100 shadow-xl max-w-md">
+          <div className="card-body text-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-16 w-16 mx-auto text-warning"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <h2 className="card-title justify-center mt-4">Link Expired</h2>
+            <p className="text-base-content/70">
+              This shared prototype link has expired and is no longer accessible.
+            </p>
+            <p className="text-base-content/50 text-sm mt-2">
+              Contact the person who shared this link to request a new one.
+            </p>
+            <div className="card-actions justify-center mt-4">
+              <a href="/" className="btn btn-primary">
+                Go to IdeaSpark
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Revoked link page (future-proofing for Story 9.5)
+  if (linkStatus === 'revoked') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-base-200" data-testid="revoked-link-page">
+        <div className="card bg-base-100 shadow-xl max-w-md">
+          <div className="card-body text-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-16 w-16 mx-auto text-error"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+              />
+            </svg>
+            <h2 className="card-title justify-center mt-4">Access Revoked</h2>
+            <p className="text-base-content/70">
+              Access to this shared prototype has been revoked by the owner.
+            </p>
+            <div className="card-actions justify-center mt-4">
+              <a href="/" className="btn btn-primary">
+                Go to IdeaSpark
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error || !prototype) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-base-200">
+      <div className="flex items-center justify-center min-h-screen bg-base-200" data-testid="not-found-page">
         <div className="card bg-base-100 shadow-xl max-w-md">
           <div className="card-body text-center">
             <svg

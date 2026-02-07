@@ -436,7 +436,8 @@ export const prototypeService = {
         }
       }, 0);
 
-      // Map to PublicPrototype - NEVER expose password_hash to client
+      // Map to PublicPrototype - NEVER expose password_hash or expires_at to client.
+      // RLS blocks expired prototypes, so if we reach here the link is valid.
       const publicPrototype: PublicPrototype = {
         id: data.id,
         url: data.url,
@@ -466,7 +467,7 @@ export const prototypeService = {
    * @param prototypeId - The prototype ID
    * @returns Share stats object or null if not shared
    */
-  async getShareStats(prototypeId: string): Promise<ServiceResponse<{ viewCount: number; sharedAt: string | null; isPublic: boolean } | null>> {
+  async getShareStats(prototypeId: string): Promise<ServiceResponse<{ viewCount: number; sharedAt: string | null; isPublic: boolean; expiresAt: string | null } | null>> {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -479,7 +480,7 @@ export const prototypeService = {
 
       const { data, error } = await supabase
         .from('prototypes')
-        .select('view_count, shared_at, is_public')
+        .select('view_count, shared_at, is_public, expires_at')
         .eq('id', prototypeId)
         .eq('user_id', session.user.id)
         .single();
@@ -503,6 +504,7 @@ export const prototypeService = {
           viewCount: data.view_count ?? 0,
           sharedAt: data.shared_at,
           isPublic: data.is_public ?? false,
+          expiresAt: data.expires_at ?? null,
         },
         error: null,
       };
@@ -776,6 +778,95 @@ export const prototypeService = {
         data: null,
         error: {
           message: 'Failed to get password status',
+          code: 'UNKNOWN_ERROR',
+        },
+      };
+    }
+  },
+
+  // =========================================================================
+  // Link Expiration (Story 9.3)
+  // =========================================================================
+
+  /**
+   * Set or remove the expiration on a shared prototype link.
+   *
+   * @param prototypeId - The prototype ID
+   * @param expiresAt - ISO 8601 timestamp for expiration, or null to remove (never expires)
+   * @returns ServiceResponse with void data
+   */
+  async setShareExpiration(prototypeId: string, expiresAt: string | null): Promise<ServiceResponse<void>> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      const { error } = await supabase
+        .from('prototypes')
+        .update({ expires_at: expiresAt })
+        .eq('id', prototypeId)
+        .eq('user_id', session.user.id); // Ensure ownership
+
+      if (error) {
+        console.error('Set share expiration error:', error);
+        return {
+          data: null,
+          error: {
+            message: 'Failed to update link expiration',
+            code: 'DB_ERROR',
+          },
+        };
+      }
+
+      return { data: undefined, error: null };
+    } catch (error) {
+      console.error('Set share expiration error:', error);
+      return {
+        data: null,
+        error: {
+          message: 'Failed to update link expiration',
+          code: 'UNKNOWN_ERROR',
+        },
+      };
+    }
+  },
+
+  /**
+   * Check the status of a share link by its share_id.
+   * Uses a SECURITY DEFINER RPC function that bypasses RLS
+   * to determine why a link might be inaccessible.
+   *
+   * @param shareId - The share_id UUID from the URL
+   * @returns Status string: 'valid' | 'expired' | 'revoked' | 'not_found' | 'not_public'
+   */
+  async checkShareLinkStatus(shareId: string): Promise<ServiceResponse<string>> {
+    try {
+      const { data, error } = await supabase
+        .rpc('check_share_link_status', { p_share_id: shareId });
+
+      if (error) {
+        console.error('Check share link status error:', error);
+        return {
+          data: null,
+          error: {
+            message: 'Failed to check link status',
+            code: 'DB_ERROR',
+          },
+        };
+      }
+
+      return { data: data as string, error: null };
+    } catch (error) {
+      console.error('Check share link status error:', error);
+      return {
+        data: null,
+        error: {
+          message: 'Failed to check link status',
           code: 'UNKNOWN_ERROR',
         },
       };

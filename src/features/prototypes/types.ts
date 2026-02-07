@@ -72,6 +72,8 @@ export interface UpdatePrototypeInput {
 }
 
 // Public prototype type (subset of fields exposed publicly)
+// NOTE: expiresAt/isExpired intentionally excluded — RLS blocks expired prototypes,
+// and exposing the raw timestamp to unauthenticated viewers leaks owner configuration.
 export interface PublicPrototype {
   id: string;
   url: string | null;
@@ -82,6 +84,13 @@ export interface PublicPrototype {
   /** Whether the prototype is password-protected (derived from password_hash !== null) */
   hasPassword: boolean;
 }
+
+// =============================================
+// Link Expiration Types (Story 9.3)
+// =============================================
+
+/** Duration options for share link expiration */
+export type ExpirationDuration = 'never' | '24h' | '7d' | '30d';
 
 // =============================================
 // Code Editor Types (Story 7.1)

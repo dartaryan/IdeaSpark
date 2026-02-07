@@ -278,7 +278,7 @@ describe('ShareButton', () => {
     });
 
     vi.mocked(prototypeService.getShareStats).mockResolvedValue({
-      data: { viewCount: 42, sharedAt: '2026-01-15T10:00:00Z', isPublic: true },
+      data: { viewCount: 42, sharedAt: '2026-01-15T10:00:00Z', isPublic: true, expiresAt: null },
       error: null,
     });
 
@@ -308,7 +308,7 @@ describe('ShareButton', () => {
     });
 
     vi.mocked(prototypeService.getShareStats).mockResolvedValue({
-      data: { viewCount: 5, sharedAt: '2026-01-15T10:00:00Z', isPublic: true },
+      data: { viewCount: 5, sharedAt: '2026-01-15T10:00:00Z', isPublic: true, expiresAt: null },
       error: null,
     });
 
@@ -356,7 +356,7 @@ describe('ShareButton', () => {
 
   it('should not display stats section when prototype is not shared', async () => {
     vi.mocked(prototypeService.getShareStats).mockResolvedValue({
-      data: { viewCount: 0, sharedAt: null, isPublic: false },
+      data: { viewCount: 0, sharedAt: null, isPublic: false, expiresAt: null },
       error: null,
     });
 
@@ -429,14 +429,14 @@ describe('ShareButton', () => {
   // =============================================
 
   describe('Password Protection', () => {
-    const setupSharedPrototype = () => {
+    const setupSharedPrototype = (overrides?: { expiresAt?: string | null }) => {
       const shareUrl = 'https://ideaspark.example.com/share/prototype/share-uuid-123';
       vi.mocked(prototypeService.getShareUrl).mockResolvedValue({
         data: shareUrl,
         error: null,
       });
       vi.mocked(prototypeService.getShareStats).mockResolvedValue({
-        data: { viewCount: 5, sharedAt: '2026-01-15T10:00:00Z', isPublic: true },
+        data: { viewCount: 5, sharedAt: '2026-01-15T10:00:00Z', isPublic: true, expiresAt: overrides?.expiresAt ?? null },
         error: null,
       });
       vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
@@ -628,6 +628,145 @@ describe('ShareButton', () => {
       await waitFor(() => {
         expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
       });
+    });
+  });
+
+  // =============================================
+  // Story 9.3 - Link Expiration Tests
+  // =============================================
+
+  describe('Link Expiration', () => {
+    const setupSharedPrototypeForExpiration = (overrides?: { expiresAt?: string | null }) => {
+      const shareUrl = 'https://ideaspark.example.com/share/prototype/share-uuid-123';
+      vi.mocked(prototypeService.getShareUrl).mockResolvedValue({
+        data: shareUrl,
+        error: null,
+      });
+      vi.mocked(prototypeService.getShareStats).mockResolvedValue({
+        data: {
+          viewCount: 5,
+          sharedAt: '2026-01-15T10:00:00Z',
+          isPublic: true,
+          expiresAt: overrides?.expiresAt ?? null,
+        },
+        error: null,
+      });
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+      queryClient.setQueryData(['shareUrl', 'proto-123'], shareUrl);
+      return shareUrl;
+    };
+
+    const openShareModalForExpiration = async () => {
+      renderComponent();
+
+      await waitFor(() => {
+        expect(prototypeService.getShareUrl).toHaveBeenCalledWith('proto-123');
+      });
+
+      const shareButton = screen.getByRole('button', { name: /share publicly/i });
+      fireEvent.click(shareButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Link Expiration')).toBeInTheDocument();
+      });
+    };
+
+    it('should show expiration select dropdown in share modal', async () => {
+      setupSharedPrototypeForExpiration();
+      await openShareModalForExpiration();
+
+      const select = screen.getByTestId('expiration-select');
+      expect(select).toBeInTheDocument();
+    });
+
+    it('should show all expiration options in dropdown', async () => {
+      setupSharedPrototypeForExpiration();
+      await openShareModalForExpiration();
+
+      expect(screen.getByText('Never expires')).toBeInTheDocument();
+      expect(screen.getByText('24 hours')).toBeInTheDocument();
+      expect(screen.getByText('7 days')).toBeInTheDocument();
+      expect(screen.getByText('30 days')).toBeInTheDocument();
+    });
+
+    it('should show Update Expiration button', async () => {
+      setupSharedPrototypeForExpiration();
+      await openShareModalForExpiration();
+
+      const updateBtn = screen.getByTestId('update-expiration-btn');
+      expect(updateBtn).toBeInTheDocument();
+      expect(updateBtn).toHaveTextContent('Update Expiration');
+    });
+
+    it('should allow selecting a different expiration duration', async () => {
+      setupSharedPrototypeForExpiration();
+      await openShareModalForExpiration();
+
+      const select = screen.getByTestId('expiration-select');
+      fireEvent.change(select, { target: { value: '7d' } });
+
+      expect(select).toHaveValue('7d');
+    });
+
+    it('should call setShareExpiration when Update Expiration is clicked', async () => {
+      setupSharedPrototypeForExpiration();
+      vi.mocked(prototypeService.setShareExpiration).mockResolvedValue({
+        data: undefined,
+        error: null,
+      });
+
+      await openShareModalForExpiration();
+
+      const select = screen.getByTestId('expiration-select');
+      fireEvent.change(select, { target: { value: '7d' } });
+
+      const updateBtn = screen.getByTestId('update-expiration-btn');
+      fireEvent.click(updateBtn);
+
+      await waitFor(() => {
+        expect(prototypeService.setShareExpiration).toHaveBeenCalledWith(
+          'proto-123',
+          expect.any(String) // ISO date string
+        );
+      });
+    });
+
+    it('should show "Never" in expiration stat when no expiration set', async () => {
+      setupSharedPrototypeForExpiration({ expiresAt: null });
+      await openShareModalForExpiration();
+
+      const expirationStat = screen.getByTestId('expiration-stat');
+      expect(expirationStat).toHaveTextContent('Never');
+    });
+
+    it('should show remaining time in expiration stat when expiration is set', async () => {
+      // Set expiration to 7 days from now
+      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      setupSharedPrototypeForExpiration({ expiresAt: futureDate });
+      await openShareModalForExpiration();
+
+      const expirationStat = screen.getByTestId('expiration-stat');
+      expect(expirationStat.textContent).toMatch(/in \d+ day/);
+    });
+
+    it('should show expired badge when link has expired', async () => {
+      const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      setupSharedPrototypeForExpiration({ expiresAt: pastDate });
+      await openShareModalForExpiration();
+
+      const expiredBadge = screen.getByTestId('expired-badge');
+      expect(expiredBadge).toBeInTheDocument();
+      expect(expiredBadge).toHaveTextContent('Expired');
+    });
+
+    it('should show expiration info when expiration is set', async () => {
+      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      setupSharedPrototypeForExpiration({ expiresAt: futureDate });
+      await openShareModalForExpiration();
+
+      const expirationInfo = screen.getByTestId('expiration-info');
+      expect(expirationInfo).toBeInTheDocument();
+      expect(expirationInfo.textContent).toMatch(/Expires:/);
     });
   });
 });

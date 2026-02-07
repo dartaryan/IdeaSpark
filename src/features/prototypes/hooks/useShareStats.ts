@@ -7,6 +7,7 @@ export interface ShareStats {
   viewCount: number;
   sharedAt: string | null;
   isPublic: boolean;
+  expiresAt: string | null;
 }
 
 export const shareStatsKeys = {

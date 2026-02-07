@@ -14,6 +14,7 @@ vi.mock('../../../lib/supabase', () => ({
       getSession: vi.fn(),
     },
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 
@@ -335,7 +336,7 @@ describe('prototypeService', () => {
       const result = await prototypeService.getPublicPrototype('share-uuid-123');
 
       expect(result.error).toBeNull();
-      // Should return mapped PublicPrototype (camelCase, hasPassword boolean, no password_hash)
+      // Should return mapped PublicPrototype (camelCase, hasPassword boolean, no password_hash or expires_at)
       expect(result.data).toEqual({
         id: 'proto-789',
         url: 'https://preview.example.com/proto-789',
@@ -413,6 +414,7 @@ describe('prototypeService', () => {
             view_count: 42,
             shared_at: '2026-01-15T10:00:00Z',
             is_public: true,
+            expires_at: '2026-02-15T10:00:00Z',
           },
           error: null,
         }),
@@ -427,8 +429,9 @@ describe('prototypeService', () => {
         viewCount: 42,
         sharedAt: '2026-01-15T10:00:00Z',
         isPublic: true,
+        expiresAt: '2026-02-15T10:00:00Z',
       });
-      expect(mockFromChain.select).toHaveBeenCalledWith('view_count, shared_at, is_public');
+      expect(mockFromChain.select).toHaveBeenCalledWith('view_count, shared_at, is_public, expires_at');
       expect(mockFromChain.eq).toHaveBeenCalledWith('id', 'proto-789');
       expect(mockFromChain.eq).toHaveBeenCalledWith('user_id', 'user-123');
     });
@@ -525,6 +528,7 @@ describe('prototypeService', () => {
             view_count: null,
             shared_at: null,
             is_public: null,
+            expires_at: null,
           },
           error: null,
         }),
@@ -539,6 +543,7 @@ describe('prototypeService', () => {
         viewCount: 0,
         sharedAt: null,
         isPublic: false,
+        expiresAt: null,
       });
     });
   });
@@ -646,6 +651,214 @@ describe('prototypeService', () => {
       expect(result.error).toEqual({
         message: 'Failed to get share URL',
         code: 'DB_ERROR',
+      });
+    });
+  });
+
+  // =========================================================================
+  // Link Expiration (Story 9.3)
+  // =========================================================================
+
+  describe('setShareExpiration', () => {
+    const mockSession = {
+      user: { id: 'user-123' },
+      access_token: 'token-123',
+    };
+
+    it('sets expiration date for authenticated user', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+      };
+      // Final .eq() in chain resolves
+      mockFromChain.eq.mockImplementation(() => {
+        return { eq: vi.fn().mockResolvedValue({ data: null, error: null }) };
+      });
+      // First call to .update returns the chain
+      mockFromChain.update.mockReturnValue({ eq: mockFromChain.eq });
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const expiresAt = '2026-02-14T12:00:00Z';
+      const result = await prototypeService.setShareExpiration('proto-789', expiresAt);
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBeUndefined();
+      expect(supabase.from).toHaveBeenCalledWith('prototypes');
+    });
+
+    it('removes expiration when null is passed (never expires)', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+      };
+      mockFromChain.eq.mockImplementation(() => {
+        return { eq: vi.fn().mockResolvedValue({ data: null, error: null }) };
+      });
+      mockFromChain.update.mockReturnValue({ eq: mockFromChain.eq });
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.setShareExpiration('proto-789', null);
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBeUndefined();
+    });
+
+    it('returns error when not authenticated', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: null },
+        error: null,
+      } as any);
+
+      const result = await prototypeService.setShareExpiration('proto-789', '2026-02-14T12:00:00Z');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Not authenticated',
+        code: 'AUTH_ERROR',
+      });
+    });
+
+    it('returns error when database update fails', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const secondEq = vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Update failed', code: 'DB_ERROR' },
+      });
+      const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
+      const mockFromChain = {
+        update: vi.fn().mockReturnValue({ eq: firstEq }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.setShareExpiration('proto-789', '2026-02-14T12:00:00Z');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Failed to update link expiration',
+        code: 'DB_ERROR',
+      });
+    });
+
+    it('handles unexpected errors gracefully', async () => {
+      vi.mocked(supabase.auth.getSession).mockRejectedValue(
+        new Error('Network error')
+      );
+
+      const result = await prototypeService.setShareExpiration('proto-789', '2026-02-14T12:00:00Z');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Failed to update link expiration',
+        code: 'UNKNOWN_ERROR',
+      });
+    });
+  });
+
+  describe('checkShareLinkStatus', () => {
+    it('returns "valid" for a valid share link', async () => {
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: 'valid',
+        error: null,
+      } as any);
+
+      const result = await prototypeService.checkShareLinkStatus('share-uuid-123');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBe('valid');
+      expect(supabase.rpc).toHaveBeenCalledWith('check_share_link_status', {
+        p_share_id: 'share-uuid-123',
+      });
+    });
+
+    it('returns "expired" for an expired share link', async () => {
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: 'expired',
+        error: null,
+      } as any);
+
+      const result = await prototypeService.checkShareLinkStatus('share-uuid-expired');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBe('expired');
+    });
+
+    it('returns "revoked" for a revoked share link', async () => {
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: 'revoked',
+        error: null,
+      } as any);
+
+      const result = await prototypeService.checkShareLinkStatus('share-uuid-revoked');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBe('revoked');
+    });
+
+    it('returns "not_found" when share link does not exist', async () => {
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: 'not_found',
+        error: null,
+      } as any);
+
+      const result = await prototypeService.checkShareLinkStatus('nonexistent-id');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBe('not_found');
+    });
+
+    it('returns "not_public" when prototype is not public', async () => {
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: 'not_public',
+        error: null,
+      } as any);
+
+      const result = await prototypeService.checkShareLinkStatus('share-uuid-private');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBe('not_public');
+    });
+
+    it('returns error when RPC call fails', async () => {
+      vi.mocked(supabase.rpc).mockResolvedValue({
+        data: null,
+        error: { message: 'RPC failed', code: 'DB_ERROR' },
+      } as any);
+
+      const result = await prototypeService.checkShareLinkStatus('share-uuid-123');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Failed to check link status',
+        code: 'DB_ERROR',
+      });
+    });
+
+    it('handles unexpected errors gracefully', async () => {
+      vi.mocked(supabase.rpc).mockRejectedValue(new Error('Network error'));
+
+      const result = await prototypeService.checkShareLinkStatus('share-uuid-123');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Failed to check link status',
+        code: 'UNKNOWN_ERROR',
       });
     });
   });

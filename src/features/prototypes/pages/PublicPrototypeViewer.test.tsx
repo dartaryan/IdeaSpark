@@ -105,6 +105,10 @@ describe('PublicPrototypeViewer', () => {
       data: null,
       error: { message: 'Prototype not found or not public', code: 'NOT_FOUND' },
     });
+    vi.mocked(prototypeService.checkShareLinkStatus).mockResolvedValue({
+      data: 'not_found',
+      error: null,
+    });
 
     renderComponent('invalid-share-id');
 
@@ -358,6 +362,125 @@ describe('PublicPrototypeViewer', () => {
 
       // Should still be on password page, not prototype viewer
       expect(screen.queryByText('View Only')).not.toBeInTheDocument();
+    });
+  });
+
+  // =============================================
+  // Story 9.3 - Link Expiration Tests
+  // =============================================
+
+  describe('Expired Link Handling', () => {
+    it('should show expired link page when checkShareLinkStatus returns "expired"', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: null,
+        error: { message: 'Prototype not found or not public', code: 'NOT_FOUND' },
+      });
+      vi.mocked(prototypeService.checkShareLinkStatus).mockResolvedValue({
+        data: 'expired',
+        error: null,
+      });
+
+      renderComponent('expired-share-id');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('expired-link-page')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Link Expired')).toBeInTheDocument();
+      expect(screen.getByText(/this shared prototype link has expired/i)).toBeInTheDocument();
+      expect(screen.getByText(/contact the person who shared this link/i)).toBeInTheDocument();
+
+      // Should show link to IdeaSpark homepage
+      const homeLink = screen.getByRole('link', { name: /go to ideaspark/i });
+      expect(homeLink).toHaveAttribute('href', '/');
+    });
+
+    it('should show revoked link page when checkShareLinkStatus returns "revoked"', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: null,
+        error: { message: 'Prototype not found or not public', code: 'NOT_FOUND' },
+      });
+      vi.mocked(prototypeService.checkShareLinkStatus).mockResolvedValue({
+        data: 'revoked',
+        error: null,
+      });
+
+      renderComponent('revoked-share-id');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('revoked-link-page')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Access Revoked')).toBeInTheDocument();
+      expect(screen.getByText(/access to this shared prototype has been revoked/i)).toBeInTheDocument();
+    });
+
+    it('should show not found page when checkShareLinkStatus returns "not_found"', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: null,
+        error: { message: 'Prototype not found or not public', code: 'NOT_FOUND' },
+      });
+      vi.mocked(prototypeService.checkShareLinkStatus).mockResolvedValue({
+        data: 'not_found',
+        error: null,
+      });
+
+      renderComponent('nonexistent-share-id');
+
+      await waitFor(() => {
+        expect(screen.getByText('Prototype Not Found')).toBeInTheDocument();
+      });
+    });
+
+    it('should show not found page when checkShareLinkStatus returns "not_public"', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: null,
+        error: { message: 'Prototype not found or not public', code: 'NOT_FOUND' },
+      });
+      vi.mocked(prototypeService.checkShareLinkStatus).mockResolvedValue({
+        data: 'not_public',
+        error: null,
+      });
+
+      renderComponent('private-share-id');
+
+      await waitFor(() => {
+        expect(screen.getByText('Prototype Not Found')).toBeInTheDocument();
+      });
+    });
+
+    it('should fall back to not found page when checkShareLinkStatus fails', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: null,
+        error: { message: 'Prototype not found or not public', code: 'NOT_FOUND' },
+      });
+      vi.mocked(prototypeService.checkShareLinkStatus).mockResolvedValue({
+        data: null,
+        error: { message: 'RPC failed', code: 'DB_ERROR' },
+      });
+
+      renderComponent('error-share-id');
+
+      await waitFor(() => {
+        expect(screen.getByText('Prototype Not Found')).toBeInTheDocument();
+      });
+    });
+
+    it('should call checkShareLinkStatus when getPublicPrototype fails', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: null,
+        error: { message: 'Prototype not found or not public', code: 'NOT_FOUND' },
+      });
+      vi.mocked(prototypeService.checkShareLinkStatus).mockResolvedValue({
+        data: 'not_found',
+        error: null,
+      });
+
+      renderComponent('some-share-id');
+
+      await waitFor(() => {
+        expect(prototypeService.checkShareLinkStatus).toHaveBeenCalledWith('some-share-id');
+      });
     });
   });
 });

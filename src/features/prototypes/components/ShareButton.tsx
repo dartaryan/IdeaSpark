@@ -6,6 +6,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useSharePrototype } from '../hooks/useSharePrototype';
 import { useShareStats } from '../hooks/useShareStats';
 import { useSetSharePassword } from '../hooks/useSetSharePassword';
+import { useSetShareExpiration } from '../hooks/useSetShareExpiration';
 import { prototypeService } from '../services/prototypeService';
 import {
   passwordSchema,
@@ -13,6 +14,13 @@ import {
   strengthBadgeClass,
   strengthLabel,
 } from '../schemas/passwordSchemas';
+import type { ExpirationDuration } from '../types';
+import {
+  calculateExpirationDate,
+  getTimeRemaining,
+  isExpired,
+  formatExpirationDate,
+} from '../utils/expirationUtils';
 import toast from 'react-hot-toast';
 
 interface ShareButtonProps {
@@ -40,9 +48,14 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Expiration state
+  const [selectedExpiration, setSelectedExpiration] = useState<ExpirationDuration>('never');
+  const [expirationTouched, setExpirationTouched] = useState(false);
+
   const shareMutation = useSharePrototype();
   const { data: shareStats } = useShareStats(prototypeId);
   const setPasswordMutation = useSetSharePassword();
+  const setExpirationMutation = useSetShareExpiration();
 
   // Check if prototype is already shared (React Query for caching & consistency)
   const { data: existingShareUrl } = useQuery({
@@ -175,12 +188,34 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
     );
   };
 
+  const handleUpdateExpiration = () => {
+    const expiresAt = calculateExpirationDate(selectedExpiration);
+    setExpirationMutation.mutate(
+      { prototypeId, expiresAt },
+      {
+        onSuccess: () => {
+          toast.success('Link expiration updated');
+          setExpirationTouched(false); // Reset after successful update
+        },
+        onError: () => {
+          toast.error('Failed to update link expiration');
+        },
+      }
+    );
+  };
+
   const shareUrl = existingShareUrl || shareMutation.data;
   const passwordValidation = passwordSchema.safeParse(passwordInput);
   const isPasswordValid = passwordValidation.success;
   const passwordStrength = passwordInput.length > 0
     ? calculatePasswordStrength(passwordInput)
     : null;
+
+  // Derived expiration state
+  const currentExpiresAt = shareStats?.expiresAt ?? null;
+  const linkIsExpired = isExpired(currentExpiresAt);
+  // Button enabled only after user explicitly interacts with the dropdown
+  const expirationChanged = expirationTouched;
 
   return (
     <>
@@ -462,7 +497,88 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
                   )}
                 </div>
 
-                {/* Section 4: Stats */}
+                {/* Section 4: Link Expiration */}
+                <div className="form-control mb-4 p-4 bg-base-200 rounded-lg">
+                  <label className="label">
+                    <span className="label-text font-medium flex items-center gap-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      Link Expiration
+                    </span>
+                  </label>
+
+                  <select
+                    className="select select-bordered w-full"
+                    value={selectedExpiration}
+                    onChange={(e) => {
+                      setSelectedExpiration(e.target.value as ExpirationDuration);
+                      setExpirationTouched(true);
+                    }}
+                    data-testid="expiration-select"
+                  >
+                    <option value="never">Never expires</option>
+                    <option value="24h">24 hours</option>
+                    <option value="7d">7 days</option>
+                    <option value="30d">30 days</option>
+                  </select>
+
+                  {/* Current expiration info */}
+                  {currentExpiresAt && (
+                    <div className="mt-2 text-sm text-base-content/70" data-testid="expiration-info">
+                      {linkIsExpired
+                        ? (
+                          <span className="text-error flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            Link expired on {formatExpirationDate(currentExpiresAt)}
+                          </span>
+                        )
+                        : (
+                          <span>Expires: {formatExpirationDate(currentExpiresAt)} ({getTimeRemaining(currentExpiresAt).label})</span>
+                        )
+                      }
+                    </div>
+                  )}
+
+                  {/* Expired warning badge */}
+                  {linkIsExpired && (
+                    <div className="badge badge-error gap-1 mt-2" data-testid="expired-badge">
+                      Expired
+                    </div>
+                  )}
+
+                  {/* Update button */}
+                  <button
+                    className="btn btn-sm btn-primary w-full mt-2"
+                    onClick={handleUpdateExpiration}
+                    disabled={!expirationChanged || setExpirationMutation.isPending}
+                    data-testid="update-expiration-btn"
+                  >
+                    {setExpirationMutation.isPending ? (
+                      <>
+                        <span className="loading loading-spinner loading-xs"></span>
+                        Updating...
+                      </>
+                    ) : (
+                      'Update Expiration'
+                    )}
+                  </button>
+                </div>
+
+                {/* Section 5: Stats */}
                 {shareStats && shareStats.isPublic && (
                   <div className="stats stats-horizontal shadow w-full mb-4">
                     <div className="stat place-items-center py-2">
@@ -477,6 +593,18 @@ export function ShareButton({ prototypeId, prdId }: ShareButtonProps) {
                         </div>
                       </div>
                     )}
+                    {/* Expiration Stat */}
+                    <div className="stat place-items-center py-2">
+                      <div className="stat-title text-xs">Expires</div>
+                      <div className="stat-value text-sm" data-testid="expiration-stat">
+                        {currentExpiresAt
+                          ? linkIsExpired
+                            ? 'Expired'
+                            : getTimeRemaining(currentExpiresAt).label
+                          : 'Never'
+                        }
+                      </div>
+                    </div>
                     {/* Password Protected Badge */}
                     {hasPassword && (
                       <div className="stat place-items-center py-2">
