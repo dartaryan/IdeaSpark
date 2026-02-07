@@ -18,6 +18,7 @@ export const prototypeKeys = {
   byPrd: (prdId: string) => [...prototypeKeys.all, 'prd', prdId] as const,
   latestByPrd: (prdId: string) => [...prototypeKeys.all, 'prd', prdId, 'latest'] as const,
   versionHistory: (prdId: string) => [...prototypeKeys.all, 'prd', prdId, 'history'] as const,
+  apiConfigs: (prototypeId: string) => [...prototypeKeys.all, 'apiConfigs', prototypeId] as const,
 };
 
 export function usePrototype(id: string) {

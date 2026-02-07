@@ -11,7 +11,7 @@ import { ShareButton } from '../features/prototypes/components/ShareButton';
 import { CodeEditorPanel } from '../features/prototypes/components/CodeEditorPanel';
 import { SaveVersionModal } from '../features/prototypes/components/SaveVersionModal';
 import { VersionCompareModal } from '../features/prototypes/components/VersionCompareModal';
-import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save, ArrowLeft, Database, CheckCircle2, RotateCcw } from 'lucide-react';
+import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save, ArrowLeft, Database, CheckCircle2, RotateCcw, Settings2 } from 'lucide-react';
 import { loadEditorWidth, saveEditorWidth } from '../features/prototypes/utils/editorHelpers';
 import { useCodePersistence } from '../features/prototypes/hooks/useCodePersistence';
 import type { SaveStatus } from '../features/prototypes/hooks/useCodePersistence';
@@ -22,6 +22,8 @@ import { useStatePersistence } from '../features/prototypes/hooks/useStatePersis
 import { StatePersistenceIndicator } from '../features/prototypes/components/StatePersistenceIndicator';
 import { useStateRestoration } from '../features/prototypes/hooks/useStateRestoration';
 import { prototypeService } from '../features/prototypes/services/prototypeService';
+import { ApiConfigurationPanel } from '../features/prototypes/components/ApiConfigurationPanel';
+import { useApiConfigs } from '../features/prototypes/hooks/useApiConfigs';
 
 // Lazy load SandpackLivePreview - only loads when edit mode is activated
 const SandpackLivePreview = lazy(() =>
@@ -163,6 +165,7 @@ export function PrototypeViewerPage() {
   const [hasCompilationError, setHasCompilationError] = useState(false);
   const [showSaveVersionModal, setShowSaveVersionModal] = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
+  const [showApiConfig, setShowApiConfig] = useState(false);
   const [compareVersionIds, setCompareVersionIds] = useState<[string, string] | null>(null);
   // Ref (not state) to avoid unnecessary re-renders during save flow.
   // Works because: handleSaveVersion sets ref → flushSave() triggers re-render
@@ -266,6 +269,9 @@ export function PrototypeViewerPage() {
     capturedState,
     enabled: editMode, // Only persist when in edit mode (Subtask 5.4)
   });
+
+  // API configs for Sandpack injection (Story 10.1)
+  const { data: apiConfigs } = useApiConfigs(displayPrototype?.id ?? '');
 
   // State restoration (Story 8.3) - restores saved state into Sandpack iframe
   // iframeReady is signaled by first state capture update (indicates injector script is running)
@@ -820,6 +826,15 @@ export function PrototypeViewerPage() {
                           onDeviceChange={setSelectedDevice}
                         />
                       )}
+                      <button
+                        className={`btn btn-sm gap-2 ${showApiConfig ? 'btn-primary' : 'btn-outline btn-primary'}`}
+                        onClick={() => setShowApiConfig((prev) => !prev)}
+                        aria-label={showApiConfig ? 'Hide API Configuration' : 'Show API Configuration'}
+                        data-testid="api-config-toggle-btn"
+                      >
+                        <Settings2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">API Config</span>
+                      </button>
                       <ShareButton
                         prototypeId={displayPrototype.id}
                         prdId={displayPrototype.prdId}
@@ -849,6 +864,7 @@ export function PrototypeViewerPage() {
                           onError={handleSandpackError}
                           prototypeId={displayPrototype.id}
                           stateCaptureEnabled={editMode}
+                          apiConfigs={apiConfigs ?? undefined}
                         />
                       </Suspense>
                     </div>
@@ -879,8 +895,17 @@ export function PrototypeViewerPage() {
                   </div>
                 </div>
 
-                {/* Refinement Chat & History - 1 column on desktop */}
+                {/* Refinement Chat, API Config & History - 1 column on desktop */}
                 <div className="space-y-6">
+                  {/* API Configuration Panel (Story 10.1) */}
+                  {showApiConfig && (
+                    <div className="card bg-base-100 shadow-lg">
+                      <div className="card-body p-4">
+                        <ApiConfigurationPanel prototypeId={displayPrototype.id} />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Refinement Chat */}
                   <RefinementChat
                     prototypeId={prototype.id}

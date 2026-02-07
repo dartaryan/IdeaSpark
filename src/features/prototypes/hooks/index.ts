@@ -9,3 +9,7 @@ export { useSharePrototype } from './useSharePrototype';
 export { usePublicPrototype } from './usePublicPrototype';
 export { usePrototypeByIdeaId, usePrototypesByIdeaId } from './usePrototypeByIdeaId';
 export { useRevokePublicAccess } from './useRevokePublicAccess';
+export { useApiConfigs } from './useApiConfigs';
+export { useCreateApiConfig } from './useCreateApiConfig';
+export { useUpdateApiConfig } from './useUpdateApiConfig';
+export { useDeleteApiConfig } from './useDeleteApiConfig';

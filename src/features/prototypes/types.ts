@@ -299,6 +299,88 @@ export function serializeFiles(files: Record<string, EditorFile>): string {
   return JSON.stringify(serialized);
 }
 
+// =============================================
+// API Configuration Types (Story 10.1)
+// =============================================
+
+/** Allowed HTTP methods for API endpoint configurations */
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+/** API endpoint configuration (camelCase app format) */
+export interface ApiConfig {
+  id: string;
+  prototypeId: string;
+  name: string;
+  url: string;
+  method: HttpMethod;
+  headers: Record<string, string>;
+  isMock: boolean;
+  mockResponse: unknown | null;
+  mockStatusCode: number;
+  mockDelayMs: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** API endpoint configuration database row (snake_case) */
+export interface ApiConfigRow {
+  id: string;
+  prototype_id: string;
+  name: string;
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  is_mock: boolean;
+  mock_response: unknown | null;
+  mock_status_code: number;
+  mock_delay_ms: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for creating a new API config */
+export interface CreateApiConfigInput {
+  prototypeId: string;
+  name: string;
+  url: string;
+  method: HttpMethod;
+  headers?: Record<string, string>;
+  isMock?: boolean;
+  mockResponse?: unknown;
+  mockStatusCode?: number;
+  mockDelayMs?: number;
+}
+
+/** Input for updating an existing API config */
+export interface UpdateApiConfigInput {
+  name?: string;
+  url?: string;
+  method?: HttpMethod;
+  headers?: Record<string, string>;
+  isMock?: boolean;
+  mockResponse?: unknown;
+  mockStatusCode?: number;
+  mockDelayMs?: number;
+}
+
+/** Map database row to app format */
+export function mapApiConfigRow(row: ApiConfigRow): ApiConfig {
+  return {
+    id: row.id,
+    prototypeId: row.prototype_id,
+    name: row.name,
+    url: row.url,
+    method: row.method as HttpMethod,
+    headers: row.headers ?? {},
+    isMock: row.is_mock,
+    mockResponse: row.mock_response ?? null,
+    mockStatusCode: row.mock_status_code ?? 200,
+    mockDelayMs: row.mock_delay_ms ?? 0,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 // Helper to convert DB row to app format
 export function mapPrototypeRow(row: PrototypeRow): Prototype {
   return {

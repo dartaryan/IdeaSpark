@@ -6,8 +6,9 @@ import {
   SandpackPreview,
   useSandpack,
 } from '@codesandbox/sandpack-react';
-import type { EditorFile } from '../types';
+import type { EditorFile, ApiConfig } from '../types';
 import { generateGuardedStateCaptureScript } from '../scripts/stateCaptureInjector';
+import { generateApiClientFile } from '../utils/apiClientInjector';
 
 // Note: State capture is injected ONLY via SandpackStateCaptureInjector (postMessage eval)
 // after the iframe reports 'done'. Adding capture as a Sandpack file was considered but
@@ -24,6 +25,8 @@ export interface SandpackLivePreviewProps {
   prototypeId?: string;
   /** Whether state capture is enabled (default: true when prototypeId is set) */
   stateCaptureEnabled?: boolean;
+  /** API endpoint configurations to inject as apiClient.js into Sandpack (Story 10.1) */
+  apiConfigs?: ApiConfig[];
 }
 
 /**
@@ -52,13 +55,23 @@ export function SandpackLivePreview({
   onError,
   prototypeId,
   stateCaptureEnabled = true,
+  apiConfigs,
 }: SandpackLivePreviewProps) {
   // Determine whether to inject the state capture script (via SandpackStateCaptureInjector)
   const shouldInjectCapture = !!(prototypeId && stateCaptureEnabled);
-  // Convert editor files to Sandpack format
+  // Convert editor files to Sandpack format, conditionally injecting apiClient.js (Story 10.1)
   const sandpackFiles = useMemo(() => {
-    return editorFilesToSandpackFiles(files);
-  }, [files]);
+    const converted = editorFilesToSandpackFiles(files);
+
+    // Inject apiClient.js when configs exist (AC #7)
+    if (apiConfigs && apiConfigs.length > 0) {
+      converted['/apiClient.js'] = {
+        code: generateApiClientFile(apiConfigs),
+      };
+    }
+
+    return converted;
+  }, [files, apiConfigs]);
 
   const hasFiles = Object.keys(files).length > 0;
 
