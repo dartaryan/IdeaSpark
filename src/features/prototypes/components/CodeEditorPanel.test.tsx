@@ -21,19 +21,20 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 // Mock CodeMirror since it requires DOM APIs not available in jsdom
 vi.mock('./CodeMirrorEditor', () => ({
-  CodeMirrorEditor: ({ value, language, onChange, 'aria-label': ariaLabel }: {
+  CodeMirrorEditor: ({ value, language, onChange, readOnly, 'aria-label': ariaLabel }: {
     value: string;
     language: string;
     onChange?: (value: string) => void;
+    readOnly?: boolean;
     'aria-label'?: string;
   }) => (
-    <div data-testid="codemirror-editor" aria-label={ariaLabel}>
+    <div data-testid="codemirror-editor" aria-label={ariaLabel} data-readonly={readOnly || false}>
       <div data-testid="editor-language">{language}</div>
       <textarea
         data-testid="editor-textarea"
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
-        readOnly={!onChange}
+        readOnly={readOnly || !onChange}
       />
     </div>
   ),
@@ -138,12 +139,23 @@ describe('CodeEditorPanel', () => {
       });
     });
 
-    it('should display format code button', async () => {
-      render(<CodeEditorPanel code={singleFileCode} />);
+    it('should display format code button when editable', async () => {
+      const onCodeChange = vi.fn();
+      render(<CodeEditorPanel code={singleFileCode} onCodeChange={onCodeChange} />);
 
       await waitFor(() => {
         expect(screen.getByLabelText(/Format code/)).toBeInTheDocument();
       });
+    });
+
+    it('should hide format code button in read-only mode', async () => {
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('code-editor-panel')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByLabelText(/Format code/)).not.toBeInTheDocument();
     });
 
     it('should display keyboard shortcuts button', async () => {
@@ -221,6 +233,200 @@ describe('CodeEditorPanel', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('editor-language')).toHaveTextContent('css');
+      });
+    });
+  });
+
+  describe('Read-Only Mode', () => {
+    it('should auto-detect read-only when onCodeChange is not provided', async () => {
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('code-editor-panel')).toBeInTheDocument();
+      });
+
+      // Format button should be hidden (read-only auto-detected)
+      expect(screen.queryByLabelText(/Format code/)).not.toBeInTheDocument();
+      // Read-only badge should be visible
+      expect(screen.getByText('read-only')).toBeInTheDocument();
+    });
+
+    it('should be editable when onCodeChange is provided', async () => {
+      const onCodeChange = vi.fn();
+      render(<CodeEditorPanel code={singleFileCode} onCodeChange={onCodeChange} />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Format code/)).toBeInTheDocument();
+      });
+
+      // Read-only badge should NOT be visible
+      expect(screen.queryByText('read-only')).not.toBeInTheDocument();
+    });
+
+    it('should pass readOnly to CodeMirrorEditor when onCodeChange is not provided', async () => {
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        const editor = screen.getByTestId('codemirror-editor');
+        expect(editor).toHaveAttribute('data-readonly', 'true');
+      });
+    });
+
+    it('should pass readOnly=false to CodeMirrorEditor when onCodeChange is provided', async () => {
+      const onCodeChange = vi.fn();
+      render(<CodeEditorPanel code={singleFileCode} onCodeChange={onCodeChange} />);
+
+      await waitFor(() => {
+        const editor = screen.getByTestId('codemirror-editor');
+        expect(editor).toHaveAttribute('data-readonly', 'false');
+      });
+    });
+
+    it('should honor explicit readOnly prop over auto-detection', async () => {
+      const onCodeChange = vi.fn();
+      render(<CodeEditorPanel code={singleFileCode} onCodeChange={onCodeChange} readOnly />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('code-editor-panel')).toBeInTheDocument();
+      });
+
+      // Even though onCodeChange is provided, readOnly=true should win
+      expect(screen.queryByLabelText(/Format code/)).not.toBeInTheDocument();
+      expect(screen.getByText('read-only')).toBeInTheDocument();
+    });
+  });
+
+  describe('Copy to Clipboard', () => {
+    const originalClipboard = navigator.clipboard;
+
+    beforeEach(() => {
+      // Restore clipboard after each test to avoid leaking mocks
+      Object.defineProperty(navigator, 'clipboard', {
+        value: originalClipboard,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    afterEach(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: originalClipboard,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it('should show copy button', async () => {
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Copy file contents to clipboard')).toBeInTheDocument();
+      });
+    });
+
+    it('should copy content to clipboard when copy button is clicked', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText },
+        writable: true,
+        configurable: true,
+      });
+
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Copy file contents to clipboard')).toBeInTheDocument();
+      });
+
+      screen.getByLabelText('Copy file contents to clipboard').click();
+
+      await waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith(singleFileCode);
+      });
+    });
+
+    it('should fall back to execCommand when clipboard API fails', async () => {
+      const writeText = vi.fn().mockRejectedValue(new Error('Not allowed'));
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText },
+        writable: true,
+        configurable: true,
+      });
+
+      // JSDOM doesn't implement execCommand, define it for fallback testing
+      const execCommandMock = vi.fn().mockReturnValue(true);
+      document.execCommand = execCommandMock;
+
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Copy file contents to clipboard')).toBeInTheDocument();
+      });
+
+      screen.getByLabelText('Copy file contents to clipboard').click();
+
+      await waitFor(() => {
+        expect(execCommandMock).toHaveBeenCalledWith('copy');
+      });
+
+      delete (document as Record<string, unknown>).execCommand;
+    });
+
+    it('should show error toast when both clipboard API and fallback fail', async () => {
+      const writeText = vi.fn().mockRejectedValue(new Error('Not allowed'));
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText },
+        writable: true,
+        configurable: true,
+      });
+
+      // execCommand returning false triggers error path
+      const execCommandMock = vi.fn().mockReturnValue(false);
+      document.execCommand = execCommandMock;
+
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Copy file contents to clipboard')).toBeInTheDocument();
+      });
+
+      screen.getByLabelText('Copy file contents to clipboard').click();
+
+      await waitFor(() => {
+        expect(execCommandMock).toHaveBeenCalledWith('copy');
+      });
+
+      delete (document as Record<string, unknown>).execCommand;
+    });
+  });
+
+  describe('File Metadata', () => {
+    it('should display line count in toolbar', async () => {
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('line-count')).toBeInTheDocument();
+      });
+
+      expect(screen.getByTestId('line-count')).toHaveTextContent('1 line');
+    });
+
+    it('should display correct line count for multi-line code', async () => {
+      const multiLineCode = 'line1\nline2\nline3';
+      render(<CodeEditorPanel code={multiLineCode} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('line-count')).toHaveTextContent('3 lines');
+      });
+    });
+
+    it('should display language badge', async () => {
+      render(<CodeEditorPanel code={singleFileCode} />);
+
+      await waitFor(() => {
+        // Badge in toolbar
+        const badges = screen.getAllByText('typescript');
+        expect(badges.length).toBeGreaterThanOrEqual(1);
       });
     });
   });

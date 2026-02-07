@@ -117,6 +117,7 @@ export interface CodeEditorPanelProps {
   onCodeChange?: (path: string, content: string) => void;
   onClose?: () => void;
   initialFile?: string;      // Optional initial file to open
+  readOnly?: boolean;        // When true, editor is view-only (auto-detected when onCodeChange is absent)
 }
 
 /** Props for the FileTree component */

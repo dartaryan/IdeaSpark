@@ -1,8 +1,9 @@
 // src/features/prototypes/components/CodeEditorPanel.tsx
 
-import { Component, useCallback, useState, Suspense, lazy, useEffect } from 'react';
+import { Component, useCallback, useState, Suspense, lazy, useEffect, useRef } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 import { PanelLeftClose, PanelLeft } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useEditorSync } from '../hooks/useEditorSync';
 import { FileTree } from './FileTree';
 import { EditorToolbar } from './EditorToolbar';
@@ -69,6 +70,7 @@ export function CodeEditorPanel({
   onCodeChange,
   onClose,
   initialFile,
+  readOnly: readOnlyProp,
 }: CodeEditorPanelProps) {
   const {
     files,
@@ -82,11 +84,17 @@ export function CodeEditorPanel({
     error,
   } = useEditorSync({ code, onCodeChange, initialFile });
 
+  // Auto-detect read-only mode when onCodeChange is not provided
+  const isReadOnly = readOnlyProp ?? !onCodeChange;
+
   const [showFileTree, setShowFileTree] = useState(true);
+  const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>('idle');
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeFileData = files[activeFile];
   const language = activeFileData ? detectLanguage(activeFile) : 'typescript';
   const currentContent = activeFileData?.content || '';
+  const lineCount = currentContent ? currentContent.split('\n').length : 0;
 
   // Handle editor content changes
   const handleEditorChange = useCallback(
@@ -104,8 +112,50 @@ export function CodeEditorPanel({
     [activeFile, updateFileContent],
   );
 
-  // Global keyboard shortcut: Ctrl+Shift+F for format
+  // Copy to clipboard handler
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(currentContent);
+      setCopyState('success');
+    } catch {
+      // Fallback for older browsers or non-HTTPS contexts
+      let textarea: HTMLTextAreaElement | null = null;
+      try {
+        textarea = document.createElement('textarea');
+        textarea.value = currentContent;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        if (!ok) throw new Error('execCommand copy returned false');
+        setCopyState('success');
+      } catch {
+        setCopyState('error');
+        toast.error('Failed to copy to clipboard');
+      } finally {
+        if (textarea && document.body.contains(textarea)) {
+          document.body.removeChild(textarea);
+        }
+      }
+    }
+
+    // Reset copy state after 2 seconds
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopyState('idle'), 2000);
+  }, [currentContent]);
+
+  // Cleanup copy timer
   useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
+
+  // Global keyboard shortcut: Ctrl+Shift+F for format (disabled in read-only)
+  useEffect(() => {
+    if (isReadOnly) return;
+
     let isMounted = true;
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -129,7 +179,7 @@ export function CodeEditorPanel({
       isMounted = false;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [currentContent, language, handleFormatCode]);
+  }, [isReadOnly, currentContent, language, handleFormatCode]);
 
   // Loading state
   if (isLoading) {
@@ -195,6 +245,10 @@ export function CodeEditorPanel({
         onFormatCode={handleFormatCode}
         currentCode={currentContent}
         onClose={onClose}
+        readOnly={isReadOnly}
+        lineCount={lineCount}
+        onCopy={handleCopy}
+        copyState={copyState}
       />
 
       {/* Body: file tree + editor */}
@@ -275,7 +329,8 @@ export function CodeEditorPanel({
                 value={currentContent}
                 language={language}
                 config={config}
-                onChange={handleEditorChange}
+                onChange={isReadOnly ? undefined : handleEditorChange}
+                readOnly={isReadOnly}
                 aria-label={`Code editor, ${language} file: ${activeFile}`}
               />
             </Suspense>

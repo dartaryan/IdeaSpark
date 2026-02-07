@@ -180,6 +180,7 @@ interface CodeMirrorEditorProps {
   language: string;
   config: EditorConfig;
   onChange?: (value: string) => void;
+  readOnly?: boolean;
   className?: string;
   'aria-label'?: string;
 }
@@ -193,6 +194,7 @@ export function CodeMirrorEditor({
   language,
   config,
   onChange,
+  readOnly = false,
   className = '',
   'aria-label': ariaLabel,
 }: CodeMirrorEditorProps) {
@@ -211,18 +213,14 @@ export function CodeMirrorEditor({
 
     const themeExtension = config.theme === 'dark' ? passportCardDarkTheme : passportCardLightTheme;
 
-    const extensions = [
-      // Core
-      history(),
+    // Base extensions shared between read-only and editable modes
+    const baseExtensions = [
+      // Visual / navigation
       drawSelection(),
-      rectangularSelection(),
-      crosshairCursor(),
-      indentOnInput(),
-      bracketMatching(),
-      closeBrackets(),
       highlightActiveLine(),
       highlightActiveLineGutter(),
       highlightSelectionMatches(),
+      bracketMatching(),
 
       // Gutter
       ...(config.lineNumbers ? [lineNumbers()] : []),
@@ -239,9 +237,6 @@ export function CodeMirrorEditor({
       // Language
       getLanguageExtension(language),
 
-      // Autocomplete
-      autocompletion(),
-
       // Font size via custom theme
       EditorView.theme({
         '.cm-content': { fontSize: `${config.fontSize}px` },
@@ -250,8 +245,18 @@ export function CodeMirrorEditor({
 
       // Tab size
       EditorState.tabSize.of(config.tabSize),
+    ];
 
-      // Key bindings
+    // Extensions only for editable mode
+    const editableExtensions = [
+      history(),
+      rectangularSelection(),
+      crosshairCursor(),
+      indentOnInput(),
+      closeBrackets(),
+      autocompletion(),
+
+      // Key bindings (editable)
       keymap.of([
         ...closeBracketsKeymap,
         ...defaultKeymap,
@@ -271,6 +276,31 @@ export function CodeMirrorEditor({
       }),
     ];
 
+    // Extensions only for read-only mode
+    const readOnlyExtensions = [
+      EditorState.readOnly.of(true),
+      EditorView.editable.of(false),
+      rectangularSelection(),
+
+      // Read-only visual style: muted cursor, subtle gutter
+      EditorView.theme({
+        '.cm-cursor': { display: 'none' },
+        '.cm-content': { cursor: 'default' },
+      }),
+
+      // Keep search and fold keymaps in read-only mode
+      keymap.of([
+        ...defaultKeymap,
+        ...searchKeymap,
+        ...foldKeymap,
+      ]),
+    ];
+
+    const extensions = [
+      ...baseExtensions,
+      ...(readOnly ? readOnlyExtensions : editableExtensions),
+    ];
+
     const state = EditorState.create({
       doc: value,
       extensions,
@@ -287,9 +317,14 @@ export function CodeMirrorEditor({
       view.destroy();
       viewRef.current = null;
     };
-    // Recreate editor when language or config changes
+    // Recreate editor when language, config, or readOnly changes.
+    // Note: readOnly is a dependency because CM6 extensions cannot be dynamically
+    // added/removed. Toggling readOnly destroys and rebuilds the editor, which
+    // means scroll position, selections, and fold state are lost. This is an
+    // accepted CM6 trade-off; the alternative (reconfiguring compartments) adds
+    // significant complexity for a rare user action.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language, config.theme, config.fontSize, config.lineNumbers, config.wordWrap, config.tabSize]);
+  }, [language, config.theme, config.fontSize, config.lineNumbers, config.wordWrap, config.tabSize, readOnly]);
 
   // Update content when value changes externally (file switch)
   useEffect(() => {
@@ -311,6 +346,7 @@ export function CodeMirrorEditor({
       role="textbox"
       aria-label={ariaLabel || `Code editor, ${language} file`}
       aria-multiline="true"
+      aria-readonly={readOnly || undefined}
     />
   );
 }
