@@ -1,5 +1,6 @@
 // src/features/prototypes/pages/PublicPrototypeViewer.test.tsx
 
+import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -18,14 +19,33 @@ vi.mock('../../../lib/supabase', () => ({
   },
 }));
 
+// Mock Sandpack components — Sandpack uses iframes internally and can't run in JSDOM
+vi.mock('@codesandbox/sandpack-react', () => ({
+  SandpackProvider: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="sandpack-provider">{children}</div>
+  ),
+  SandpackPreview: () => <div data-testid="sandpack-preview">Preview</div>,
+}));
+
+const mockMultiFileCode = JSON.stringify({
+  '/App.tsx': 'export default function App() { return <div>Hello</div>; }',
+  '/index.tsx': 'import App from "./App";',
+});
+
 const mockPublicPrototype = {
   id: 'proto-123',
   url: 'https://preview.example.com/proto-123',
+  code: mockMultiFileCode,
   version: 2,
   status: 'ready' as const,
   createdAt: '2024-01-15T10:00:00Z',
   shareId: 'share-uuid-123',
   hasPassword: false,
+};
+
+const mockUrlOnlyPrototype = {
+  ...mockPublicPrototype,
+  code: null,
 };
 
 const mockPasswordProtectedPrototype = {
@@ -68,7 +88,7 @@ describe('PublicPrototypeViewer', () => {
     expect(screen.getByText('Loading prototype...')).toBeInTheDocument();
   });
 
-  it('should display public prototype when loaded', async () => {
+  it('should display public prototype with Sandpack when code is available', async () => {
     vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
       data: mockPublicPrototype,
       error: null,
@@ -94,10 +114,33 @@ describe('PublicPrototypeViewer', () => {
     // Should show "View Only" badge
     expect(screen.getByText('View Only')).toBeInTheDocument();
 
-    // Should show iframe with prototype
+    // Should render Sandpack (not iframe) when code is available
+    expect(screen.getByTestId('sandpack-provider')).toBeInTheDocument();
+    expect(screen.getByTestId('sandpack-preview')).toBeInTheDocument();
+
+    // Should NOT have an iframe
+    expect(screen.queryByTitle(/ideaspark prototype/i)).not.toBeInTheDocument();
+  });
+
+  it('should render iframe fallback when only url is available (no code)', async () => {
+    vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+      data: mockUrlOnlyPrototype,
+      error: null,
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading prototype...')).not.toBeInTheDocument();
+    });
+
+    // Should show iframe with prototype URL
     const iframe = screen.getByTitle(/ideaspark prototype - version 2/i);
     expect(iframe).toBeInTheDocument();
-    expect(iframe).toHaveAttribute('src', mockPublicPrototype.url);
+    expect(iframe).toHaveAttribute('src', mockUrlOnlyPrototype.url);
+
+    // Should NOT render Sandpack
+    expect(screen.queryByTestId('sandpack-provider')).not.toBeInTheDocument();
   });
 
   it('should show error page for invalid share ID', async () => {
@@ -198,9 +241,9 @@ describe('PublicPrototypeViewer', () => {
     expect(screen.getByText(/this prototype was created with/i)).toBeInTheDocument();
   });
 
-  it('should handle prototype without URL', async () => {
+  it('should show "Preview not available" when both code and url are null', async () => {
     vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
-      data: { ...mockPublicPrototype, url: null },
+      data: { ...mockPublicPrototype, url: null, code: null },
       error: null,
     });
 
@@ -212,11 +255,67 @@ describe('PublicPrototypeViewer', () => {
 
     // Should show "Preview not available" message
     expect(screen.getByText('Preview not available')).toBeInTheDocument();
+    expect(screen.queryByTestId('sandpack-provider')).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/ideaspark prototype/i)).not.toBeInTheDocument();
   });
 
-  it('should apply sandbox attribute to iframe for security', async () => {
+  it('should treat empty string code as null and fall back to url', async () => {
     vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
-      data: mockPublicPrototype,
+      data: { ...mockPublicPrototype, code: '', url: 'https://preview.example.com/proto-123' },
+      error: null,
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getAllByText('IdeaSpark').length).toBeGreaterThan(0);
+    });
+
+    // Empty code should fall back to iframe
+    const iframe = screen.getByTitle(/ideaspark prototype/i);
+    expect(iframe).toBeInTheDocument();
+    expect(screen.queryByTestId('sandpack-provider')).not.toBeInTheDocument();
+  });
+
+  it('should show "Preview not available" when code is empty string and url is null', async () => {
+    vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+      data: { ...mockPublicPrototype, code: '', url: null },
+      error: null,
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getAllByText('IdeaSpark').length).toBeGreaterThan(0);
+    });
+
+    // Empty code + null url should show "Preview not available"
+    expect(screen.getByText('Preview not available')).toBeInTheDocument();
+    expect(screen.queryByTestId('sandpack-provider')).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/ideaspark prototype/i)).not.toBeInTheDocument();
+  });
+
+  it('should treat whitespace-only code as null and fall back to url', async () => {
+    vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+      data: { ...mockPublicPrototype, code: '   ', url: 'https://preview.example.com/proto-123' },
+      error: null,
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getAllByText('IdeaSpark').length).toBeGreaterThan(0);
+    });
+
+    // Whitespace-only code should fall back to iframe
+    const iframe = screen.getByTitle(/ideaspark prototype/i);
+    expect(iframe).toBeInTheDocument();
+    expect(screen.queryByTestId('sandpack-provider')).not.toBeInTheDocument();
+  });
+
+  it('should render iframe without sandbox attribute when using url fallback', async () => {
+    vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+      data: mockUrlOnlyPrototype,
       error: null,
     });
 
@@ -227,7 +326,9 @@ describe('PublicPrototypeViewer', () => {
     });
 
     const iframe = screen.getByTitle(/ideaspark prototype/i);
-    expect(iframe).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
+    expect(iframe).toBeInTheDocument();
+    // sandbox attribute removed per Story 9.4 (Sandpack manages its own iframe security)
+    expect(iframe).not.toHaveAttribute('sandbox');
   });
 
   it('should link to IdeaSpark homepage from header', async () => {
@@ -481,6 +582,121 @@ describe('PublicPrototypeViewer', () => {
       await waitFor(() => {
         expect(prototypeService.checkShareLinkStatus).toHaveBeenCalledWith('some-share-id');
       });
+    });
+  });
+
+  // =============================================
+  // Story 9.4 - Sandpack Rendering Tests
+  // =============================================
+
+  describe('Sandpack Rendering', () => {
+    it('should prefer Sandpack (code) over iframe (url) when both are available', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: { ...mockPublicPrototype, code: mockMultiFileCode, url: 'https://preview.example.com/proto-123' },
+        error: null,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('sandpack-provider')).toBeInTheDocument();
+      });
+
+      // Sandpack should render, NOT iframe
+      expect(screen.queryByTitle(/ideaspark prototype/i)).not.toBeInTheDocument();
+    });
+
+    it('should render Sandpack with device size selector on desktop', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: mockPublicPrototype,
+        error: null,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('sandpack-provider')).toBeInTheDocument();
+      });
+
+      // Desktop button should be active by default
+      const desktopButton = screen.getByRole('button', { name: /desktop/i });
+      expect(desktopButton).toHaveClass('btn-active');
+    });
+
+    it('should render Sandpack with device size selector on mobile', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: mockPublicPrototype,
+        error: null,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('sandpack-provider')).toBeInTheDocument();
+      });
+
+      // Switch to mobile
+      const mobileButton = screen.getByRole('button', { name: /mobile/i });
+      fireEvent.click(mobileButton);
+
+      // Sandpack should still be rendered
+      expect(screen.getByTestId('sandpack-provider')).toBeInTheDocument();
+      expect(mobileButton).toHaveClass('btn-active');
+    });
+
+    it('should render Sandpack with device size selector on tablet', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: mockPublicPrototype,
+        error: null,
+      });
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('sandpack-provider')).toBeInTheDocument();
+      });
+
+      // Switch to tablet
+      const tabletButton = screen.getByRole('button', { name: /tablet/i });
+      fireEvent.click(tabletButton);
+
+      // Sandpack should still be rendered
+      expect(screen.getByTestId('sandpack-provider')).toBeInTheDocument();
+      expect(tabletButton).toHaveClass('btn-active');
+    });
+
+    it('should render Sandpack after password verification for password-protected prototype', async () => {
+      vi.mocked(prototypeService.getPublicPrototype).mockResolvedValue({
+        data: { ...mockPasswordProtectedPrototype, code: mockMultiFileCode },
+        error: null,
+      });
+
+      vi.mocked(supabase.functions.invoke).mockResolvedValue({
+        data: { verified: true },
+        error: null,
+      });
+
+      renderComponent();
+
+      // Wait for password prompt
+      await waitFor(() => {
+        expect(screen.getByText('This prototype is password protected')).toBeInTheDocument();
+      });
+
+      // Enter password
+      const passwordInput = screen.getByTestId('verify-password-input');
+      fireEvent.change(passwordInput, { target: { value: 'correct-password' } });
+
+      // Click unlock
+      const unlockButton = screen.getByRole('button', { name: /unlock/i });
+      fireEvent.click(unlockButton);
+
+      // Should show Sandpack after verification
+      await waitFor(() => {
+        expect(screen.getByTestId('sandpack-provider')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('View Only')).toBeInTheDocument();
     });
   });
 });

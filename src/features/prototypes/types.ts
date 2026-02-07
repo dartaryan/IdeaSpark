@@ -77,6 +77,8 @@ export interface UpdatePrototypeInput {
 export interface PublicPrototype {
   id: string;
   url: string | null;
+  /** Prototype source code (multi-file JSON or single-file string) for Sandpack rendering */
+  code: string | null;
   version: number;
   status: PrototypeStatus;
   createdAt: string;

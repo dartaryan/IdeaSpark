@@ -48,20 +48,6 @@ describe('prototypeService', () => {
     view_count: 0,
   };
 
-  const mockPrototype = {
-    id: 'proto-789',
-    prdId: 'prd-123',
-    ideaId: 'idea-456',
-    userId: 'user-123',
-    url: 'https://preview.example.com/proto-789',
-    code: 'import React from "react"...',
-    version: 1,
-    refinementPrompt: null,
-    status: 'ready' as const,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-  };
-
   describe('getVersionHistory', () => {
     it('returns all versions for a PRD ordered by version descending', async () => {
       const mockVersions = [
@@ -310,9 +296,22 @@ describe('prototypeService', () => {
   });
 
   describe('getPublicPrototype', () => {
+    // Use fake timers to control the fire-and-forget setTimeout for view_count increment.
+    // Without this, setTimeout(fn, 0) leaks into subsequent test contexts and causes
+    // "supabase.from(...).update is not a function" errors in stderr.
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.runAllTimers();
+      vi.useRealTimers();
+    });
+
     const mockPublicPrototypeRow = {
       id: 'proto-789',
       url: 'https://preview.example.com/proto-789',
+      code: '{"/App.tsx": "export default function App() { return <div>Hello</div>; }"}',
       version: 2,
       status: 'ready' as const,
       created_at: '2024-01-01T00:00:00Z',
@@ -321,7 +320,10 @@ describe('prototypeService', () => {
       password_hash: null,
     };
 
-    it('fetches public prototype by share_id successfully', async () => {
+    it('fetches public prototype by share_id successfully including code', async () => {
+      const mockUpdateChain = {
+        eq: vi.fn().mockReturnValue(Promise.resolve({ data: null, error: null })),
+      };
       const mockFromChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -329,6 +331,7 @@ describe('prototypeService', () => {
           data: mockPublicPrototypeRow,
           error: null,
         }),
+        update: vi.fn().mockReturnValue(mockUpdateChain),
       };
 
       vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
@@ -336,22 +339,71 @@ describe('prototypeService', () => {
       const result = await prototypeService.getPublicPrototype('share-uuid-123');
 
       expect(result.error).toBeNull();
-      // Should return mapped PublicPrototype (camelCase, hasPassword boolean, no password_hash or expires_at)
+      // Should return mapped PublicPrototype with code field
       expect(result.data).toEqual({
         id: 'proto-789',
         url: 'https://preview.example.com/proto-789',
+        code: mockPublicPrototypeRow.code,
         version: 2,
         status: 'ready',
         createdAt: '2024-01-01T00:00:00Z',
         shareId: 'share-uuid-123',
         hasPassword: false,
       });
+      // Verify select query includes 'code'
       expect(mockFromChain.select).toHaveBeenCalledWith(
-        'id, url, version, status, created_at, share_id, view_count, password_hash'
+        'id, url, code, version, status, created_at, share_id, view_count, password_hash'
       );
       expect(mockFromChain.eq).toHaveBeenCalledWith('share_id', 'share-uuid-123');
       expect(mockFromChain.eq).toHaveBeenCalledWith('is_public', true);
       expect(mockFromChain.eq).toHaveBeenCalledWith('status', 'ready');
+    });
+
+    it('returns code as null when prototype has no code', async () => {
+      const mockUpdateChain = {
+        eq: vi.fn().mockReturnValue(Promise.resolve({ data: null, error: null })),
+      };
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { ...mockPublicPrototypeRow, code: null },
+          error: null,
+        }),
+        update: vi.fn().mockReturnValue(mockUpdateChain),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getPublicPrototype('share-uuid-123');
+
+      expect(result.error).toBeNull();
+      expect(result.data!.code).toBeNull();
+    });
+
+    it('returns code as null when code is undefined in DB response', async () => {
+      const rowWithoutCode = { ...mockPublicPrototypeRow };
+      delete (rowWithoutCode as any).code;
+
+      const mockUpdateChain = {
+        eq: vi.fn().mockReturnValue(Promise.resolve({ data: null, error: null })),
+      };
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: rowWithoutCode,
+          error: null,
+        }),
+        update: vi.fn().mockReturnValue(mockUpdateChain),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getPublicPrototype('share-uuid-123');
+
+      expect(result.error).toBeNull();
+      expect(result.data!.code).toBeNull();
     });
 
     it('returns error when prototype not found', async () => {

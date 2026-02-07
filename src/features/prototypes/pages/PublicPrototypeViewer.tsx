@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { usePublicPrototype } from '../hooks/usePublicPrototype';
 import { prototypeService } from '../services/prototypeService';
 import { PasswordProtectedViewer } from './PasswordProtectedViewer';
+import { PublicSandpackPreview } from '../components';
 
 type DeviceSize = 'desktop' | 'tablet' | 'mobile';
 type LinkStatus = 'loading' | 'expired' | 'revoked' | 'not_found' | 'not_public' | 'valid' | 'error';
@@ -242,12 +243,16 @@ export function PublicPrototypeViewer() {
               maxWidth: '100%',
             }}
           >
-            {prototype.url ? (
+            {prototype.code && prototype.code.trim() !== '' ? (
+              <PublicSandpackPreview
+                code={prototype.code}
+                className="w-full h-full"
+              />
+            ) : prototype.url ? (
               <iframe
                 src={prototype.url}
                 className="w-full h-full"
                 title={`IdeaSpark Prototype - Version ${prototype.version}`}
-                sandbox="allow-scripts allow-same-origin"
               />
             ) : (
               <div className="flex items-center justify-center h-full">

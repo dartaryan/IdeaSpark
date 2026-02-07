@@ -135,7 +135,7 @@ development_status:
   9-1-generate-public-shareable-url: done
   9-2-optional-password-protection: done
   9-3-configurable-link-expiration: done
-  9-4-public-prototype-viewer-no-authentication: backlog
+  9-4-public-prototype-viewer-no-authentication: done
   9-5-revoke-public-access: backlog
   epic-9-retrospective: optional
 

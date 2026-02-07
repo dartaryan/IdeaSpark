@@ -404,7 +404,7 @@ export const prototypeService = {
     try {
       const { data, error } = await supabase
         .from('prototypes')
-        .select('id, url, version, status, created_at, share_id, view_count, password_hash')
+        .select('id, url, code, version, status, created_at, share_id, view_count, password_hash')
         .eq('share_id', shareId)
         .eq('is_public', true)
         .eq('status', 'ready') // Only show successful prototypes
@@ -441,6 +441,7 @@ export const prototypeService = {
       const publicPrototype: PublicPrototype = {
         id: data.id,
         url: data.url,
+        code: data.code ?? null,
         version: data.version,
         status: data.status,
         createdAt: data.created_at,
