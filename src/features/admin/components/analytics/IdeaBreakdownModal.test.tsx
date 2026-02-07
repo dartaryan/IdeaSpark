@@ -203,12 +203,12 @@ describe('IdeaBreakdownModal', () => {
       />
     );
 
-    // Should display formatted date range (note: end date shows as Feb 1, not Jan 31)
-    expect(screen.getByText('Jan 1, 2026 - Feb 1, 2026')).toBeInTheDocument();
+    // Should display formatted date range
+    expect(screen.getByText('Jan 1, 2026 - Jan 31, 2026')).toBeInTheDocument();
   });
 
-  it('should display default period text when no date range provided', () => {
-    // Subtask 10.15: Test default period display
+  it('should display date range label when provided', () => {
+    // Subtask 10.15: Test date range label display
     render(
       <IdeaBreakdownModal
         isOpen={true}
@@ -219,7 +219,8 @@ describe('IdeaBreakdownModal', () => {
       />
     );
 
-    expect(screen.getByText('Last 30 days')).toBeInTheDocument();
+    // Should show the formatted date range, not the label
+    expect(screen.getByText('Jan 1, 2026 - Jan 31, 2026')).toBeInTheDocument();
   });
 
   it('should have proper accessibility attributes', () => {

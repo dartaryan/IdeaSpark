@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useGeneratePrototype } from './useGeneratePrototype';
 import { openLovableService } from '../../../services/openLovableService';
@@ -7,6 +7,28 @@ import { supabase } from '../../../lib/supabase';
 
 vi.mock('../../../services/openLovableService');
 vi.mock('../../../lib/supabase');
+
+// Mock localStorage for test environment
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    }),
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: vi.fn((index: number) => Object.keys(store)[index] ?? null),
+  };
+})();
+Object.defineProperty(window, 'localStorage', { value: localStorageMock, writable: true });
 
 describe('useGeneratePrototype', () => {
   let queryClient: QueryClient;
@@ -16,7 +38,7 @@ describe('useGeneratePrototype', () => {
       defaultOptions: { queries: { retry: false } },
     });
     vi.clearAllMocks();
-    localStorage.clear();
+    localStorageMock.clear();
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -245,8 +267,17 @@ describe('useGeneratePrototype', () => {
     await result.current.generate('prd-1', 'idea-1');
     await waitFor(() => expect(result.current.isGenerating).toBe(false));
 
+    // Wait for state updates to settle
+    await waitFor(() => {
+      expect(result.current.error).toBeNull();
+    });
+
     // Retry
-    result.current.retry();
+    await act(async () => {
+      result.current.retry();
+    });
+    
+    // Should be generating again
     await waitFor(() => expect(result.current.isGenerating).toBe(false));
 
     expect(openLovableService.generate).toHaveBeenCalledTimes(2);
@@ -277,53 +308,67 @@ describe('useGeneratePrototype', () => {
       error: null,
     });
 
-    // Mock pollStatus to keep generating
-    vi.mocked(openLovableService.pollStatus).mockImplementation(
-      () =>
-        new Promise((resolve) =>
-          setTimeout(
-            () => resolve({ data: { status: 'ready' }, error: null }),
-            100
-          )
-        )
-    );
+    vi.mocked(openLovableService.pollStatus).mockResolvedValue({
+      data: { status: 'ready' },
+      error: null,
+    });
 
     const { result } = renderHook(() => useGeneratePrototype(), { wrapper });
 
     await result.current.generate('prd-1', 'idea-1');
 
-    // Check localStorage was set
-    const savedState = localStorage.getItem('prototype_generation_state');
-    expect(savedState).toBeTruthy();
-    const state = JSON.parse(savedState!);
+    await waitFor(() => expect(result.current.isGenerating).toBe(false));
+
+    // Verify localStorage.setItem was called with correct state during generation
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'prototype_generation_state',
+      expect.stringContaining('proto-123')
+    );
+    
+    // Verify the saved state contained all expected fields
+    const savedCall = localStorageMock.setItem.mock.calls.find(
+      (call: string[]) => call[0] === 'prototype_generation_state'
+    );
+    expect(savedCall).toBeTruthy();
+    const state = JSON.parse(savedCall![1]);
     expect(state.prototypeId).toBe('proto-123');
     expect(state.prdId).toBe('prd-1');
     expect(state.ideaId).toBe('idea-1');
-
-    await waitFor(() => expect(result.current.isGenerating).toBe(false));
   });
 
   it('should update idea status on successful generation', async () => {
-    const mockUpdate = vi.fn().mockReturnThis();
-
-    // Mock successful PRD fetch
-    vi.mocked(supabase.from).mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({
-        data: {
-          content: {
-            problemStatement: 'Test',
-            goalsAndMetrics: 'Test',
-            userStories: 'Test',
-            requirements: 'Test',
-            technicalConsiderations: 'Test',
-          },
+    const mockEq = vi.fn().mockResolvedValue({ error: null });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: {
+        content: {
+          problemStatement: 'Test',
+          goalsAndMetrics: 'Test',
+          userStories: 'Test',
+          requirements: 'Test',
+          technicalConsiderations: 'Test',
         },
-        error: null,
-      }),
-      update: mockUpdate,
-    } as any);
+      },
+      error: null,
+    });
+
+    // Mock supabase.from to return different chains for different tables
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'prd_documents') {
+        return {
+          select: mockSelect,
+          eq: vi.fn().mockReturnThis(),
+          single: mockSingle,
+        } as any;
+      }
+      if (table === 'ideas') {
+        return {
+          update: mockUpdate,
+        } as any;
+      }
+      return {} as any;
+    });
 
     vi.mocked(openLovableService.generate).mockResolvedValue({
       data: { prototypeId: 'proto-123', status: 'generating' },
@@ -343,7 +388,9 @@ describe('useGeneratePrototype', () => {
       expect(result.current.isGenerating).toBe(false);
     });
 
-    // Verify idea status was updated
+    // Verify idea status was updated via chain: .from('ideas').update({status}).eq('id', ideaId)
+    expect(supabase.from).toHaveBeenCalledWith('ideas');
     expect(mockUpdate).toHaveBeenCalledWith({ status: 'prototype_complete' });
+    expect(mockEq).toHaveBeenCalledWith('id', 'idea-1');
   });
 });

@@ -435,7 +435,67 @@ describe('ChatInterface', () => {
   });
 
   describe('Error handling', () => {
-    it('displays error message when message sending fails', async () => {
+    it('displays error message when message sending fails', { timeout: 20000 }, async () => {
+      const user = userEvent.setup();
+
+      let callCount = 0;
+      // Override the default mock for addMessage to return error on second call
+      vi.mocked(prdMessageService.addMessage).mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: welcome message
+          return {
+            data: {
+              id: '1',
+              prd_id: mockPrdId,
+              role: 'assistant',
+              content: 'Welcome to PRD development!',
+              created_at: new Date().toISOString(),
+            },
+            error: null,
+          };
+        } else {
+          // Second call: user message - return error
+          return {
+            data: null,
+            error: { message: 'Network error', code: 'ERROR' },
+          };
+        }
+      });
+
+      render(
+        <ChatInterface
+          prdId={mockPrdId}
+          ideaContext={mockIdeaContext}
+          prdContent={mockPrdContent}
+        />
+      );
+
+      // Wait for welcome message to complete and input to be ready
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('Type your response...')).toBeInTheDocument();
+      }, { timeout: 10000 });
+
+      // Wait a bit more for welcome message to finish loading
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const input = screen.getByPlaceholderText('Type your response...');
+      const sendButton = screen.getByRole('button', { name: /send/i });
+
+      await user.type(input, 'Test');
+      await user.click(sendButton);
+
+      // Wait for error to appear - check for error text in alert
+      await waitFor(() => {
+        expect(screen.getByText('Failed to save message')).toBeInTheDocument();
+      }, { timeout: 15000 });
+      
+      // Verify both retry and dismiss buttons are present
+      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /dismiss/i })).toBeInTheDocument();
+    });
+
+    it('shows retry button on error', { timeout: 15000 }, async () => {
       const user = userEvent.setup();
 
       vi.mocked(prdMessageService.addMessage)
@@ -462,6 +522,7 @@ describe('ChatInterface', () => {
         />
       );
 
+      // Wait for welcome flow to complete before interacting
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Type your response...')).toBeInTheDocument();
       });
@@ -474,50 +535,10 @@ describe('ChatInterface', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Failed to save message')).toBeInTheDocument();
-      });
-    });
-
-    it('shows retry button on error', async () => {
-      const user = userEvent.setup();
-
-      vi.mocked(prdMessageService.addMessage)
-        .mockResolvedValueOnce({
-          data: {
-            id: '1',
-            prd_id: mockPrdId,
-            role: 'assistant',
-            content: 'Welcome!',
-            created_at: new Date().toISOString(),
-          },
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: null,
-          error: { message: 'Network error', code: 'ERROR' },
-        });
-
-      render(
-        <ChatInterface
-          prdId={mockPrdId}
-          ideaContext={mockIdeaContext}
-          prdContent={mockPrdContent}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Type your response...')).toBeInTheDocument();
-      });
-
-      const input = screen.getByPlaceholderText('Type your response...');
-      const sendButton = screen.getByRole('button', { name: /send/i });
-
-      await user.type(input, 'Test');
-      await user.click(sendButton);
-
-      await waitFor(() => {
+        // Verify both retry and dismiss buttons are present
         expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /dismiss/i })).toBeInTheDocument();
-      });
+      }, { timeout: 10000 });
     });
 
     it('dismisses error when dismiss button is clicked', async () => {

@@ -119,7 +119,7 @@ describe('usePrdView', () => {
     });
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/prd/build/idea-123', { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith('/prd/idea-123', { replace: true });
     });
   });
 

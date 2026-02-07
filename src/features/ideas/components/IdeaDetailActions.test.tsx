@@ -274,7 +274,7 @@ describe('IdeaDetailActions - Story 4.8', () => {
       await user.click(screen.getByTestId('generate-prototype-button'));
 
       // Assert
-      expect(mockNavigate).toHaveBeenCalledWith('/prd/prd-1');
+      expect(mockNavigate).toHaveBeenCalledWith('/prd/view/prd-1');
     });
   });
 

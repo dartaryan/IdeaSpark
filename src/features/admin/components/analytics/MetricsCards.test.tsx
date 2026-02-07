@@ -6,6 +6,13 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MetricsCards } from './MetricsCards';
 import type { AnalyticsData } from '../../analytics/types';
+import type { DateRange } from '../../types';
+
+const mockDateRange: DateRange = {
+  start: new Date('2026-01-01'),
+  end: new Date('2026-01-31'),
+  label: 'Last 30 days',
+};
 
 const mockAnalyticsData: AnalyticsData = {
   totalIdeas: 42,
@@ -30,7 +37,7 @@ const mockAnalyticsData: AnalyticsData = {
 describe('MetricsCards', () => {
   it('should render loading skeleton when analytics data is undefined', () => {
     // Subtask 13.8: Test loading state
-    const { container } = render(<MetricsCards analytics={undefined} />);
+    const { container } = render(<MetricsCards analytics={undefined} dateRange={mockDateRange} />);
     
     // Should render 4 skeleton cards
     const skeletons = container.querySelectorAll('.animate-pulse');
@@ -39,7 +46,7 @@ describe('MetricsCards', () => {
 
   it('should render metric cards with correct values', () => {
     // Subtask 13.9: Test metric cards render with correct values
-    render(<MetricsCards analytics={mockAnalyticsData} />);
+    render(<MetricsCards analytics={mockAnalyticsData} dateRange={mockDateRange} />);
     
     // Subtask 2.3: Check all 4 metric cards
     expect(screen.getByText('Total Ideas')).toBeInTheDocument();
@@ -57,7 +64,7 @@ describe('MetricsCards', () => {
 
   it('should render trend indicators correctly', () => {
     // Subtask 13.10: Test trend indicators display correctly
-    const { container } = render(<MetricsCards analytics={mockAnalyticsData} />);
+    const { container } = render(<MetricsCards analytics={mockAnalyticsData} dateRange={mockDateRange} />);
     
     // Subtask 2.5 & 2.6: Check for trend indicators and percentages
     // Story 6.2: Now displays real trend from analytics data
@@ -75,7 +82,7 @@ describe('MetricsCards', () => {
 
   it('should use PassportCard styling on metric cards', () => {
     // Subtask 12.1 & 12.2: Verify PassportCard styling
-    const { container } = render(<MetricsCards analytics={mockAnalyticsData} />);
+    const { container } = render(<MetricsCards analytics={mockAnalyticsData} dateRange={mockDateRange} />);
     
     // Subtask 1.4: Check for 20px border radius
     const cards = container.querySelectorAll('[style*="border-radius: 20px"]');
@@ -88,7 +95,7 @@ describe('MetricsCards', () => {
 
   it('should render all required Heroicons', () => {
     // Subtask 2.4: Verify all metric icons are present
-    const { container } = render(<MetricsCards analytics={mockAnalyticsData} />);
+    const { container } = render(<MetricsCards analytics={mockAnalyticsData} dateRange={mockDateRange} />);
     
     // Should have 4 icons (light-bulb, chart-bar, check-circle, clock)
     const icons = container.querySelectorAll('svg.w-12');
@@ -98,7 +105,7 @@ describe('MetricsCards', () => {
   it('should apply hover effects on cards', () => {
     // Subtask 12.9: Verify hover effects exist
     // Task 7: Only clickable cards (Total Ideas) have enhanced hover effects when onClick provided
-    const { container } = render(<MetricsCards analytics={mockAnalyticsData} />);
+    const { container } = render(<MetricsCards analytics={mockAnalyticsData} dateRange={mockDateRange} />);
     
     const allCards = container.querySelectorAll('.card');
     expect(allCards.length).toBe(4);
@@ -118,7 +125,7 @@ describe('MetricsCards', () => {
       trendPercentage: 25, // ((50-40)/40)*100
     };
 
-    render(<MetricsCards analytics={analyticsWithPositiveTrend} />);
+    render(<MetricsCards analytics={analyticsWithPositiveTrend} dateRange={mockDateRange} />);
     
     expect(screen.getByText('50')).toBeInTheDocument();
     expect(screen.getByText('+25%')).toBeInTheDocument();
@@ -133,7 +140,7 @@ describe('MetricsCards', () => {
       trendPercentage: -40, // ((30-50)/50)*100
     };
 
-    const { container } = render(<MetricsCards analytics={analyticsWithNegativeTrend} />);
+    const { container } = render(<MetricsCards analytics={analyticsWithNegativeTrend} dateRange={mockDateRange} />);
     
     expect(screen.getByText('30')).toBeInTheDocument();
     expect(screen.getByText('-40%')).toBeInTheDocument();
@@ -152,7 +159,7 @@ describe('MetricsCards', () => {
       trendPercentage: 0,
     };
 
-    const { container } = render(<MetricsCards analytics={analyticsWithZeroTrend} />);
+    const { container } = render(<MetricsCards analytics={analyticsWithZeroTrend} dateRange={mockDateRange} />);
     
     expect(screen.getByText('40')).toBeInTheDocument();
     // Check that there are multiple "0%" (one for Total Ideas trend, one for Pipeline Stages)
@@ -174,7 +181,7 @@ describe('MetricsCards', () => {
       pipelineBreakdown: [],
     };
 
-    const { container } = render(<MetricsCards analytics={analyticsWithZeroIdeas} />);
+    const { container } = render(<MetricsCards analytics={analyticsWithZeroIdeas} dateRange={mockDateRange} />);
     
     // Find the Total Ideas card specifically
     const totalIdeasLabel = screen.getByText('Total Ideas');

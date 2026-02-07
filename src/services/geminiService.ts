@@ -85,6 +85,16 @@ export const geminiService = {
 
       const data: EdgeFunctionResponse | EdgeFunctionError = await response.json();
 
+      if (!data) {
+        return {
+          data: null,
+          error: {
+            message: 'No data returned from AI enhancement',
+            code: 'NO_DATA',
+          },
+        };
+      }
+
       // Check for error response from Edge Function
       if ('error' in data && 'code' in data) {
         const errorData = data as EdgeFunctionError;

@@ -4,9 +4,6 @@ import { openLovableService } from './openLovableService';
 // Mock the supabase client
 vi.mock('../lib/supabase', () => ({
   supabase: {
-    auth: {
-      getSession: vi.fn(),
-    },
     functions: {
       invoke: vi.fn(),
     },
@@ -30,16 +27,13 @@ describe('openLovableService', () => {
     technicalConsiderations: 'Use React and TypeScript',
   };
 
-  const mockSession = {
-    access_token: 'mock-token',
-    user: { id: 'user-123' },
-  };
 
   describe('generate', () => {
     it('returns error when not authenticated', async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
+      // Mock Edge Function returning 401 status
+      vi.mocked(supabase.functions.invoke).mockResolvedValue({
+        data: null,
+        error: { message: 'Unauthorized', status: 401 },
       });
 
       const result = await openLovableService.generate(
@@ -56,11 +50,6 @@ describe('openLovableService', () => {
     });
 
     it('calls supabase.functions.invoke with correct parameters', async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: mockSession },
-        error: null,
-      });
-
       vi.mocked(supabase.functions.invoke).mockResolvedValue({
         data: { prototypeId: 'proto-789', status: 'generating' },
         error: null,
@@ -78,11 +67,6 @@ describe('openLovableService', () => {
     });
 
     it('returns prototype ID and status on success', async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: mockSession },
-        error: null,
-      });
-
       const mockResponse = {
         prototypeId: 'proto-789',
         status: 'generating' as const,
@@ -104,11 +88,6 @@ describe('openLovableService', () => {
     });
 
     it('returns error when Edge Function returns an error', async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: mockSession },
-        error: null,
-      });
-
       vi.mocked(supabase.functions.invoke).mockResolvedValue({
         data: null,
         error: { message: 'Function invocation failed' },
@@ -128,11 +107,6 @@ describe('openLovableService', () => {
     });
 
     it('handles Edge Function error without message', async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: mockSession },
-        error: null,
-      });
-
       vi.mocked(supabase.functions.invoke).mockResolvedValue({
         data: null,
         error: {} as { message?: string },
@@ -152,11 +126,6 @@ describe('openLovableService', () => {
     });
 
     it('handles unexpected exceptions', async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: mockSession },
-        error: null,
-      });
-
       vi.mocked(supabase.functions.invoke).mockRejectedValue(new Error('Network error'));
 
       const result = await openLovableService.generate(

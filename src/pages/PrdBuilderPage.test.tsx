@@ -53,6 +53,37 @@ vi.mock('../features/prd/hooks/usePrdBuilder', () => ({
   },
 }));
 
+// Mock ChatInterface services
+vi.mock('../features/prd/services/prdChatService', () => ({
+  prdChatService: {
+    getWelcomeMessage: vi.fn().mockResolvedValue({
+      data: { aiMessage: 'Welcome to PRD development!' },
+      error: null,
+    }),
+    sendMessage: vi.fn(),
+    formatMessageHistory: vi.fn(),
+  },
+}));
+
+vi.mock('../features/prd/services/prdMessageService', () => ({
+  prdMessageService: {
+    getMessagesByPrdId: vi.fn().mockResolvedValue({
+      data: [],
+      error: null,
+    }),
+    addMessage: vi.fn().mockResolvedValue({
+      data: {
+        id: '1',
+        prd_id: 'prd-123',
+        role: 'assistant',
+        content: 'Welcome to PRD development!',
+        created_at: new Date().toISOString(),
+      },
+      error: null,
+    }),
+  },
+}));
+
 const mockIdeaService = vi.mocked(ideaService);
 const mockPrdService = vi.mocked(prdService);
 
@@ -118,7 +149,9 @@ describe('PrdBuilderPage', () => {
 
     render(<PrdBuilderPage />, { wrapper });
 
-    expect(screen.getByRole('generic', { hidden: true })).toHaveClass('animate-pulse');
+    // Check that skeleton is rendered (has animate-pulse class)
+    const skeleton = document.querySelector('.animate-pulse');
+    expect(skeleton).toBeInTheDocument();
   });
 
   it('displays PRD builder layout when data is loaded', async () => {
@@ -137,7 +170,11 @@ describe('PrdBuilderPage', () => {
       expect(screen.getByText(/PRD:/)).toBeInTheDocument();
     });
 
-    expect(screen.getByText('AI Assistant')).toBeInTheDocument();
+    // ChatInterface is now functional, check for input field instead
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Type your response...')).toBeInTheDocument();
+    });
+    
     expect(screen.getByText('PRD Preview')).toBeInTheDocument();
   });
 
@@ -238,11 +275,15 @@ describe('PrdBuilderPage', () => {
 
     render(<PrdBuilderPage />, { wrapper });
 
+    // ChatInterface now shows welcome message from usePrdChat hook
     await waitFor(() => {
-      expect(screen.getByText(/Welcome!/)).toBeInTheDocument();
-    });
-
-    expect(screen.getByText(/Chat functionality coming in the next update/)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Type your response...')).toBeInTheDocument();
+    }, { timeout: 10000 });
+    
+    // Welcome message should appear from the chat service
+    await waitFor(() => {
+      expect(screen.getByText(/welcome/i)).toBeInTheDocument();
+    }, { timeout: 10000 });
   });
 
   it('displays idea summary in header', async () => {

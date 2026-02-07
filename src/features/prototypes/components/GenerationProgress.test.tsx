@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { GenerationProgress } from './GenerationProgress';
 
 describe('GenerationProgress', () => {
@@ -20,7 +20,7 @@ describe('GenerationProgress', () => {
 
   it('should render progress indicator when generating', () => {
     render(<GenerationProgress status="generating" startTime={Date.now()} />);
-    expect(screen.getByText(/Analyzing PRD/)).toBeInTheDocument();
+    expect(screen.getByText(/Analyzing PRD\.\.\./)).toBeInTheDocument();
   });
 
   it('should show elapsed time', () => {
@@ -36,7 +36,7 @@ describe('GenerationProgress', () => {
     render(<GenerationProgress status="generating" startTime={startTime} />);
 
     // Initially should be in "Analyzing PRD" stage
-    expect(screen.getByText(/Analyzing PRD/)).toBeInTheDocument();
+    expect(screen.getByText(/Analyzing PRD\.\.\./)).toBeInTheDocument();
 
     // Advance time to move to next stage (3 seconds)
     vi.advanceTimersByTime(3500);
@@ -82,7 +82,9 @@ describe('GenerationProgress', () => {
     const startTime = Date.now() - 40000; // 40 seconds ago
     render(<GenerationProgress status="generating" startTime={startTime} />);
 
-    vi.advanceTimersByTime(1000);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
 
     // Progress should not exceed 100%
     const progressBar = document.querySelector('.bg-primary') as HTMLElement;

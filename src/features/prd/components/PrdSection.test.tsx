@@ -201,7 +201,7 @@ describe('PrdSection', () => {
           isHighlighted={false}
         />
       );
-      expect(screen.getByText('Empty')).toBeInTheDocument();
+      expect(screen.getByText('Not Started')).toBeInTheDocument();
     });
 
     it('should render with in_progress status', () => {

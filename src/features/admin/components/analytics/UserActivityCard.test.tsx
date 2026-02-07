@@ -3,6 +3,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { UserActivityCard } from './UserActivityCard';
 import type { UserActivityMetrics } from '../../analytics/types';
 
@@ -22,7 +23,11 @@ describe('UserActivityCard', () => {
 
   // Subtask 15.8: Test card renders with user activity data
   it('should render user activity stats correctly', () => {
-    render(<UserActivityCard data={mockUserActivity} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={mockUserActivity} />
+      </MemoryRouter>
+    );
 
     // Verify card title
     expect(screen.getByText('User Activity')).toBeInTheDocument();
@@ -42,7 +47,11 @@ describe('UserActivityCard', () => {
 
   // Test trend indicator display
   it('should display trend indicator correctly', () => {
-    render(<UserActivityCard data={mockUserActivity} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={mockUserActivity} />
+      </MemoryRouter>
+    );
 
     // Verify trend direction (up arrow)
     expect(screen.getByText('↑')).toBeInTheDocument();
@@ -62,7 +71,11 @@ describe('UserActivityCard', () => {
       },
     };
 
-    render(<UserActivityCard data={dataWithDownTrend} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={dataWithDownTrend} />
+      </MemoryRouter>
+    );
 
     // Verify down arrow
     expect(screen.getByText('↓')).toBeInTheDocument();
@@ -79,7 +92,11 @@ describe('UserActivityCard', () => {
       },
     };
 
-    render(<UserActivityCard data={dataWithNeutralTrend} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={dataWithNeutralTrend} />
+      </MemoryRouter>
+    );
 
     // Verify neutral arrow
     expect(screen.getByText('→')).toBeInTheDocument();
@@ -93,7 +110,11 @@ describe('UserActivityCard', () => {
       activePercentage: 60,
     };
 
-    render(<UserActivityCard data={highEngagementData} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={highEngagementData} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText('High engagement')).toBeInTheDocument();
   });
@@ -104,7 +125,11 @@ describe('UserActivityCard', () => {
       activePercentage: 35,
     };
 
-    render(<UserActivityCard data={mediumEngagementData} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={mediumEngagementData} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText('Medium engagement')).toBeInTheDocument();
   });
@@ -115,14 +140,22 @@ describe('UserActivityCard', () => {
       activePercentage: 15,
     };
 
-    render(<UserActivityCard data={lowEngagementData} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={lowEngagementData} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText(/Low engagement/)).toBeInTheDocument();
   });
 
   // Subtask 15.9: Test empty state displays correctly
   it('should display empty state when no data', () => {
-    render(<UserActivityCard data={undefined} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={undefined} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText('User Activity')).toBeInTheDocument();
     expect(screen.getByText('No user data available')).toBeInTheDocument();
@@ -142,14 +175,22 @@ describe('UserActivityCard', () => {
       recentSubmissions: [],
     };
 
-    render(<UserActivityCard data={emptyData} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={emptyData} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText('No user data available')).toBeInTheDocument();
   });
 
   // Test loading state
   it('should display loading skeleton when isLoading is true', () => {
-    render(<UserActivityCard data={undefined} isLoading={true} />);
+    render(
+      <MemoryRouter>
+        <UserActivityCard data={undefined} isLoading={true} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText('User Activity')).toBeInTheDocument();
     // Check for loading skeleton (animate-pulse class)

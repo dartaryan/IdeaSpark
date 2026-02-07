@@ -116,7 +116,7 @@ describe('PrototypeMetadata', () => {
       const viewPrdButton = screen.getByRole('button', { name: /view prd/i });
       await user.click(viewPrdButton);
       
-      expect(mockNavigate).toHaveBeenCalledWith('/prd/prd-1');
+      expect(mockNavigate).toHaveBeenCalledWith('/prd/view/prd-1');
     });
   });
 

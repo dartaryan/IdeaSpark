@@ -4,8 +4,8 @@ import { geminiService } from './geminiService';
 // Mock the supabase client
 vi.mock('../lib/supabase', () => ({
   supabase: {
-    functions: {
-      invoke: vi.fn(),
+    auth: {
+      getSession: vi.fn(),
     },
   },
 }));
@@ -13,9 +13,21 @@ vi.mock('../lib/supabase', () => ({
 // Import the mocked module
 import { supabase } from '../lib/supabase';
 
+// Mock fetch globally
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
+
+// Stub environment variables
+vi.stubEnv('VITE_SUPABASE_URL', 'https://test.supabase.co');
+vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'test-anon-key');
+
 describe('geminiService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { access_token: 'test-token' } },
+      error: null,
+    } as any);
   });
 
   const mockInput = {
@@ -34,27 +46,27 @@ describe('geminiService', () => {
   };
 
   describe('enhanceIdea', () => {
-    it('calls supabase.functions.invoke with correct parameters', async () => {
-      vi.mocked(supabase.functions.invoke).mockResolvedValue({
-        data: mockEdgeFunctionResponse,
-        error: null,
+    it('calls fetch with correct parameters', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => mockEdgeFunctionResponse,
       });
 
       await geminiService.enhanceIdea(mockInput.problem, mockInput.solution, mockInput.impact);
 
-      expect(supabase.functions.invoke).toHaveBeenCalledWith('gemini-enhance', {
-        body: {
-          problem: mockInput.problem,
-          solution: mockInput.solution,
-          impact: mockInput.impact,
-        },
-      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('gemini-enhance'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.any(String),
+        })
+      );
     });
 
     it('returns enhanced data mapped to service response format on success', async () => {
-      vi.mocked(supabase.functions.invoke).mockResolvedValue({
-        data: mockEdgeFunctionResponse,
-        error: null,
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => mockEdgeFunctionResponse,
       });
 
       const result = await geminiService.enhanceIdea(
@@ -72,9 +84,10 @@ describe('geminiService', () => {
     });
 
     it('returns error when Edge Function returns an error', async () => {
-      vi.mocked(supabase.functions.invoke).mockResolvedValue({
-        data: null,
-        error: { message: 'Function invocation failed' },
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => 'Internal Server Error',
       });
 
       const result = await geminiService.enhanceIdea(
@@ -85,15 +98,15 @@ describe('geminiService', () => {
 
       expect(result.data).toBeNull();
       expect(result.error).toEqual({
-        message: 'Function invocation failed',
+        message: 'Edge function error: 500',
         code: 'EDGE_FUNCTION_ERROR',
       });
     });
 
     it('returns error when Edge Function returns null data', async () => {
-      vi.mocked(supabase.functions.invoke).mockResolvedValue({
-        data: null,
-        error: null,
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => null,
       });
 
       const result = await geminiService.enhanceIdea(
@@ -115,9 +128,9 @@ describe('geminiService', () => {
         code: 'VALIDATION_ERROR',
       };
 
-      vi.mocked(supabase.functions.invoke).mockResolvedValue({
-        data: errorResponse,
-        error: null,
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => errorResponse,
       });
 
       const result = await geminiService.enhanceIdea(
@@ -139,9 +152,9 @@ describe('geminiService', () => {
         code: 'CONFIG_ERROR',
       };
 
-      vi.mocked(supabase.functions.invoke).mockResolvedValue({
-        data: errorResponse,
-        error: null,
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => errorResponse,
       });
 
       const result = await geminiService.enhanceIdea(
@@ -163,9 +176,9 @@ describe('geminiService', () => {
         code: 'CONTENT_TOO_LONG',
       };
 
-      vi.mocked(supabase.functions.invoke).mockResolvedValue({
-        data: errorResponse,
-        error: null,
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => errorResponse,
       });
 
       const result = await geminiService.enhanceIdea(
@@ -187,9 +200,9 @@ describe('geminiService', () => {
         code: 'ENHANCEMENT_FAILED',
       };
 
-      vi.mocked(supabase.functions.invoke).mockResolvedValue({
-        data: errorResponse,
-        error: null,
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => errorResponse,
       });
 
       const result = await geminiService.enhanceIdea(
@@ -206,7 +219,7 @@ describe('geminiService', () => {
     });
 
     it('handles unexpected exceptions', async () => {
-      vi.mocked(supabase.functions.invoke).mockRejectedValue(new Error('Network error'));
+      mockFetch.mockRejectedValue(new Error('Network error'));
 
       const result = await geminiService.enhanceIdea(
         mockInput.problem,
@@ -222,9 +235,10 @@ describe('geminiService', () => {
     });
 
     it('handles Edge Function error without message', async () => {
-      vi.mocked(supabase.functions.invoke).mockResolvedValue({
-        data: null,
-        error: {} as { message?: string },
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 502,
+        text: async () => '',
       });
 
       const result = await geminiService.enhanceIdea(
@@ -235,7 +249,7 @@ describe('geminiService', () => {
 
       expect(result.data).toBeNull();
       expect(result.error).toEqual({
-        message: 'Failed to enhance idea with AI',
+        message: 'Edge function error: 502',
         code: 'EDGE_FUNCTION_ERROR',
       });
     });

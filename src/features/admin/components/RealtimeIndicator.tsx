@@ -22,7 +22,7 @@ interface RealtimeIndicatorProps {
 
 export function RealtimeIndicator({ isConnected, error }: RealtimeIndicatorProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" data-testid="realtime-indicator">
       {/* Subtask 7.1 & 7.6: "Live" indicator badge with DaisyUI styling */}
       <div 
         className="badge badge-sm gap-2 rounded-[20px]"

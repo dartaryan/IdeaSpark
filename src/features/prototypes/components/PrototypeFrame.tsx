@@ -25,14 +25,14 @@ export function PrototypeFrame({ url, device, className = '' }: PrototypeFramePr
 
     // Set timeout for iframe load (10 seconds) - AC 6
     const timeout = setTimeout(() => {
-      if (isLoading) {
-        setLoadTimeout(true);
-        setIsLoading(false);
-      }
+      setLoadTimeout(true);
+      setIsLoading(false);
     }, 10000);
 
     return () => clearTimeout(timeout);
-  }, [url, isLoading]);
+    // Only re-run when URL changes, not when isLoading changes (avoids infinite loop)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]);
 
   const handleLoad = () => {
     setIsLoading(false);
