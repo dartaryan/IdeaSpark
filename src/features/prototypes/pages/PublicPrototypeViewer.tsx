@@ -71,7 +71,7 @@ export function PublicPrototypeViewer() {
       <div className="navbar bg-base-100 shadow-lg">
         <div className="flex-1">
           <a href="/" className="btn btn-ghost normal-case text-xl">
-            <span className="text-primary font-bold">IdeaSpark</span>
+            <img src="/logo-text-side.svg" alt="IdeaSpark" className="h-8" />
           </a>
           <span className="badge badge-ghost ml-2">View Only</span>
         </div>
@@ -132,7 +132,10 @@ export function PublicPrototypeViewer() {
         <div className="text-center mt-8 text-sm text-base-content/70">
           <p>
             This prototype was created with{' '}
-            <a href="/" className="link link-primary">IdeaSpark</a>
+            <a href="/" className="inline-flex items-center gap-1 link link-primary">
+              <img src="/logo-icon.svg" alt="IdeaSpark" className="h-4 inline" />
+              IdeaSpark
+            </a>
           </p>
           <p className="mt-2">
             Created {new Date(prototype.created_at).toLocaleDateString()}

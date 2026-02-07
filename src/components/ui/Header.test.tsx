@@ -17,8 +17,7 @@ describe('Header', () => {
   it('should render the IdeaSpark logo', () => {
     render(<Header />);
 
-    expect(screen.getByText('Idea')).toBeInTheDocument();
-    expect(screen.getByText('Spark')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /ideaspark/i })).toBeInTheDocument();
   });
 
   it('should render the logo as a link to dashboard', () => {
@@ -86,12 +85,13 @@ describe('Header', () => {
     expect(header).toHaveClass('z-30');
   });
 
-  it('should render lightbulb icon in logo', () => {
+  it('should render logo image in logo link', () => {
     render(<Header />);
 
-    // The SVG icon should be present
+    // The logo image should be present inside the link
     const logoLink = screen.getByRole('link', { name: /ideaspark/i });
-    const svg = logoLink.querySelector('svg');
-    expect(svg).toBeInTheDocument();
+    const img = logoLink.querySelector('img');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', '/logo-text-side.svg');
   });
 });

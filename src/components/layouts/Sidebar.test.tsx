@@ -124,9 +124,10 @@ describe('Sidebar', () => {
     it('should render mobile logo', () => {
       render(<Sidebar />);
 
-      // The mobile logo contains "IdeaSpark" text
-      expect(screen.getByText('Idea')).toBeInTheDocument();
-      expect(screen.getByText('Spark')).toBeInTheDocument();
+      // The mobile logo is an img with alt text
+      const logo = screen.getByRole('img', { name: /ideaspark/i });
+      expect(logo).toBeInTheDocument();
+      expect(logo).toHaveAttribute('src', '/logo-text-side.svg');
     });
   });
 

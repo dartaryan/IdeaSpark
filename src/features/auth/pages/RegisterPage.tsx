@@ -23,6 +23,13 @@ export function RegisterPage() {
     <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
       <div className="card bg-base-100 shadow-xl w-full max-w-md">
         <div className="card-body">
+          <div className="flex justify-center mb-6">
+            <img
+              src="/logo-text-bottom.svg"
+              alt="IdeaSpark"
+              className="h-24"
+            />
+          </div>
           <h1 className="card-title text-2xl font-bold justify-center mb-4">Create Account</h1>
           <p className="text-center text-base-content/70 mb-6">
             Join IdeaSpark and start submitting your ideas

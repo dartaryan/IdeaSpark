@@ -137,10 +137,11 @@ export function Sidebar({ onNavClick }: SidebarProps) {
     <aside className="w-64 bg-base-100 min-h-full flex flex-col">
       {/* Logo for mobile drawer */}
       <div className="lg:hidden p-4 border-b border-base-200">
-        <span className="text-xl font-bold">
-          <span className="text-primary">Idea</span>
-          <span>Spark</span>
-        </span>
+        <img
+          src="/logo-text-side.svg"
+          alt="IdeaSpark"
+          className="h-7"
+        />
       </div>
 
       {/* Navigation menu */}
