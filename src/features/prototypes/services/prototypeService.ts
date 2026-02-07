@@ -315,6 +315,9 @@ export const prototypeService = {
         isPublic: restoredData.is_public || false,
         sharedAt: restoredData.shared_at || null,
         viewCount: restoredData.view_count || 0,
+        passwordHash: restoredData.password_hash ?? null,
+        expiresAt: restoredData.expires_at ?? null,
+        shareRevoked: restoredData.share_revoked ?? false,
       };
 
       return { data: prototype, error: null };
@@ -438,6 +441,64 @@ export const prototypeService = {
         error: { 
           message: 'Failed to load prototype', 
           code: 'UNKNOWN_ERROR' 
+        },
+      };
+    }
+  },
+
+  /**
+   * Get share statistics for a prototype (view count, shared date, public status)
+   *
+   * @param prototypeId - The prototype ID
+   * @returns Share stats object or null if not shared
+   */
+  async getShareStats(prototypeId: string): Promise<ServiceResponse<{ viewCount: number; sharedAt: string | null; isPublic: boolean } | null>> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        return {
+          data: null,
+          error: { message: 'Not authenticated', code: 'AUTH_ERROR' },
+        };
+      }
+
+      const { data, error } = await supabase
+        .from('prototypes')
+        .select('view_count, shared_at, is_public')
+        .eq('id', prototypeId)
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return { data: null, error: null }; // Prototype not found, not an error
+        }
+        console.error('Get share stats error:', error);
+        return {
+          data: null,
+          error: {
+            message: 'Failed to get share statistics',
+            code: 'DB_ERROR',
+          },
+        };
+      }
+
+      return {
+        data: {
+          viewCount: data.view_count ?? 0,
+          sharedAt: data.shared_at,
+          isPublic: data.is_public ?? false,
+        },
+        error: null,
+      };
+    } catch (error) {
+      console.error('Get share stats error:', error);
+      return {
+        data: null,
+        error: {
+          message: 'Failed to get share statistics',
+          code: 'UNKNOWN_ERROR',
         },
       };
     }

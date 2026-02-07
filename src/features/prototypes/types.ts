@@ -19,6 +19,10 @@ export interface Prototype {
   isPublic: boolean;
   sharedAt: string | null;
   viewCount: number;
+  // Epic 9 sharing enhancements
+  passwordHash: string | null;
+  expiresAt: string | null;
+  shareRevoked: boolean;
 }
 
 // Database row format (snake_case)
@@ -39,6 +43,10 @@ export interface PrototypeRow {
   is_public: boolean;
   shared_at: string | null;
   view_count: number;
+  // Epic 9 sharing enhancements
+  password_hash: string | null;
+  expires_at: string | null;
+  share_revoked: boolean;
 }
 
 export interface CreatePrototypeInput {
@@ -296,5 +304,8 @@ export function mapPrototypeRow(row: PrototypeRow): Prototype {
     isPublic: row.is_public,
     sharedAt: row.shared_at,
     viewCount: row.view_count,
+    passwordHash: row.password_hash ?? null,
+    expiresAt: row.expires_at ?? null,
+    shareRevoked: row.share_revoked ?? false,
   };
 }

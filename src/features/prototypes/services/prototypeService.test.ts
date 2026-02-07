@@ -383,6 +383,156 @@ describe('prototypeService', () => {
     });
   });
 
+  describe('getShareStats', () => {
+    const mockSession = {
+      user: { id: 'user-123' },
+      access_token: 'token-123',
+    };
+
+    it('returns share stats for authenticated user', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            view_count: 42,
+            shared_at: '2026-01-15T10:00:00Z',
+            is_public: true,
+          },
+          error: null,
+        }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getShareStats('proto-789');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual({
+        viewCount: 42,
+        sharedAt: '2026-01-15T10:00:00Z',
+        isPublic: true,
+      });
+      expect(mockFromChain.select).toHaveBeenCalledWith('view_count, shared_at, is_public');
+      expect(mockFromChain.eq).toHaveBeenCalledWith('id', 'proto-789');
+      expect(mockFromChain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+    });
+
+    it('returns null when prototype not found (PGRST116)', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Not found', code: 'PGRST116' },
+        }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getShareStats('proto-789');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toBeNull();
+    });
+
+    it('returns error when not authenticated', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: null },
+        error: null,
+      } as any);
+
+      const result = await prototypeService.getShareStats('proto-789');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Not authenticated',
+        code: 'AUTH_ERROR',
+      });
+    });
+
+    it('returns error when database query fails', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Query failed', code: 'DB_ERROR' },
+        }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getShareStats('proto-789');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Failed to get share statistics',
+        code: 'DB_ERROR',
+      });
+    });
+
+    it('handles unexpected errors gracefully', async () => {
+      vi.mocked(supabase.auth.getSession).mockRejectedValue(
+        new Error('Network error')
+      );
+
+      const result = await prototypeService.getShareStats('proto-789');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        message: 'Failed to get share statistics',
+        code: 'UNKNOWN_ERROR',
+      });
+    });
+
+    it('defaults view_count to 0 and is_public to false when null', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      } as any);
+
+      const mockFromChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            view_count: null,
+            shared_at: null,
+            is_public: null,
+          },
+          error: null,
+        }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(mockFromChain as any);
+
+      const result = await prototypeService.getShareStats('proto-789');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual({
+        viewCount: 0,
+        sharedAt: null,
+        isPublic: false,
+      });
+    });
+  });
+
   describe('getShareUrl', () => {
     const mockSession = {
       user: { id: 'user-123' },

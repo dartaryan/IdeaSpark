@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { prototypeService } from '../services/prototypeService';
 import { prototypeKeys } from './usePrototype';
+import { shareStatsKeys } from './useShareStats';
 
 interface SharePrototypeInput {
   prototypeId: string;
@@ -11,7 +12,7 @@ interface SharePrototypeInput {
 
 /**
  * Hook to generate a shareable public link for a prototype
- * Copies the URL to clipboard on success
+ * Copies the URL to clipboard on success and invalidates share stats
  *
  * @returns React Query mutation for share link generation
  */
@@ -39,6 +40,11 @@ export function useSharePrototype() {
       
       queryClient.invalidateQueries({ 
         queryKey: prototypeKeys.detail(variables.prototypeId) 
+      });
+
+      // Invalidate share stats to refresh view count after sharing
+      queryClient.invalidateQueries({
+        queryKey: shareStatsKeys.detail(variables.prototypeId),
       });
     },
   });
