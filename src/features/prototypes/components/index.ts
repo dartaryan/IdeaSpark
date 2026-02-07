@@ -18,3 +18,5 @@ export { EditorToolbar } from './EditorToolbar';
 export { SandpackLivePreview } from './SandpackLivePreview';
 // Save Version Modal (Story 7.4)
 export { SaveVersionModal } from './SaveVersionModal';
+// Version Compare Modal (Story 7.5)
+export { VersionCompareModal } from './VersionCompareModal';

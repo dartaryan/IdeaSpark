@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { usePrototype, useVersionHistory } from '../features/prototypes/hooks/usePrototype';
 import { PrototypeFrame } from '../features/prototypes/components/PrototypeFrame';
@@ -10,7 +10,8 @@ import { VersionHistoryPanel } from '../features/prototypes/components/VersionHi
 import { ShareButton } from '../features/prototypes/components/ShareButton';
 import { CodeEditorPanel } from '../features/prototypes/components/CodeEditorPanel';
 import { SaveVersionModal } from '../features/prototypes/components/SaveVersionModal';
-import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save } from 'lucide-react';
+import { VersionCompareModal } from '../features/prototypes/components/VersionCompareModal';
+import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save, ArrowLeft } from 'lucide-react';
 import { loadEditorWidth, saveEditorWidth } from '../features/prototypes/utils/editorHelpers';
 import { useCodePersistence } from '../features/prototypes/hooks/useCodePersistence';
 import type { SaveStatus } from '../features/prototypes/hooks/useCodePersistence';
@@ -83,14 +84,19 @@ function SaveStatusBadge({ status, onRetry }: { status: SaveStatus; onRetry?: ()
 export function PrototypeViewerPage() {
   const { prototypeId } = useParams<{ prototypeId: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedDevice, setSelectedDevice] = useState<DevicePreset>(DEVICE_PRESETS[0]); // Default to desktop
-  const [activePrototypeId, setActivePrototypeId] = useState<string | null>(null);
+  const [activePrototypeId, setActivePrototypeId] = useState<string | null>(
+    () => searchParams.get('version') || null,
+  );
   const [showEditor, setShowEditor] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editorWidthPercent, setEditorWidthPercent] = useState(() => loadEditorWidth());
   const [mobileView, setMobileView] = useState<'preview' | 'code'>('preview');
   const [hasCompilationError, setHasCompilationError] = useState(false);
   const [showSaveVersionModal, setShowSaveVersionModal] = useState(false);
+  const [showCompareModal, setShowCompareModal] = useState(false);
+  const [compareVersionIds, setCompareVersionIds] = useState<[string, string] | null>(null);
   // Ref (not state) to avoid unnecessary re-renders during save flow.
   // Works because: handleSaveVersion sets ref → flushSave() triggers re-render
   // (via setSaveStatus) → useCodePersistence picks up new ref value at next render.
@@ -183,6 +189,39 @@ export function PrototypeViewerPage() {
     [saveVersion, flushSave, navigate, displayPrototype?.version],
   );
 
+  // Determine if viewing the latest version (Story 7.5, Task 4)
+  const latestVersionId = versionHistory?.[0]?.id;
+  const isViewingLatest = !activePrototypeId || activePrototypeId === latestVersionId;
+
+  // Handle version switching with unsaved changes warning (Story 7.5, Subtask 4.1)
+  const handleVersionSelect = useCallback((versionId: string) => {
+    if (editMode && hasUnsavedChanges) {
+      const proceed = window.confirm(
+        'You have unsaved changes. Switching versions will discard them. Continue?',
+      );
+      if (!proceed) return;
+      setEditMode(false);
+    }
+    setActivePrototypeId(versionId);
+    // Update URL search param for bookmarkability (Subtask 4.5)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (versionId === latestVersionId) {
+        next.delete('version');
+      } else {
+        next.set('version', versionId);
+      }
+      return next;
+    });
+  }, [editMode, hasUnsavedChanges, latestVersionId, setSearchParams]);
+
+  // Return to latest version quick action (Subtask 4.3)
+  const handleReturnToLatest = useCallback(() => {
+    if (latestVersionId) {
+      handleVersionSelect(latestVersionId);
+    }
+  }, [latestVersionId, handleVersionSelect]);
+
   // Handle entering edit mode
   const handleEnterEditMode = useCallback(() => {
     setEditMode(true);
@@ -194,6 +233,17 @@ export function PrototypeViewerPage() {
     await flushSave();
     setEditMode(false);
   }, [flushSave]);
+
+  // Handle compare versions (Story 7.5)
+  const handleCompare = useCallback((versionIdA: string, versionIdB: string) => {
+    setCompareVersionIds([versionIdA, versionIdB]);
+    setShowCompareModal(true);
+  }, []);
+
+  const handleCloseCompare = useCallback(() => {
+    setShowCompareModal(false);
+    setCompareVersionIds(null);
+  }, []);
 
   // Handle code changes from editor in edit mode
   const handleCodeChange = useCallback(
@@ -486,6 +536,27 @@ export function PrototypeViewerPage() {
                       >
                         v{displayPrototype.version}
                       </span>
+                      {/* "Viewing older version" indicator (Story 7.5, Subtask 4.2) */}
+                      {!isViewingLatest && (
+                        <span
+                          className="badge badge-warning badge-sm gap-1"
+                          data-testid="viewing-old-version-badge"
+                        >
+                          Viewing v{displayPrototype.version}
+                        </span>
+                      )}
+                      {/* Return to Latest button (Story 7.5, Subtask 4.3) */}
+                      {!isViewingLatest && (
+                        <button
+                          className="btn btn-xs btn-ghost gap-1"
+                          onClick={handleReturnToLatest}
+                          aria-label="Return to latest version"
+                          data-testid="return-to-latest-btn"
+                        >
+                          <ArrowLeft className="w-3 h-3" />
+                          Latest
+                        </button>
+                      )}
                       {/* Save status indicator (visible in edit mode) */}
                       {editMode && <SaveStatusBadge status={saveStatus} onRetry={() => flushSave()} />}
                     </div>
@@ -520,10 +591,13 @@ export function PrototypeViewerPage() {
                         </button>
                       )}
                       {/* Edit Code button (enters edit mode with Sandpack live preview) */}
+                      {/* Disabled when viewing non-latest version (Story 7.5, Subtask 4.4) */}
                       {hasCode && !editMode && (
                         <button
                           className="btn btn-sm btn-outline btn-accent gap-2"
                           onClick={handleEnterEditMode}
+                          disabled={!isViewingLatest}
+                          title={!isViewingLatest ? 'Switch to latest version to edit' : undefined}
                           aria-label="Edit prototype code with live preview"
                           data-testid="edit-code-btn"
                         >
@@ -626,7 +700,8 @@ export function PrototypeViewerPage() {
                     <VersionHistoryPanel
                       prdId={prototype.prdId}
                       activeVersionId={activePrototypeId || prototype.id}
-                      onVersionSelect={(versionId) => setActivePrototypeId(versionId)}
+                      onVersionSelect={handleVersionSelect}
+                      onCompare={handleCompare}
                     />
                   )}
                 </div>
@@ -645,6 +720,17 @@ export function PrototypeViewerPage() {
         currentVersion={displayPrototype.version}
         nextVersion={displayPrototype.version + 1}
       />
+
+      {/* Version Compare Modal (Story 7.5) */}
+      {versionHistory && (
+        <VersionCompareModal
+          isOpen={showCompareModal}
+          onClose={handleCloseCompare}
+          versions={versionHistory}
+          initialVersionA={compareVersionIds?.[0]}
+          initialVersionB={compareVersionIds?.[1]}
+        />
+      )}
     </div>
   );
 }

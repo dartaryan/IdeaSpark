@@ -1,6 +1,7 @@
 // src/features/prototypes/components/VersionHistoryPanel.tsx
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { GitCompare } from 'lucide-react';
 import { RefinementHistoryItem } from './RefinementHistoryItem';
 import { useVersionHistory } from '../hooks/usePrototype';
 import { useRestoreVersion } from '../hooks/useRestoreVersion';
@@ -9,14 +10,18 @@ interface VersionHistoryPanelProps {
   prdId: string;
   activeVersionId: string | null;
   onVersionSelect: (prototypeId: string) => void;
+  /** Called when user wants to compare two versions */
+  onCompare?: (versionIdA: string, versionIdB: string) => void;
 }
 
 export function VersionHistoryPanel({ 
   prdId, 
   activeVersionId, 
-  onVersionSelect 
+  onVersionSelect,
+  onCompare,
 }: VersionHistoryPanelProps) {
   const [restoreConfirmId, setRestoreConfirmId] = useState<string | null>(null);
+  const [compareSelection, setCompareSelection] = useState<string[]>([]);
   const { data: versions, isLoading } = useVersionHistory(prdId);
   const restoreMutation = useRestoreVersion();
 
@@ -37,6 +42,46 @@ export function VersionHistoryPanel({
       console.error('Restoration failed:', error);
     }
   };
+
+  const handleCompareToggle = useCallback((versionId: string) => {
+    setCompareSelection((prev) => {
+      if (prev.includes(versionId)) {
+        // Deselect
+        return prev.filter((id) => id !== versionId);
+      }
+      if (prev.length >= 2) {
+        // Replace oldest selection
+        return [prev[1], versionId];
+      }
+      return [...prev, versionId];
+    });
+  }, []);
+
+  const handleCompareSelected = useCallback(() => {
+    if (compareSelection.length === 2 && onCompare) {
+      // Sort by version number so older is A, newer is B
+      const versionA = versions?.find((v) => v.id === compareSelection[0]);
+      const versionB = versions?.find((v) => v.id === compareSelection[1]);
+      if (versionA && versionB) {
+        const [older, newer] = versionA.version < versionB.version
+          ? [versionA, versionB]
+          : [versionB, versionA];
+        onCompare(older.id, newer.id);
+      }
+      setCompareSelection([]);
+    }
+  }, [compareSelection, onCompare, versions]);
+
+  const handleCompareWithCurrent = useCallback((versionId: string) => {
+    if (activeVersionId && onCompare) {
+      // Compare the clicked version (old) with the current active version (new)
+      onCompare(versionId, activeVersionId);
+    }
+  }, [activeVersionId, onCompare]);
+
+  const handleClearSelection = useCallback(() => {
+    setCompareSelection([]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -64,40 +109,107 @@ export function VersionHistoryPanel({
   }
 
   const versionToRestore = versions.find(v => v.id === restoreConfirmId);
+  const canCompare = versions.length >= 2;
+  const hasCompareSelection = compareSelection.length === 2;
 
   return (
     <>
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
           <h3 className="card-title text-lg">Version History</h3>
-          <p className="text-sm text-base-content/70 mb-2">
-            {versions.length} {versions.length === 1 ? 'version' : 'versions'}
-          </p>
-          
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {versions.map((prototype) => (
-              <div key={prototype.id} className="relative">
-                <RefinementHistoryItem
-                  prototype={prototype}
-                  isActive={prototype.id === activeVersionId}
-                  onClick={() => onVersionSelect(prototype.id)}
-                />
-                
-                {/* Restore button - only show for non-active versions */}
-                {prototype.id !== activeVersionId && (
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-base-content/70">
+              {versions.length} {versions.length === 1 ? 'version' : 'versions'}
+            </p>
+            {/* Compare selection controls */}
+            {canCompare && onCompare && (
+              <div className="flex items-center gap-1">
+                {compareSelection.length > 0 && (
                   <button
-                    className="btn btn-sm btn-ghost absolute top-2 right-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setRestoreConfirmId(prototype.id);
-                    }}
-                    disabled={restoreMutation.isPending}
+                    className="btn btn-xs btn-ghost"
+                    onClick={handleClearSelection}
+                    aria-label="Clear compare selection"
+                    data-testid="clear-compare-selection"
                   >
-                    Restore
+                    Clear
                   </button>
                 )}
+                <button
+                  className="btn btn-xs btn-primary gap-1"
+                  onClick={handleCompareSelected}
+                  disabled={!hasCompareSelection}
+                  aria-label="Compare selected versions"
+                  data-testid="compare-selected-btn"
+                >
+                  <GitCompare className="w-3.5 h-3.5" />
+                  Compare ({compareSelection.length}/2)
+                </button>
               </div>
-            ))}
+            )}
+          </div>
+          
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {versions.map((prototype, index) => {
+              const isSelected = compareSelection.includes(prototype.id);
+              // Versions are ordered DESC (newest first), so next in array is the previous version
+              const previousVersion = index < versions.length - 1 ? versions[index + 1] : null;
+              return (
+                <div key={prototype.id} className="relative">
+                  {/* Compare checkbox overlay */}
+                  {canCompare && onCompare && (
+                    <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        className={`checkbox checkbox-xs ${isSelected ? 'checkbox-secondary' : ''}`}
+                        checked={isSelected}
+                        onChange={() => handleCompareToggle(prototype.id)}
+                        aria-label={`Select v${prototype.version} for comparison`}
+                        data-testid={`compare-checkbox-${prototype.id}`}
+                      />
+                    </div>
+                  )}
+                  <div className={isSelected ? 'ring-2 ring-secondary ring-offset-1 rounded-2xl' : ''}>
+                    <RefinementHistoryItem
+                      prototype={prototype}
+                      isActive={prototype.id === activeVersionId}
+                      onClick={() => onVersionSelect(prototype.id)}
+                      previousVersion={previousVersion}
+                    />
+                  </div>
+                  
+                  {/* Action buttons - only show for non-active versions */}
+                  {prototype.id !== activeVersionId && (
+                    <div className="absolute top-2 right-2 flex items-center gap-1">
+                      {/* Compare with current quick action */}
+                      {onCompare && (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCompareWithCurrent(prototype.id);
+                          }}
+                          title={`Compare v${prototype.version} with current`}
+                          aria-label={`Compare version ${prototype.version} with current`}
+                          data-testid={`compare-with-current-${prototype.id}`}
+                        >
+                          <GitCompare className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRestoreConfirmId(prototype.id);
+                        }}
+                        disabled={restoreMutation.isPending}
+                      >
+                        Restore
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {restoreMutation.isError && (

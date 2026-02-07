@@ -120,7 +120,7 @@ development_status:
   7-2-view-generated-code-with-syntax-highlighting: done
   7-3-edit-code-in-real-time-with-live-preview: done
   7-4-save-edited-prototype-version: done
-  7-5-manage-multiple-prototype-versions: backlog
+  7-5-manage-multiple-prototype-versions: done
   epic-7-retrospective: optional
 
   # Epic 8: Prototype State Persistence

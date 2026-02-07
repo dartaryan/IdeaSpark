@@ -471,4 +471,179 @@ describe('VersionHistoryPanel', () => {
       expect(button).toBeDisabled();
     });
   });
+
+  // --- Story 7.5: Compare feature tests (Code Review H1) ---
+
+  describe('Compare selection (Story 7.5)', () => {
+    const mockOnCompare = vi.fn();
+
+    function renderWithCompare(activeVersionId = 'proto-3') {
+      vi.mocked(useVersionHistory).mockReturnValue({
+        data: mockVersions,
+        isLoading: false,
+      } as any);
+
+      vi.mocked(useRestoreVersion).mockReturnValue({
+        mutateAsync: vi.fn(),
+        isPending: false,
+        isError: false,
+        reset: vi.fn(),
+      } as any);
+
+      return render(
+        <VersionHistoryPanel
+          prdId="prd-123"
+          activeVersionId={activeVersionId}
+          onVersionSelect={mockOnVersionSelect}
+          onCompare={mockOnCompare}
+        />,
+        { wrapper },
+      );
+    }
+
+    it('renders compare checkboxes when onCompare is provided', () => {
+      renderWithCompare();
+
+      // Each version should have a compare checkbox
+      expect(screen.getByTestId('compare-checkbox-proto-3')).toBeInTheDocument();
+      expect(screen.getByTestId('compare-checkbox-proto-2')).toBeInTheDocument();
+      expect(screen.getByTestId('compare-checkbox-proto-1')).toBeInTheDocument();
+    });
+
+    it('renders "Compare (0/2)" button when onCompare is provided', () => {
+      renderWithCompare();
+
+      const compareBtn = screen.getByTestId('compare-selected-btn');
+      expect(compareBtn).toBeInTheDocument();
+      expect(compareBtn).toHaveTextContent('Compare (0/2)');
+      expect(compareBtn).toBeDisabled();
+    });
+
+    it('disables compare button when fewer than 2 versions selected', async () => {
+      const user = userEvent.setup();
+      renderWithCompare();
+
+      // Select one version
+      await user.click(screen.getByTestId('compare-checkbox-proto-1'));
+
+      const compareBtn = screen.getByTestId('compare-selected-btn');
+      expect(compareBtn).toHaveTextContent('Compare (1/2)');
+      expect(compareBtn).toBeDisabled();
+    });
+
+    it('enables compare button when exactly 2 versions selected', async () => {
+      const user = userEvent.setup();
+      renderWithCompare();
+
+      await user.click(screen.getByTestId('compare-checkbox-proto-1'));
+      await user.click(screen.getByTestId('compare-checkbox-proto-2'));
+
+      const compareBtn = screen.getByTestId('compare-selected-btn');
+      expect(compareBtn).toHaveTextContent('Compare (2/2)');
+      expect(compareBtn).not.toBeDisabled();
+    });
+
+    it('calls onCompare with sorted version IDs (older first) when compare clicked', async () => {
+      const user = userEvent.setup();
+      renderWithCompare();
+
+      // Select v3 first, then v1 — should still pass v1 (older) as A
+      await user.click(screen.getByTestId('compare-checkbox-proto-3'));
+      await user.click(screen.getByTestId('compare-checkbox-proto-1'));
+
+      await user.click(screen.getByTestId('compare-selected-btn'));
+
+      expect(mockOnCompare).toHaveBeenCalledWith('proto-1', 'proto-3');
+    });
+
+    it('clears selection when Clear button is clicked', async () => {
+      const user = userEvent.setup();
+      renderWithCompare();
+
+      // Select two versions
+      await user.click(screen.getByTestId('compare-checkbox-proto-1'));
+      await user.click(screen.getByTestId('compare-checkbox-proto-2'));
+
+      // Clear button should appear
+      const clearBtn = screen.getByTestId('clear-compare-selection');
+      expect(clearBtn).toBeInTheDocument();
+      await user.click(clearBtn);
+
+      // Button should go back to 0/2
+      expect(screen.getByTestId('compare-selected-btn')).toHaveTextContent('Compare (0/2)');
+    });
+
+    it('replaces oldest selection when selecting a third version', async () => {
+      const user = userEvent.setup();
+      renderWithCompare();
+
+      // Select two versions
+      await user.click(screen.getByTestId('compare-checkbox-proto-1'));
+      await user.click(screen.getByTestId('compare-checkbox-proto-2'));
+
+      // Select a third - should replace proto-1 (oldest selection)
+      await user.click(screen.getByTestId('compare-checkbox-proto-3'));
+
+      // Should still show 2/2 (proto-2 and proto-3)
+      expect(screen.getByTestId('compare-selected-btn')).toHaveTextContent('Compare (2/2)');
+    });
+
+    it('shows "Compare with current" button for non-active versions', () => {
+      renderWithCompare();
+
+      // Non-active versions (proto-2 and proto-1) should have "compare with current" buttons
+      expect(screen.getByTestId('compare-with-current-proto-2')).toBeInTheDocument();
+      expect(screen.getByTestId('compare-with-current-proto-1')).toBeInTheDocument();
+      // Active version (proto-3) should NOT have it
+      expect(screen.queryByTestId('compare-with-current-proto-3')).not.toBeInTheDocument();
+    });
+
+    it('calls onCompare when "Compare with current" is clicked', async () => {
+      const user = userEvent.setup();
+      renderWithCompare();
+
+      await user.click(screen.getByTestId('compare-with-current-proto-1'));
+
+      // Should compare proto-1 (old) with proto-3 (active/current)
+      expect(mockOnCompare).toHaveBeenCalledWith('proto-1', 'proto-3');
+    });
+
+    it('does not render compare checkboxes when onCompare is not provided', () => {
+      vi.mocked(useVersionHistory).mockReturnValue({
+        data: mockVersions,
+        isLoading: false,
+      } as any);
+
+      vi.mocked(useRestoreVersion).mockReturnValue({
+        mutateAsync: vi.fn(),
+        isPending: false,
+        isError: false,
+        reset: vi.fn(),
+      } as any);
+
+      render(
+        <VersionHistoryPanel
+          prdId="prd-123"
+          activeVersionId="proto-3"
+          onVersionSelect={mockOnVersionSelect}
+        />,
+        { wrapper },
+      );
+
+      expect(screen.queryByTestId('compare-checkbox-proto-3')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('compare-selected-btn')).not.toBeInTheDocument();
+    });
+
+    it('applies secondary ring highlight on selected compare versions', async () => {
+      const user = userEvent.setup();
+      renderWithCompare();
+
+      await user.click(screen.getByTestId('compare-checkbox-proto-1'));
+
+      // The wrapper div around the selected version should have ring-2 ring-secondary
+      const checkbox = screen.getByTestId('compare-checkbox-proto-1');
+      const itemWrapper = checkbox.closest('.relative')?.querySelector('.ring-2');
+      expect(itemWrapper).toBeInTheDocument();
+    });
+  });
 });
