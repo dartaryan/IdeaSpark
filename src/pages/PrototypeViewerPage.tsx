@@ -11,11 +11,13 @@ import { ShareButton } from '../features/prototypes/components/ShareButton';
 import { CodeEditorPanel } from '../features/prototypes/components/CodeEditorPanel';
 import { SaveVersionModal } from '../features/prototypes/components/SaveVersionModal';
 import { VersionCompareModal } from '../features/prototypes/components/VersionCompareModal';
-import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save, ArrowLeft, Database, CheckCircle2 } from 'lucide-react';
 import { loadEditorWidth, saveEditorWidth } from '../features/prototypes/utils/editorHelpers';
 import { useCodePersistence } from '../features/prototypes/hooks/useCodePersistence';
 import type { SaveStatus } from '../features/prototypes/hooks/useCodePersistence';
 import { useSaveVersion } from '../features/prototypes/hooks/useSaveVersion';
+import { useSandpackStateBridge } from '../features/prototypes/hooks/useSandpackStateBridge';
+import { useStateCapturePerformance } from '../features/prototypes/hooks/useStateCapturePerformance';
 
 // Lazy load SandpackLivePreview - only loads when edit mode is activated
 const SandpackLivePreview = lazy(() =>
@@ -79,6 +81,67 @@ function SaveStatusBadge({ status, onRetry }: { status: SaveStatus; onRetry?: ()
     default:
       return null;
   }
+}
+
+/** State capture indicator showing sync status (Story 8.1, Subtask 8.3) */
+function StateCaptureIndicator({
+  isActive,
+  lastUpdateTime,
+  hasError,
+}: {
+  isActive: boolean;
+  lastUpdateTime: number | null;
+  hasError: boolean;
+}) {
+  if (hasError) {
+    return (
+      <span
+        className="flex items-center gap-1 text-xs text-warning"
+        aria-live="polite"
+        data-testid="state-capture-indicator"
+      >
+        <AlertTriangle className="w-3 h-3" />
+        State capture error
+      </span>
+    );
+  }
+
+  if (!isActive) {
+    return (
+      <span
+        className="flex items-center gap-1 text-xs text-base-content/40"
+        aria-live="polite"
+        data-testid="state-capture-indicator"
+      >
+        <Database className="w-3 h-3" />
+        State capture paused
+      </span>
+    );
+  }
+
+  if (lastUpdateTime) {
+    return (
+      <span
+        className="flex items-center gap-1 text-xs text-success/70"
+        aria-live="polite"
+        data-testid="state-capture-indicator"
+      >
+        <CheckCircle2 className="w-3 h-3" />
+        State synced
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="flex items-center gap-1 text-xs text-base-content/40"
+      aria-live="polite"
+      data-testid="state-capture-indicator"
+    >
+      <Database className="w-3 h-3" />
+      Waiting for state...
+    </span>
+  );
 }
 
 export function PrototypeViewerPage() {
@@ -168,6 +231,23 @@ export function PrototypeViewerPage() {
     currentFiles: editedFiles,
     prdId: displayPrototype?.prdId ?? '',
     ideaId: displayPrototype?.ideaId ?? '',
+  });
+
+  // Performance monitoring for state captures (Story 8.1, Task 9)
+  const { recordCapture } = useStateCapturePerformance();
+
+  // State capture bridge (Story 8.1) - active in edit mode (Sandpack live preview)
+  const {
+    capturedState: _capturedState, // Stored for future Story 8.2 (database persistence)
+    isListening: isStateCaptureActive,
+    lastError: stateCaptureError,
+    lastUpdateTime: stateLastUpdateTime,
+  } = useSandpackStateBridge({
+    enabled: editMode, // Capture continuously while in edit mode
+    onStateUpdate: recordCapture, // Track performance metrics for each capture
+    onError: (err) => {
+      console.debug('[PrototypeViewer] State capture error:', err.message);
+    },
   });
 
   // Handle Save Version flow (AC: #1, #3, #4)
@@ -559,6 +639,14 @@ export function PrototypeViewerPage() {
                       )}
                       {/* Save status indicator (visible in edit mode) */}
                       {editMode && <SaveStatusBadge status={saveStatus} onRetry={() => flushSave()} />}
+                      {/* State capture indicator (Story 8.1, Subtask 8.3) */}
+                      {editMode && (
+                        <StateCaptureIndicator
+                          isActive={isStateCaptureActive}
+                          lastUpdateTime={stateLastUpdateTime}
+                          hasError={!!stateCaptureError}
+                        />
+                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       {/* Exit Edit Mode button */}
@@ -657,6 +745,8 @@ export function PrototypeViewerPage() {
                           files={editedFiles}
                           className="min-h-[500px]"
                           onError={handleSandpackError}
+                          prototypeId={displayPrototype.id}
+                          stateCaptureEnabled={editMode}
                         />
                       </Suspense>
                     </div>

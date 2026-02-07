@@ -120,6 +120,26 @@ vi.mock('../features/prototypes/utils/editorHelpers', () => ({
   saveEditorWidth: vi.fn(),
 }));
 
+// Mock state bridge hook (Story 8.1)
+const mockStateBridge = {
+  capturedState: null as any,
+  isListening: false,
+  lastError: null as Error | null,
+  lastUpdateTime: null as number | null,
+};
+vi.mock('../features/prototypes/hooks/useSandpackStateBridge', () => ({
+  useSandpackStateBridge: () => mockStateBridge,
+}));
+
+// Mock state capture performance hook (Story 8.1, Task 9)
+vi.mock('../features/prototypes/hooks/useStateCapturePerformance', () => ({
+  useStateCapturePerformance: () => ({
+    recordCapture: vi.fn(),
+    getRecentEntries: vi.fn().mockReturnValue([]),
+    getAverageCaptureDuration: vi.fn().mockReturnValue(0),
+  }),
+}));
+
 const mockPrototype: Prototype = {
   id: 'proto-1',
   prdId: 'prd-1',
@@ -157,6 +177,11 @@ const mockVersionHistory: Prototype[] = [
 describe('PrototypeViewerPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset state bridge mock
+    mockStateBridge.capturedState = null;
+    mockStateBridge.isListening = false;
+    mockStateBridge.lastError = null;
+    mockStateBridge.lastUpdateTime = null;
     // Mock useVersionHistory to return empty array by default
     vi.mocked(useVersionHistory).mockReturnValue({
       data: [],
@@ -502,6 +527,109 @@ describe('PrototypeViewerPage', () => {
       // The old-version badge should disappear
       await waitFor(() => {
         expect(screen.queryByTestId('viewing-old-version-badge')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  // --- Story 8.1: State capture integration tests ---
+
+  describe('State Capture Indicator (Story 8.1)', () => {
+    function renderWithCode() {
+      vi.mocked(usePrototype).mockReturnValue({
+        data: { ...mockPrototype, code: '{"App.tsx":"console.log()"}' },
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+      } as any);
+
+      vi.mocked(useVersionHistory).mockReturnValue({
+        data: [{ ...mockPrototype, code: '{"App.tsx":"console.log()"}' }],
+        isLoading: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn(),
+      } as any);
+
+      return renderPage();
+    }
+
+    it('should not show state capture indicator when not in edit mode', () => {
+      renderWithCode();
+
+      expect(screen.queryByTestId('state-capture-indicator')).not.toBeInTheDocument();
+    });
+
+    it('should show state capture indicator when in edit mode', async () => {
+      const user = userEvent.setup();
+      renderWithCode();
+
+      // Enter edit mode
+      const editBtn = screen.getByTestId('edit-code-btn');
+      await user.click(editBtn);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('state-capture-indicator')).toBeInTheDocument();
+      });
+    });
+
+    it('should show "State synced" when lastUpdateTime is set', async () => {
+      mockStateBridge.isListening = true;
+      mockStateBridge.lastUpdateTime = Date.now();
+
+      const user = userEvent.setup();
+      renderWithCode();
+
+      // Enter edit mode
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/state synced/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should show error state when state capture has an error', async () => {
+      mockStateBridge.isListening = true;
+      mockStateBridge.lastError = new Error('Bridge error');
+
+      const user = userEvent.setup();
+      renderWithCode();
+
+      // Enter edit mode
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/state capture error/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should show "Waiting for state..." when listening but no update yet', async () => {
+      mockStateBridge.isListening = true;
+      mockStateBridge.lastUpdateTime = null;
+
+      const user = userEvent.setup();
+      renderWithCode();
+
+      // Enter edit mode
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/waiting for state/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should show "State capture paused" when not actively listening', async () => {
+      mockStateBridge.isListening = false;
+      mockStateBridge.lastError = null;
+
+      const user = userEvent.setup();
+      renderWithCode();
+
+      // Enter edit mode
+      await user.click(screen.getByTestId('edit-code-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/state capture paused/i)).toBeInTheDocument();
       });
     });
   });
