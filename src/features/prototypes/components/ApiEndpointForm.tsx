@@ -1,11 +1,14 @@
 // src/features/prototypes/components/ApiEndpointForm.tsx
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, Braces } from 'lucide-react';
 import { apiConfigSchema, type ApiConfigFormValues } from '../schemas/apiConfigSchemas';
 import type { ApiConfig, HttpMethod } from '../types';
+import { MockResponseEditor } from './MockResponseEditor';
+import { MockTemplateSelector } from './MockTemplateSelector';
+import { MockResponsePreview } from './MockResponsePreview';
 
 const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
@@ -111,6 +114,31 @@ export function ApiEndpointForm({
       prev.map((entry, i) => (i === index ? { ...entry, [field]: val } : entry)),
     );
   };
+
+  // Mock editor handlers
+  // Don't clear mockResponseError here — the linter's onError callback manages
+  // the error state. Clearing on every keystroke causes a visible flicker because
+  // the linter re-fires after a ~750ms debounce.
+  const handleEditorChange = useCallback((value: string) => {
+    setMockResponseStr(value);
+  }, []);
+
+  const handleFormatJson = useCallback(() => {
+    if (!mockResponseStr.trim()) return;
+    try {
+      const parsed = JSON.parse(mockResponseStr);
+      const formatted = JSON.stringify(parsed, null, 2);
+      setMockResponseStr(formatted);
+      setMockResponseError(null);
+    } catch {
+      // Cannot format invalid JSON — error is already shown by linter
+    }
+  }, [mockResponseStr]);
+
+  const handleTemplateSelect = useCallback((content: string) => {
+    setMockResponseStr(content);
+    setMockResponseError(null);
+  }, []);
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-4" data-testid="api-endpoint-form">
@@ -286,27 +314,57 @@ export function ApiEndpointForm({
             )}
           </div>
 
-          {/* Mock Response JSON */}
+          {/* Mock Response JSON Editor */}
           <div className="form-control">
             <label className="label py-1">
               <span className="label-text text-xs">Mock Response (JSON)</span>
             </label>
-            <textarea
-              className={`textarea textarea-sm textarea-bordered w-full font-mono text-xs ${mockResponseError ? 'textarea-error' : ''}`}
-              rows={4}
-              placeholder='{"key": "value"}'
+
+            {/* Toolbar: Format JSON + Template Selector */}
+            <div
+              className="flex items-center gap-1 px-2 py-1 bg-base-300 border border-base-content/20 border-b-0 rounded-t-lg"
+              data-testid="mock-editor-toolbar"
+            >
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs gap-1"
+                onClick={handleFormatJson}
+                data-testid="format-json-btn"
+              >
+                <Braces className="w-3 h-3" />
+                Format
+              </button>
+              <MockTemplateSelector
+                onSelect={handleTemplateSelect}
+                hasContent={!!mockResponseStr.trim()}
+              />
+            </div>
+
+            {/* CodeMirror JSON Editor */}
+            <MockResponseEditor
               value={mockResponseStr}
-              onChange={(e) => {
-                setMockResponseStr(e.target.value);
-                setMockResponseError(null);
-              }}
-              data-testid="endpoint-mock-response-textarea"
+              onChange={handleEditorChange}
+              onError={setMockResponseError}
+              disabled={isSubmitting}
             />
+
             {mockResponseError && (
               <label className="label py-0">
-                <span className="label-text-alt text-error">{mockResponseError}</span>
+                <span className="label-text-alt text-error" data-testid="mock-response-error">
+                  {mockResponseError}
+                </span>
               </label>
             )}
+
+            {/* Mock Response Preview */}
+            <div className="mt-2">
+              <MockResponsePreview
+                responseBody={mockResponseStr}
+                statusCode={watch('mockStatusCode') || 200}
+                delayMs={watch('mockDelayMs') || 0}
+                hasError={!!mockResponseError}
+              />
+            </div>
           </div>
         </div>
       )}

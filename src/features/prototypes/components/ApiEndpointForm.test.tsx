@@ -5,6 +5,84 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApiEndpointForm } from './ApiEndpointForm';
 import type { ApiConfig } from '../types';
 
+// Track the latest onChange/onError callbacks from MockResponseEditor
+let mockEditorOnChange: ((value: string) => void) | undefined;
+let mockEditorOnError: ((error: string | null) => void) | undefined;
+let mockEditorValue = '';
+
+// Mock MockResponseEditor - replaces CodeMirror with a simple textarea
+vi.mock('./MockResponseEditor', () => ({
+  MockResponseEditor: ({
+    value,
+    onChange,
+    onError,
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    onError: (error: string | null) => void;
+    disabled?: boolean;
+  }) => {
+    mockEditorOnChange = onChange;
+    mockEditorOnError = onError;
+    mockEditorValue = value;
+    return (
+      <div data-testid="mock-response-editor">
+        <textarea
+          data-testid="mock-editor-textarea"
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+        />
+      </div>
+    );
+  },
+}));
+
+// Mock MockTemplateSelector
+vi.mock('./MockTemplateSelector', () => ({
+  MockTemplateSelector: ({
+    onSelect,
+    hasContent,
+  }: {
+    onSelect: (content: string) => void;
+    hasContent: boolean;
+  }) => (
+    <div data-testid="mock-template-selector" data-has-content={hasContent}>
+      <button
+        type="button"
+        data-testid="mock-template-trigger"
+        onClick={() => onSelect('{"template": true}')}
+      >
+        Templates
+      </button>
+    </div>
+  ),
+}));
+
+// Mock MockResponsePreview
+vi.mock('./MockResponsePreview', () => ({
+  MockResponsePreview: ({
+    responseBody,
+    statusCode,
+    delayMs,
+    hasError,
+  }: {
+    responseBody: string;
+    statusCode: number;
+    delayMs: number;
+    hasError: boolean;
+  }) => (
+    <div
+      data-testid="mock-response-preview"
+      data-status={statusCode}
+      data-delay={delayMs}
+      data-has-error={hasError}
+      data-body={responseBody}
+    />
+  ),
+}));
+
 const makeConfig = (overrides: Partial<ApiConfig> = {}): ApiConfig => ({
   id: 'cfg-1',
   prototypeId: 'proto-1',
@@ -27,6 +105,9 @@ describe('ApiEndpointForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockEditorOnChange = undefined;
+    mockEditorOnError = undefined;
+    mockEditorValue = '';
   });
 
   it('should render the form with empty fields for create mode', () => {
@@ -131,11 +212,38 @@ describe('ApiEndpointForm', () => {
     // Toggle mock mode
     fireEvent.click(screen.getByTestId('endpoint-mock-toggle'));
 
-    // Mock fields should now be visible
+    // Mock fields should now be visible with new components
     await waitFor(() => {
       expect(screen.getByTestId('endpoint-mock-status-input')).toBeInTheDocument();
       expect(screen.getByTestId('endpoint-mock-delay-input')).toBeInTheDocument();
-      expect(screen.getByTestId('endpoint-mock-response-textarea')).toBeInTheDocument();
+      expect(screen.getByTestId('mock-response-editor')).toBeInTheDocument();
+      expect(screen.getByTestId('mock-editor-toolbar')).toBeInTheDocument();
+      expect(screen.getByTestId('mock-template-selector')).toBeInTheDocument();
+      expect(screen.getByTestId('mock-response-preview')).toBeInTheDocument();
+    });
+  });
+
+  it('should show CodeMirror editor instead of textarea in mock mode', async () => {
+    render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+    fireEvent.click(screen.getByTestId('endpoint-mock-toggle'));
+
+    await waitFor(() => {
+      // New editor should be present
+      expect(screen.getByTestId('mock-response-editor')).toBeInTheDocument();
+      // Old textarea should not be present
+      expect(screen.queryByTestId('endpoint-mock-response-textarea')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should show Format JSON button in the toolbar', async () => {
+    render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+    fireEvent.click(screen.getByTestId('endpoint-mock-toggle'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('format-json-btn')).toBeInTheDocument();
+      expect(screen.getByText('Format')).toBeInTheDocument();
     });
   });
 
@@ -189,11 +297,12 @@ describe('ApiEndpointForm', () => {
     fireEvent.click(screen.getByTestId('endpoint-mock-toggle'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('endpoint-mock-response-textarea')).toBeInTheDocument();
+      expect(screen.getByTestId('mock-response-editor')).toBeInTheDocument();
     });
 
-    // Enter invalid JSON
-    fireEvent.change(screen.getByTestId('endpoint-mock-response-textarea'), {
+    // Simulate the editor reporting invalid JSON via onChange
+    const editorTextarea = screen.getByTestId('mock-editor-textarea');
+    fireEvent.change(editorTextarea, {
       target: { value: '{ invalid json }' },
     });
 
@@ -204,5 +313,58 @@ describe('ApiEndpointForm', () => {
     });
 
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('should integrate MockTemplateSelector and update editor via template selection', async () => {
+    render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+    fireEvent.click(screen.getByTestId('endpoint-mock-toggle'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-template-selector')).toBeInTheDocument();
+    });
+
+    // Click mock template trigger (which calls onSelect with template content)
+    fireEvent.click(screen.getByTestId('mock-template-trigger'));
+
+    // The mock template selector calls onSelect('{"template": true}')
+    // which triggers handleTemplateSelect, setting mockResponseStr
+    await waitFor(() => {
+      const editorTextarea = screen.getByTestId('mock-editor-textarea');
+      expect(editorTextarea).toHaveValue('{"template": true}');
+    });
+  });
+
+  it('should pass correct props to MockResponsePreview', async () => {
+    render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+    fireEvent.click(screen.getByTestId('endpoint-mock-toggle'));
+
+    await waitFor(() => {
+      const preview = screen.getByTestId('mock-response-preview');
+      expect(preview).toBeInTheDocument();
+      expect(preview).toHaveAttribute('data-status', '200');
+      expect(preview).toHaveAttribute('data-delay', '0');
+      expect(preview).toHaveAttribute('data-has-error', 'false');
+    });
+  });
+
+  it('should pre-populate mock response editor in edit mode with mock data', async () => {
+    const mockConfig = makeConfig({
+      isMock: true,
+      mockResponse: { id: 1, name: 'test' },
+      mockStatusCode: 201,
+      mockDelayMs: 500,
+    });
+
+    render(
+      <ApiEndpointForm initialValues={mockConfig} onSubmit={onSubmit} onCancel={onCancel} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-response-editor')).toBeInTheDocument();
+      const editorTextarea = screen.getByTestId('mock-editor-textarea');
+      expect(editorTextarea).toHaveValue(JSON.stringify({ id: 1, name: 'test' }, null, 2));
+    });
   });
 });
