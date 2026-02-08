@@ -11,7 +11,7 @@ import { ShareButton } from '../features/prototypes/components/ShareButton';
 import { CodeEditorPanel } from '../features/prototypes/components/CodeEditorPanel';
 import { SaveVersionModal } from '../features/prototypes/components/SaveVersionModal';
 import { VersionCompareModal } from '../features/prototypes/components/VersionCompareModal';
-import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save, ArrowLeft, Database, CheckCircle2, RotateCcw, Settings2 } from 'lucide-react';
+import { AlertCircle, Code2, EyeOff, Pencil, X, Check, AlertTriangle, Loader2, Save, ArrowLeft, Database, CheckCircle2, RotateCcw, Settings2, Activity } from 'lucide-react';
 import { loadEditorWidth, saveEditorWidth } from '../features/prototypes/utils/editorHelpers';
 import { useCodePersistence } from '../features/prototypes/hooks/useCodePersistence';
 import type { SaveStatus } from '../features/prototypes/hooks/useCodePersistence';
@@ -23,7 +23,9 @@ import { StatePersistenceIndicator } from '../features/prototypes/components/Sta
 import { useStateRestoration } from '../features/prototypes/hooks/useStateRestoration';
 import { prototypeService } from '../features/prototypes/services/prototypeService';
 import { ApiConfigurationPanel } from '../features/prototypes/components/ApiConfigurationPanel';
+import { ApiMonitorPanel } from '../features/prototypes/components/ApiMonitorPanel';
 import { useApiConfigs } from '../features/prototypes/hooks/useApiConfigs';
+import { useSandpackMonitorBridge } from '../features/prototypes/hooks/useSandpackMonitorBridge';
 
 // Lazy load SandpackLivePreview - only loads when edit mode is activated
 const SandpackLivePreview = lazy(() =>
@@ -166,6 +168,7 @@ export function PrototypeViewerPage() {
   const [showSaveVersionModal, setShowSaveVersionModal] = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [showApiConfig, setShowApiConfig] = useState(false);
+  const [showApiMonitor, setShowApiMonitor] = useState(false);
   const [compareVersionIds, setCompareVersionIds] = useState<[string, string] | null>(null);
   // Ref (not state) to avoid unnecessary re-renders during save flow.
   // Works because: handleSaveVersion sets ref → flushSave() triggers re-render
@@ -272,6 +275,16 @@ export function PrototypeViewerPage() {
 
   // API configs for Sandpack injection (Story 10.1)
   const { data: apiConfigs } = useApiConfigs(displayPrototype?.id ?? '');
+
+  // API call monitoring bridge (Story 10.5) — active in edit mode (Sandpack live preview)
+  const {
+    logs: apiMonitorLogs,
+    totalCount: apiMonitorTotalCount,
+    errorCount: apiMonitorErrorCount,
+    clearLogs: clearApiMonitorLogs,
+  } = useSandpackMonitorBridge({
+    enabled: editMode,
+  });
 
   // State restoration (Story 8.3) - restores saved state into Sandpack iframe
   // iframeReady is signaled by first state capture update (indicates injector script is running)
@@ -835,6 +848,24 @@ export function PrototypeViewerPage() {
                         <Settings2 className="w-4 h-4" />
                         <span className="hidden sm:inline">API Config</span>
                       </button>
+                      {/* API Monitor toggle (Story 10.5) — only visible in edit mode */}
+                      {editMode && (
+                        <button
+                          className={`btn btn-sm gap-2 ${showApiMonitor ? 'btn-primary' : 'btn-outline btn-primary'}`}
+                          onClick={() => setShowApiMonitor((prev) => !prev)}
+                          aria-label={showApiMonitor ? 'Hide API Monitor' : 'Show API Monitor'}
+                          data-testid="api-monitor-toggle-btn"
+                        >
+                          <Activity className="w-4 h-4" />
+                          <span className="hidden sm:inline">API Monitor</span>
+                          {apiMonitorTotalCount > 0 && (
+                            <span className="badge badge-xs badge-ghost">{apiMonitorTotalCount}</span>
+                          )}
+                          {apiMonitorErrorCount > 0 && (
+                            <span className="badge badge-xs badge-error">{apiMonitorErrorCount}</span>
+                          )}
+                        </button>
+                      )}
                       <ShareButton
                         prototypeId={displayPrototype.id}
                         prdId={displayPrototype.prdId}
@@ -867,6 +898,17 @@ export function PrototypeViewerPage() {
                           apiConfigs={apiConfigs ?? undefined}
                         />
                       </Suspense>
+                      {/* API Monitor Panel (Story 10.5) — collapsible bottom panel */}
+                      {showApiMonitor && (
+                        <div className="mt-3" data-testid="api-monitor-container">
+                          <ApiMonitorPanel
+                            logs={apiMonitorLogs}
+                            totalCount={apiMonitorTotalCount}
+                            errorCount={apiMonitorErrorCount}
+                            clearLogs={clearApiMonitorLogs}
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <PrototypeFrame

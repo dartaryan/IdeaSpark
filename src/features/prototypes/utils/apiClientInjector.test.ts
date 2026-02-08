@@ -38,7 +38,7 @@ describe('generateApiClientFile', () => {
   it('should generate valid JavaScript with a single config', () => {
     const result = generateApiClientFile([makeConfig()]);
 
-    expect(result).toContain('const API_CONFIG =');
+    expect(result).toContain('var API_CONFIG =');
     expect(result).toContain('"getUsers"');
     expect(result).toContain('https://api.example.com/users');
     expect(result).toContain('export async function apiCall');
@@ -83,7 +83,7 @@ describe('generateApiClientFile', () => {
   it('should handle empty configs array', () => {
     const result = generateApiClientFile([]);
 
-    expect(result).toContain('const API_CONFIG = {}');
+    expect(result).toContain('var API_CONFIG = {}');
     expect(result).toContain('export async function apiCall');
   });
 
@@ -205,9 +205,9 @@ describe('generateApiClientFile', () => {
     it('should generate response objects with json() and text() methods for proxy calls', () => {
       const result = generateApiClientFile([makeConfig()], makeProxyConfig());
 
-      // Success response: json/text methods
-      expect(result).toContain('json: async () => proxyData.body');
-      expect(result).toContain('text: async ()');
+      // Success response: json/text methods (using function expressions for Sandpack compatibility)
+      expect(result).toContain('json: async function() { return proxyData.body; }');
+      expect(result).toContain('text: async function()');
       // Response properties
       expect(result).toContain('status: proxyData.status');
       expect(result).toContain('statusText: proxyData.statusText');
@@ -270,7 +270,7 @@ describe('generateApiClientFile', () => {
       const result = generateApiClientFile([makeConfig()]);
 
       // Should generate valid code with direct fetch
-      expect(result).toContain('const API_CONFIG =');
+      expect(result).toContain('var API_CONFIG =');
       expect(result).toContain('export async function apiCall');
       expect(result).toContain('fetch(config.url');
       expect(result).toContain('export default');
@@ -405,9 +405,9 @@ describe('generateApiClientFile', () => {
     it('should generate response objects with json() and text() methods for AI calls', () => {
       const result = generateApiClientFile([makeAiConfig()], makeProxyConfig());
 
-      // AI success response shape
-      expect(result).toContain('json: async () => aiData');
-      expect(result).toContain('text: async ()');
+      // AI success response shape (using function expressions for Sandpack compatibility)
+      expect(result).toContain('json: async function() { return aiData; }');
+      expect(result).toContain('text: async function()');
     });
 
     it('should handle AI error responses (non-ok status)', () => {
@@ -426,6 +426,206 @@ describe('generateApiClientFile', () => {
       // Should be properly escaped
       expect(result).toContain('token-with-');
       expect(result).not.toMatch(/Bearer token-with-'quotes'/);
+    });
+  });
+
+  // =========================================================================
+  // Story 10.5: API Monitoring tests
+  // =========================================================================
+
+  describe('API monitoring (Story 10.5)', () => {
+    it('should generate monitoring variables (__apiCallId, __apiLog)', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain('var __apiCallId = 0');
+      expect(result).toContain('var __apiLog = []');
+    });
+
+    it('should generate __sendLog function with postMessage', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain('function __sendLog(entry)');
+      expect(result).toContain("type: 'API_CALL_LOG'");
+      expect(result).toContain("source: 'sandpack-api-monitor'");
+      expect(result).toContain('parent.postMessage');
+    });
+
+    it('should generate __redactHeaders function', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain('function __redactHeaders(headers)');
+      expect(result).toContain("'[redacted]'");
+      expect(result).toContain("'authorization'");
+      expect(result).toContain("'apikey'");
+    });
+
+    it('should generate __truncateBody function with 10KB limit', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain('function __truncateBody(body)');
+      expect(result).toContain('10240');
+      expect(result).toContain('...[truncated]');
+    });
+
+    it('should generate __elapsed function using performance.now', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain('function __elapsed(startTime)');
+      expect(result).toContain('performance.now()');
+    });
+
+    it('should expose window.__apiLog', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain('window.__apiLog = __apiLog');
+    });
+
+    it('should create __logEntry with all required fields at apiCall start', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain('var __logEntry = {');
+      expect(result).toContain('id: __callId');
+      expect(result).toContain('timestamp:');
+      expect(result).toContain('endpointName: endpointName');
+      expect(result).toContain('method:');
+      expect(result).toContain('requestHeaders: __redactHeaders');
+      expect(result).toContain('requestBody: __truncateBody');
+      expect(result).toContain('responseStatus: 0');
+      expect(result).toContain('isAi:');
+      expect(result).toContain('isMock:');
+    });
+
+    it('should log mock responses before returning', () => {
+      const result = generateApiClientFile([
+        makeConfig({ isMock: true, mockResponse: { data: 'test' } }),
+      ]);
+
+      // Mock path should log before returning
+      expect(result).toContain('__logEntry.responseStatus = config.mockStatusCode');
+      expect(result).toContain('__logEntry.responseBody = __truncateBody(config.mockResponse)');
+      expect(result).toContain('__sendLog(__logEntry)');
+    });
+
+    it('should log AI responses before returning (with proxyConfig)', () => {
+      const result = generateApiClientFile(
+        [makeConfig({ isAi: true, isMock: false })],
+        makeProxyConfig(),
+      );
+
+      // AI success path should log aiData
+      expect(result).toContain('__logEntry.responseBody = __truncateBody(aiData)');
+      expect(result).toContain('__sendLog(__logEntry)');
+    });
+
+    it('should log proxy responses before returning', () => {
+      const result = generateApiClientFile([makeConfig()], makeProxyConfig());
+
+      // Proxy success path should log proxyData.body
+      expect(result).toContain('__logEntry.responseBody = __truncateBody(proxyData.body)');
+    });
+
+    it('should log direct fetch responses with clone', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      // Direct fetch path should clone for body capture
+      expect(result).toContain('__directResponse.clone()');
+      expect(result).toContain('__logEntry.responseBody = __truncateBody(__bodyText)');
+    });
+
+    it('should return structured error response (not throw) in direct fetch error path', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      // Direct fetch error path should return a structured response (consistent with proxy/AI)
+      // and NOT re-throw (which would cause double-logging via the outer catch)
+      expect(result).toContain('ok: false');
+      expect(result).toContain("statusText: __fetchErr.message || 'Network error'");
+      // Should NOT re-throw inside the inner catch
+      expect(result).not.toMatch(/catch \(__fetchErr\)[\s\S]*?throw __fetchErr/);
+    });
+
+    it('should capture proxy response headers in log entries', () => {
+      const result = generateApiClientFile([makeConfig()], makeProxyConfig());
+
+      // Proxy success and error paths should capture response headers
+      expect(result).toContain('__logEntry.responseHeaders = proxyData.headers || {}');
+    });
+
+    it('should log errors in AI network error catch', () => {
+      const result = generateApiClientFile(
+        [makeConfig({ isAi: true })],
+        makeProxyConfig(),
+      );
+
+      expect(result).toContain('__logEntry.isError = true');
+      expect(result).toContain('__logEntry.errorMessage = fetchErr.message');
+    });
+
+    it('should log errors in proxy network error catch', () => {
+      const result = generateApiClientFile([makeConfig()], makeProxyConfig());
+
+      expect(result).toContain('__logEntry.isError = true');
+      expect(result).toContain('__logEntry.errorMessage = fetchErr.message');
+    });
+
+    it('should have outer catch block for monitoring errors', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain('catch (__monitorErr)');
+      expect(result).toContain('__logEntry.errorMessage = __monitorErr.message');
+      expect(result).toContain('throw __monitorErr');
+    });
+
+    it('should use var declarations in generated monitoring code', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      // All monitoring variables should use var for Sandpack compatibility
+      expect(result).toContain('var __apiCallId');
+      expect(result).toContain('var __apiLog');
+      expect(result).toContain('var __callId');
+      expect(result).toContain('var __startTime');
+      expect(result).toContain('var __logEntry');
+    });
+
+    it('should generate timing capture at apiCall start', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain("var __startTime = typeof performance !== 'undefined' ? performance.now() : Date.now()");
+    });
+
+    it('should generate incrementing callId', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain("var __callId = 'call-' + (++__apiCallId)");
+    });
+
+    it('should cap __apiLog at 200 entries', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain('if (__apiLog.length > 200) __apiLog.shift()');
+    });
+
+    it('should set url to mock:// for mock endpoints in log', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain("url: config.isMock ? 'mock://' + endpointName");
+    });
+
+    it('should set method to AI for AI endpoints in log', () => {
+      const result = generateApiClientFile([makeConfig()]);
+
+      expect(result).toContain("method: config.isAi ? 'AI'");
+    });
+
+    it('monitoring code should not break mock response interface', () => {
+      const result = generateApiClientFile([
+        makeConfig({ isMock: true, mockResponse: { test: true } }),
+      ]);
+
+      // Mock response should still have ok, status, json, text
+      expect(result).toContain('ok: __mockOk');
+      expect(result).toContain('status: config.mockStatusCode');
+      expect(result).toContain('json: async function() { return config.mockResponse; }');
+      expect(result).toContain('text: async function() { return JSON.stringify(config.mockResponse); }');
     });
   });
 });

@@ -145,5 +145,5 @@ development_status:
   10-2-mock-api-response-system: done
   10-3-real-api-calls-from-prototypes: done
   10-4-ai-api-integration-in-prototypes: done
-  10-5-api-call-monitoring-and-debugging: backlog
+  10-5-api-call-monitoring-and-debugging: review
   epic-10-retrospective: optional

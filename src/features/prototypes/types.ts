@@ -300,6 +300,12 @@ export function serializeFiles(files: Record<string, EditorFile>): string {
 }
 
 // =============================================
+// API Monitor Types (Story 10.5) — re-export from dedicated file
+// =============================================
+
+export type { ApiCallLogEntry, ApiMonitorMessage, ApiMonitorFilter } from './types/apiMonitor';
+
+// =============================================
 // API Configuration Types (Story 10.1)
 // =============================================
 
