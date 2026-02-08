@@ -318,6 +318,11 @@ export interface ApiConfig {
   mockResponse: unknown | null;
   mockStatusCode: number;
   mockDelayMs: number;
+  isAi: boolean;
+  aiModel: string | null;
+  aiSystemPrompt: string | null;
+  aiMaxTokens: number | null;
+  aiTemperature: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -334,6 +339,11 @@ export interface ApiConfigRow {
   mock_response: unknown | null;
   mock_status_code: number;
   mock_delay_ms: number;
+  is_ai: boolean;
+  ai_model: string | null;
+  ai_system_prompt: string | null;
+  ai_max_tokens: number | null;
+  ai_temperature: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -349,6 +359,11 @@ export interface CreateApiConfigInput {
   mockResponse?: unknown;
   mockStatusCode?: number;
   mockDelayMs?: number;
+  isAi?: boolean;
+  aiModel?: string;
+  aiSystemPrompt?: string;
+  aiMaxTokens?: number;
+  aiTemperature?: number;
 }
 
 /** Input for updating an existing API config */
@@ -361,6 +376,11 @@ export interface UpdateApiConfigInput {
   mockResponse?: unknown;
   mockStatusCode?: number;
   mockDelayMs?: number;
+  isAi?: boolean;
+  aiModel?: string;
+  aiSystemPrompt?: string;
+  aiMaxTokens?: number;
+  aiTemperature?: number;
 }
 
 /** Map database row to app format */
@@ -376,6 +396,11 @@ export function mapApiConfigRow(row: ApiConfigRow): ApiConfig {
     mockResponse: row.mock_response ?? null,
     mockStatusCode: row.mock_status_code ?? 200,
     mockDelayMs: row.mock_delay_ms ?? 0,
+    isAi: row.is_ai ?? false,
+    aiModel: row.ai_model ?? null,
+    aiSystemPrompt: row.ai_system_prompt ?? null,
+    aiMaxTokens: row.ai_max_tokens ?? null,
+    aiTemperature: row.ai_temperature ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

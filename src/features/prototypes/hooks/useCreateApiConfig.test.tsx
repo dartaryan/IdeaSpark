@@ -41,6 +41,11 @@ describe('useCreateApiConfig', () => {
       mockResponse: null,
       mockStatusCode: 200,
       mockDelayMs: 0,
+      isAi: false,
+      aiModel: null,
+      aiSystemPrompt: null,
+      aiMaxTokens: null,
+      aiTemperature: null,
       createdAt: '',
       updatedAt: '',
     };
@@ -87,7 +92,8 @@ describe('useCreateApiConfig', () => {
     mockService.createApiConfig.mockResolvedValue({
       data: {
         id: 'cfg-new', prototypeId: 'proto-1', name: 'test', url: 'https://test.com', method: 'GET',
-        headers: {}, isMock: false, mockResponse: null, mockStatusCode: 200, mockDelayMs: 0, createdAt: '', updatedAt: '',
+        headers: {}, isMock: false, mockResponse: null, mockStatusCode: 200, mockDelayMs: 0,
+        isAi: false, aiModel: null, aiSystemPrompt: null, aiMaxTokens: null, aiTemperature: null, createdAt: '', updatedAt: '',
       },
       error: null,
     });

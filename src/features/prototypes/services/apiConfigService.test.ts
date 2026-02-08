@@ -52,6 +52,11 @@ const sampleRow = {
   mock_response: null,
   mock_status_code: 200,
   mock_delay_ms: 0,
+  is_ai: false,
+  ai_model: null,
+  ai_system_prompt: null,
+  ai_max_tokens: null,
+  ai_temperature: null,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
 };

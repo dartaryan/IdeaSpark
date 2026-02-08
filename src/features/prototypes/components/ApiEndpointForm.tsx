@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2, X, Braces } from 'lucide-react';
+import { Plus, Trash2, X, Braces, Bot } from 'lucide-react';
 import { apiConfigSchema, type ApiConfigFormValues } from '../schemas/apiConfigSchemas';
 import type { ApiConfig, HttpMethod } from '../types';
 import { MockResponseEditor } from './MockResponseEditor';
@@ -11,6 +11,11 @@ import { MockTemplateSelector } from './MockTemplateSelector';
 import { MockResponsePreview } from './MockResponsePreview';
 
 const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+
+const AI_MODELS = [
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+];
 
 export interface ApiEndpointFormProps {
   /** Existing config for edit mode; null for create mode */
@@ -64,6 +69,7 @@ export function ApiEndpointForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ApiConfigFormValues>({
     resolver: zodResolver(apiConfigSchema),
@@ -75,10 +81,18 @@ export function ApiEndpointForm({
       isMock: initialValues?.isMock ?? false,
       mockStatusCode: initialValues?.mockStatusCode ?? 200,
       mockDelayMs: initialValues?.mockDelayMs ?? 0,
+      isAi: initialValues?.isAi ?? false,
+      aiModel: initialValues?.aiModel ?? 'gemini-2.5-flash',
+      aiSystemPrompt: initialValues?.aiSystemPrompt ?? '',
+      aiMaxTokens: initialValues?.aiMaxTokens ?? 1024,
+      aiTemperature: initialValues?.aiTemperature ?? 0.7,
     },
   });
 
   const isMock = watch('isMock');
+  const isAi = watch('isAi');
+  const aiTemperature = watch('aiTemperature');
+  const aiSystemPrompt = watch('aiSystemPrompt') ?? '';
 
   const handleFormSubmit = handleSubmit((data) => {
     // Merge headers from local state
@@ -95,6 +109,14 @@ export function ApiEndpointForm({
       }
     } else {
       data.mockResponse = undefined;
+    }
+
+    // Clear AI fields when AI mode is off
+    if (!data.isAi) {
+      data.aiSystemPrompt = undefined;
+      data.aiModel = 'gemini-2.5-flash';
+      data.aiMaxTokens = 1024;
+      data.aiTemperature = 0.7;
     }
 
     onSubmit(data);
@@ -116,9 +138,6 @@ export function ApiEndpointForm({
   };
 
   // Mock editor handlers
-  // Don't clear mockResponseError here — the linter's onError callback manages
-  // the error state. Clearing on every keystroke causes a visible flicker because
-  // the linter re-fires after a ~750ms debounce.
   const handleEditorChange = useCallback((value: string) => {
     setMockResponseStr(value);
   }, []);
@@ -165,7 +184,7 @@ export function ApiEndpointForm({
         <input
           type="text"
           className={`input input-sm input-bordered w-full ${errors.name ? 'input-error' : ''}`}
-          placeholder="e.g., getUsers"
+          placeholder={isAi ? 'e.g., generateDescription' : 'e.g., getUsers'}
           {...register('name')}
           data-testid="endpoint-name-input"
         />
@@ -176,91 +195,194 @@ export function ApiEndpointForm({
         )}
       </div>
 
-      {/* URL */}
+      {/* AI Mode Toggle */}
       <div className="form-control">
-        <label className="label py-1">
-          <span className="label-text text-xs">URL</span>
+        <label className="label cursor-pointer justify-start gap-3 py-1">
+          <input
+            type="checkbox"
+            className="toggle toggle-sm toggle-info"
+            {...register('isAi')}
+            data-testid="endpoint-ai-toggle"
+          />
+          <span className="label-text text-xs flex items-center gap-1">
+            <Bot className="w-3.5 h-3.5" />
+            AI Mode
+          </span>
         </label>
-        <input
-          type="text"
-          className={`input input-sm input-bordered w-full ${errors.url ? 'input-error' : ''}`}
-          placeholder="https://api.example.com/users"
-          {...register('url')}
-          data-testid="endpoint-url-input"
-        />
-        {errors.url && (
-          <label className="label py-0">
-            <span className="label-text-alt text-error">{errors.url.message}</span>
-          </label>
-        )}
       </div>
 
-      {/* Method */}
-      <div className="form-control">
-        <label className="label py-1">
-          <span className="label-text text-xs">HTTP Method</span>
-        </label>
-        <select
-          className={`select select-sm select-bordered w-full ${errors.method ? 'select-error' : ''}`}
-          {...register('method')}
-          data-testid="endpoint-method-select"
-        >
-          {HTTP_METHODS.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Headers (dynamic key-value pairs) */}
-      <div className="form-control">
-        <label className="label py-1">
-          <span className="label-text text-xs">Headers</span>
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs gap-1"
-            onClick={addHeaderEntry}
-            data-testid="add-header-btn"
-          >
-            <Plus className="w-3 h-3" />
-            Add
-          </button>
-        </label>
-        {headerEntries.length > 0 && (
-          <div className="space-y-1">
-            {headerEntries.map((entry, index) => (
-              <div key={index} className="flex items-center gap-1">
-                <input
-                  type="text"
-                  className="input input-xs input-bordered flex-1"
-                  placeholder="Key"
-                  value={entry.key}
-                  onChange={(e) => updateHeaderEntry(index, 'key', e.target.value)}
-                  data-testid={`header-key-${index}`}
-                />
-                <input
-                  type="text"
-                  className="input input-xs input-bordered flex-1"
-                  placeholder="Value"
-                  value={entry.value}
-                  onChange={(e) => updateHeaderEntry(index, 'value', e.target.value)}
-                  data-testid={`header-value-${index}`}
-                />
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-xs btn-square text-error"
-                  onClick={() => removeHeaderEntry(index)}
-                  aria-label={`Remove header ${index}`}
-                  data-testid={`remove-header-${index}`}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
+      {/* AI Configuration (visible when isAi is true) */}
+      {isAi && (
+        <div className="space-y-3 pl-2 border-l-2 border-info/30" data-testid="ai-config-section">
+          {/* AI Model */}
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text text-xs">Model</span>
+            </label>
+            <select
+              className="select select-sm select-bordered w-full"
+              {...register('aiModel')}
+              data-testid="ai-model-select"
+            >
+              {AI_MODELS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
-      </div>
+
+          {/* System Prompt */}
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text text-xs">
+                System Prompt <span className="text-error">*</span>
+              </span>
+            </label>
+            <textarea
+              className={`textarea textarea-sm textarea-bordered w-full min-h-[120px] ${errors.aiSystemPrompt ? 'textarea-error' : ''}`}
+              placeholder="You are a helpful assistant that generates product descriptions..."
+              {...register('aiSystemPrompt')}
+              data-testid="ai-system-prompt-input"
+            />
+            <label className="label py-0">
+              <span className={`label-text-alt ${errors.aiSystemPrompt ? 'text-error' : ''}`}>
+                {errors.aiSystemPrompt?.message || `${aiSystemPrompt.length}/10000 characters`}
+              </span>
+            </label>
+          </div>
+
+          {/* Max Tokens */}
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text text-xs">Max Tokens</span>
+            </label>
+            <input
+              type="number"
+              className={`input input-sm input-bordered w-32 ${errors.aiMaxTokens ? 'input-error' : ''}`}
+              {...register('aiMaxTokens', { valueAsNumber: true })}
+              data-testid="ai-max-tokens-input"
+            />
+            {errors.aiMaxTokens && (
+              <label className="label py-0">
+                <span className="label-text-alt text-error">{errors.aiMaxTokens.message}</span>
+              </label>
+            )}
+          </div>
+
+          {/* Temperature */}
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text text-xs">Temperature: {aiTemperature}</span>
+            </label>
+            <input
+              type="range"
+              className="range range-xs range-info"
+              min={0}
+              max={2}
+              step={0.1}
+              {...register('aiTemperature', { valueAsNumber: true })}
+              data-testid="ai-temperature-input"
+            />
+            <div className="flex justify-between text-xs text-base-content/50 px-1">
+              <span>0</span>
+              <span>1</span>
+              <span>2</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Standard endpoint fields (hidden when AI mode is on) */}
+      {!isAi && (
+        <>
+          {/* URL */}
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text text-xs">URL</span>
+            </label>
+            <input
+              type="text"
+              className={`input input-sm input-bordered w-full ${errors.url ? 'input-error' : ''}`}
+              placeholder="https://api.example.com/users"
+              {...register('url')}
+              data-testid="endpoint-url-input"
+            />
+            {errors.url && (
+              <label className="label py-0">
+                <span className="label-text-alt text-error">{errors.url.message}</span>
+              </label>
+            )}
+          </div>
+
+          {/* Method */}
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text text-xs">HTTP Method</span>
+            </label>
+            <select
+              className={`select select-sm select-bordered w-full ${errors.method ? 'select-error' : ''}`}
+              {...register('method')}
+              data-testid="endpoint-method-select"
+            >
+              {HTTP_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Headers (dynamic key-value pairs) */}
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text text-xs">Headers</span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs gap-1"
+                onClick={addHeaderEntry}
+                data-testid="add-header-btn"
+              >
+                <Plus className="w-3 h-3" />
+                Add
+              </button>
+            </label>
+            {headerEntries.length > 0 && (
+              <div className="space-y-1">
+                {headerEntries.map((entry, index) => (
+                  <div key={index} className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      className="input input-xs input-bordered flex-1"
+                      placeholder="Key"
+                      value={entry.key}
+                      onChange={(e) => updateHeaderEntry(index, 'key', e.target.value)}
+                      data-testid={`header-key-${index}`}
+                    />
+                    <input
+                      type="text"
+                      className="input input-xs input-bordered flex-1"
+                      placeholder="Value"
+                      value={entry.value}
+                      onChange={(e) => updateHeaderEntry(index, 'value', e.target.value)}
+                      data-testid={`header-value-${index}`}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs btn-square text-error"
+                      onClick={() => removeHeaderEntry(index)}
+                      aria-label={`Remove header ${index}`}
+                      data-testid={`remove-header-${index}`}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Mock Mode Toggle */}
       <div className="form-control">

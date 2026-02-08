@@ -60,6 +60,11 @@ export const apiConfigService = {
           mock_response: input.mockResponse ?? null,
           mock_status_code: input.mockStatusCode ?? 200,
           mock_delay_ms: input.mockDelayMs ?? 0,
+          is_ai: input.isAi ?? false,
+          ai_model: input.aiModel ?? 'gemini-2.5-flash',
+          ai_system_prompt: input.aiSystemPrompt ?? null,
+          ai_max_tokens: input.aiMaxTokens ?? 1024,
+          ai_temperature: input.aiTemperature ?? 0.7,
         })
         .select()
         .single();
@@ -101,6 +106,11 @@ export const apiConfigService = {
       if (input.mockResponse !== undefined) updates.mock_response = input.mockResponse;
       if (input.mockStatusCode !== undefined) updates.mock_status_code = input.mockStatusCode;
       if (input.mockDelayMs !== undefined) updates.mock_delay_ms = input.mockDelayMs;
+      if (input.isAi !== undefined) updates.is_ai = input.isAi;
+      if (input.aiModel !== undefined) updates.ai_model = input.aiModel;
+      if (input.aiSystemPrompt !== undefined) updates.ai_system_prompt = input.aiSystemPrompt;
+      if (input.aiMaxTokens !== undefined) updates.ai_max_tokens = input.aiMaxTokens;
+      if (input.aiTemperature !== undefined) updates.ai_temperature = input.aiTemperature;
 
       const { data, error } = await supabase
         .from('prototype_api_configs')

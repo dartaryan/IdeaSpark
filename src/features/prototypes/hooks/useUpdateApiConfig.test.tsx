@@ -33,7 +33,8 @@ describe('useUpdateApiConfig', () => {
     const updated = {
       id: 'cfg-1', prototypeId: 'proto-1', name: 'updatedName', url: 'https://api.test.com',
       method: 'GET' as const, headers: {}, isMock: false, mockResponse: null, mockStatusCode: 200,
-      mockDelayMs: 0, createdAt: '', updatedAt: '',
+      mockDelayMs: 0, isAi: false, aiModel: null, aiSystemPrompt: null, aiMaxTokens: null, aiTemperature: null,
+      createdAt: '', updatedAt: '',
     };
 
     mockService.updateApiConfig.mockResolvedValue({ data: updated, error: null });
@@ -67,7 +68,8 @@ describe('useUpdateApiConfig', () => {
     mockService.updateApiConfig.mockResolvedValue({
       data: {
         id: 'cfg-1', prototypeId: 'proto-1', name: 'test', url: 'https://test.com', method: 'GET',
-        headers: {}, isMock: false, mockResponse: null, mockStatusCode: 200, mockDelayMs: 0, createdAt: '', updatedAt: '',
+        headers: {}, isMock: false, mockResponse: null, mockStatusCode: 200, mockDelayMs: 0,
+        isAi: false, aiModel: null, aiSystemPrompt: null, aiMaxTokens: null, aiTemperature: null, createdAt: '', updatedAt: '',
       },
       error: null,
     });

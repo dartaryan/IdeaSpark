@@ -100,6 +100,11 @@ const makeApiConfig = (overrides: Partial<ApiConfig> = {}): ApiConfig => ({
   mockResponse: null,
   mockStatusCode: 200,
   mockDelayMs: 0,
+  isAi: false,
+  aiModel: null,
+  aiSystemPrompt: null,
+  aiMaxTokens: null,
+  aiTemperature: null,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   ...overrides,
@@ -327,6 +332,74 @@ describe('SandpackLivePreview', () => {
       );
 
       // Has non-mock endpoints, so proxyConfig should be passed
+      expect(mockGenerateApiClientFile).toHaveBeenCalledWith(
+        apiConfigs,
+        expect.objectContaining({
+          prototypeId: 'proto-1',
+          accessToken: 'test-access-token',
+        }),
+      );
+    });
+  });
+
+  // =======================================================================
+  // Story 10.4: AI endpoint proxy config tests
+  // =======================================================================
+
+  describe('AI endpoint proxy config (Story 10.4)', () => {
+    it('passes proxyConfig when AI endpoints exist (isAi=true, isMock=false)', () => {
+      const apiConfigs = [makeApiConfig({ isAi: true, isMock: false })];
+
+      render(
+        <SandpackLivePreview
+          files={singleFile}
+          apiConfigs={apiConfigs}
+          prototypeId="proto-1"
+        />,
+      );
+
+      // AI endpoint with isMock=false is a non-mock endpoint → proxyConfig should be passed
+      expect(mockGenerateApiClientFile).toHaveBeenCalledWith(
+        apiConfigs,
+        expect.objectContaining({
+          supabaseUrl: 'https://test.supabase.co',
+          supabaseAnonKey: 'test-anon-key',
+          prototypeId: 'proto-1',
+          accessToken: 'test-access-token',
+        }),
+      );
+    });
+
+    it('does not pass proxyConfig when AI endpoint is in mock mode', () => {
+      const apiConfigs = [makeApiConfig({ isAi: true, isMock: true })];
+
+      render(
+        <SandpackLivePreview
+          files={singleFile}
+          apiConfigs={apiConfigs}
+          prototypeId="proto-1"
+        />,
+      );
+
+      // All endpoints are mock, so proxyConfig should be undefined
+      expect(mockGenerateApiClientFile).toHaveBeenCalledWith(apiConfigs, undefined);
+    });
+
+    it('passes proxyConfig with mixed AI and regular non-mock endpoints', () => {
+      const apiConfigs = [
+        makeApiConfig({ name: 'aiEndpoint', isAi: true, isMock: false }),
+        makeApiConfig({ name: 'regularEndpoint', isAi: false, isMock: false }),
+        makeApiConfig({ name: 'mockEndpoint', isAi: false, isMock: true }),
+      ];
+
+      render(
+        <SandpackLivePreview
+          files={singleFile}
+          apiConfigs={apiConfigs}
+          prototypeId="proto-1"
+        />,
+      );
+
       expect(mockGenerateApiClientFile).toHaveBeenCalledWith(
         apiConfigs,
         expect.objectContaining({

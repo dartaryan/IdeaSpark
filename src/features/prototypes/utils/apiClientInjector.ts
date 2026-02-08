@@ -18,7 +18,7 @@ export interface ProxyConfig {
  *
  * The generated file exposes:
  * - `window.__API_CONFIG__` — raw config map for debugging
- * - `apiCall(endpointName, options)` — calls configured endpoint (real or mock)
+ * - `apiCall(endpointName, options)` — calls configured endpoint (real, mock, or AI)
  * - `default export { call: apiCall, config: API_CONFIG }` — convenience object
  *
  * @param configs - Array of API endpoint configurations
@@ -36,6 +36,7 @@ export function generateApiClientFile(configs: ApiConfig[], proxyConfig?: ProxyC
         mockResponse: cfg.mockResponse,
         mockStatusCode: cfg.mockStatusCode,
         mockDelayMs: cfg.mockDelayMs,
+        isAi: cfg.isAi,
       };
       return acc;
     },
@@ -46,6 +47,11 @@ export function generateApiClientFile(configs: ApiConfig[], proxyConfig?: ProxyC
   const nonMockCodePath = proxyConfig
     ? generateProxyCodePath(proxyConfig)
     : generateDirectFetchCodePath();
+
+  // Build the AI code path (only when proxyConfig is available — AI needs auth)
+  const aiCodePath = proxyConfig
+    ? generateAiCodePath(proxyConfig)
+    : '';
 
   return `// Auto-generated API client from IdeaSpark API Configuration
 // Do not edit manually — changes will be overwritten when configs are updated.
@@ -76,10 +82,89 @@ export async function apiCall(endpointName, options = {}) {
     };
   }
 
+${aiCodePath}
 ${nonMockCodePath}
 }
 
 export default { call: apiCall, config: API_CONFIG };
+`;
+}
+
+/**
+ * Generate the AI code path that routes through the prototype-ai-call Edge Function.
+ * Inserted AFTER mock check, BEFORE proxy/direct check in generated apiCall().
+ */
+function generateAiCodePath(proxyConfig: ProxyConfig): string {
+  const supabaseUrl = escapeJsString(proxyConfig.supabaseUrl);
+  const supabaseAnonKey = escapeJsString(proxyConfig.supabaseAnonKey);
+  const prototypeId = escapeJsString(proxyConfig.prototypeId);
+  const accessToken = escapeJsString(proxyConfig.accessToken);
+
+  return `  if (config.isAi) {
+    // Route through AI Edge Function (Story 10.4)
+    const aiUrl = '${supabaseUrl}/functions/v1/prototype-ai-call';
+    let aiResponse;
+    try {
+      aiResponse = await fetch(aiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${accessToken}',
+          'apikey': '${supabaseAnonKey}',
+        },
+        body: JSON.stringify({
+          prototypeId: '${prototypeId}',
+          endpointName: endpointName,
+          prompt: options.prompt || (typeof options.body === 'string' ? options.body : ''),
+          context: options.context || undefined,
+        }),
+      });
+    } catch (fetchErr) {
+      return {
+        ok: false,
+        status: 0,
+        statusText: fetchErr.message || 'Network error',
+        json: async () => ({ error: fetchErr.message || 'Network error' }),
+        text: async () => fetchErr.message || 'Network error',
+        headers: new Headers(),
+      };
+    }
+
+    // Parse AI response safely (M3 fix: handle non-JSON responses)
+    let aiData;
+    try {
+      aiData = await aiResponse.json();
+    } catch {
+      return {
+        ok: false,
+        status: aiResponse.status,
+        statusText: 'Invalid AI response',
+        json: async () => ({ error: 'Invalid AI response' }),
+        text: async () => 'Invalid AI response',
+        headers: new Headers(),
+      };
+    }
+
+    if (!aiResponse.ok) {
+      return {
+        ok: false,
+        status: aiResponse.status,
+        statusText: aiData.error || aiResponse.statusText,
+        json: async () => aiData,
+        text: async () => JSON.stringify(aiData),
+        headers: new Headers(),
+      };
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => aiData,
+      text: async () => aiData.text || JSON.stringify(aiData),
+      headers: new Headers({ 'content-type': 'application/json' }),
+    };
+  }
 `;
 }
 

@@ -31,7 +31,7 @@ describe('useApiConfigs', () => {
 
   it('should fetch configs for a prototype', async () => {
     const configs = [
-      { id: 'cfg-1', prototypeId: 'proto-1', name: 'getUsers', url: 'https://api.test.com', method: 'GET', headers: {}, isMock: false, mockResponse: null, mockStatusCode: 200, mockDelayMs: 0, createdAt: '', updatedAt: '' },
+      { id: 'cfg-1', prototypeId: 'proto-1', name: 'getUsers', url: 'https://api.test.com', method: 'GET', headers: {}, isMock: false, mockResponse: null, mockStatusCode: 200, mockDelayMs: 0, isAi: false, aiModel: null, aiSystemPrompt: null, aiMaxTokens: null, aiTemperature: null, createdAt: '', updatedAt: '' },
     ];
 
     mockService.getApiConfigs.mockResolvedValue({ data: configs, error: null });

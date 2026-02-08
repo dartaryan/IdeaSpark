@@ -16,6 +16,11 @@ const makeConfig = (overrides: Partial<ApiConfig> = {}): ApiConfig => ({
   mockResponse: null,
   mockStatusCode: 200,
   mockDelayMs: 0,
+  isAi: false,
+  aiModel: null,
+  aiSystemPrompt: null,
+  aiMaxTokens: null,
+  aiTemperature: null,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   ...overrides,
@@ -269,6 +274,158 @@ describe('generateApiClientFile', () => {
       expect(result).toContain('export async function apiCall');
       expect(result).toContain('fetch(config.url');
       expect(result).toContain('export default');
+    });
+  });
+
+  // =========================================================================
+  // Story 10.4: AI routing tests
+  // =========================================================================
+
+  describe('AI routing (Story 10.4)', () => {
+    const makeAiConfig = (overrides: Partial<ApiConfig> = {}): ApiConfig =>
+      makeConfig({
+        name: 'generateDescription',
+        isAi: true,
+        isMock: false,
+        aiModel: 'gemini-2.5-flash',
+        aiSystemPrompt: 'You are a helpful assistant.',
+        aiMaxTokens: 1024,
+        aiTemperature: 0.7,
+        ...overrides,
+      });
+
+    it('should include isAi field in generated config map', () => {
+      const result = generateApiClientFile([makeAiConfig()]);
+
+      expect(result).toContain('"isAi": true');
+    });
+
+    it('should generate AI code path when proxyConfig is provided for AI endpoints', () => {
+      const result = generateApiClientFile([makeAiConfig()], makeProxyConfig());
+
+      expect(result).toContain('/functions/v1/prototype-ai-call');
+      expect(result).toContain('config.isAi');
+    });
+
+    it('should route AI endpoint through prototype-ai-call Edge Function URL', () => {
+      const result = generateApiClientFile(
+        [makeAiConfig()],
+        makeProxyConfig({ supabaseUrl: 'https://my-project.supabase.co' }),
+      );
+
+      expect(result).toContain('https://my-project.supabase.co/functions/v1/prototype-ai-call');
+    });
+
+    it('should embed auth credentials in AI code path', () => {
+      const result = generateApiClientFile(
+        [makeAiConfig()],
+        makeProxyConfig({ accessToken: 'ai-jwt-token', supabaseAnonKey: 'ai-anon-key' }),
+      );
+
+      expect(result).toContain("'Bearer ai-jwt-token'");
+      expect(result).toContain("'apikey': 'ai-anon-key'");
+    });
+
+    it('should embed prototypeId in AI request body', () => {
+      const result = generateApiClientFile(
+        [makeAiConfig()],
+        makeProxyConfig({ prototypeId: 'ai-proto-123' }),
+      );
+
+      expect(result).toContain("prototypeId: 'ai-proto-123'");
+    });
+
+    it('should send prompt and context fields in AI request', () => {
+      const result = generateApiClientFile([makeAiConfig()], makeProxyConfig());
+
+      expect(result).toContain('prompt: options.prompt');
+      expect(result).toContain('context: options.context');
+    });
+
+    it('should use mock path for AI endpoint with isMock=true, not AI path', () => {
+      const result = generateApiClientFile(
+        [makeAiConfig({ isMock: true, mockResponse: { text: 'mocked' }, mockStatusCode: 200 })],
+        makeProxyConfig(),
+      );
+
+      // Mock path should still work (config.isMock is checked first)
+      expect(result).toContain('config.isMock');
+      expect(result).toContain('config.mockResponse');
+    });
+
+    it('should not generate AI code path when proxyConfig is NOT provided', () => {
+      const result = generateApiClientFile([makeAiConfig()]);
+
+      // Without proxyConfig, no AI path (AI needs auth)
+      expect(result).not.toContain('/functions/v1/prototype-ai-call');
+    });
+
+    it('should handle non-AI endpoints unchanged when AI code path is present', () => {
+      const result = generateApiClientFile(
+        [makeConfig({ name: 'regularEndpoint', isAi: false })],
+        makeProxyConfig(),
+      );
+
+      // Proxy path for non-AI, non-mock endpoints
+      expect(result).toContain('/functions/v1/api-proxy');
+      expect(result).toContain('"isAi": false');
+    });
+
+    it('should handle mixed AI, regular, and mock endpoints', () => {
+      const configs = [
+        makeAiConfig({ name: 'aiEndpoint' }),
+        makeConfig({ name: 'regularEndpoint', isAi: false, isMock: false }),
+        makeConfig({ name: 'mockEndpoint', isAi: false, isMock: true, mockResponse: { data: 1 } }),
+      ];
+      const result = generateApiClientFile(configs, makeProxyConfig());
+
+      expect(result).toContain('"aiEndpoint"');
+      expect(result).toContain('"regularEndpoint"');
+      expect(result).toContain('"mockEndpoint"');
+      // All three code paths present
+      expect(result).toContain('config.isAi');
+      expect(result).toContain('config.isMock');
+      expect(result).toContain('/functions/v1/prototype-ai-call');
+      expect(result).toContain('/functions/v1/api-proxy');
+    });
+
+    it('should generate error handling for AI network errors', () => {
+      const result = generateApiClientFile([makeAiConfig()], makeProxyConfig());
+
+      expect(result).toContain('} catch (fetchErr)');
+      expect(result).toContain('Network error');
+    });
+
+    it('should generate error handling for non-JSON AI response (M3 fix)', () => {
+      const result = generateApiClientFile([makeAiConfig()], makeProxyConfig());
+
+      expect(result).toContain('Invalid AI response');
+    });
+
+    it('should generate response objects with json() and text() methods for AI calls', () => {
+      const result = generateApiClientFile([makeAiConfig()], makeProxyConfig());
+
+      // AI success response shape
+      expect(result).toContain('json: async () => aiData');
+      expect(result).toContain('text: async ()');
+    });
+
+    it('should handle AI error responses (non-ok status)', () => {
+      const result = generateApiClientFile([makeAiConfig()], makeProxyConfig());
+
+      expect(result).toContain('!aiResponse.ok');
+      expect(result).toContain('ok: false');
+    });
+
+    it('should escape special characters in proxyConfig values for AI path', () => {
+      const result = generateApiClientFile(
+        [makeAiConfig()],
+        makeProxyConfig({ accessToken: "token-with-'quotes'" }),
+      );
+
+      // Should be properly escaped
+      expect(result).toContain('token-with-');
+      expect(result).not.toMatch(/Bearer token-with-'quotes'/);
     });
   });
 });

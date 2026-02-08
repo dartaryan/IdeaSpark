@@ -94,6 +94,11 @@ const makeConfig = (overrides: Partial<ApiConfig> = {}): ApiConfig => ({
   mockResponse: null,
   mockStatusCode: 200,
   mockDelayMs: 0,
+  isAi: false,
+  aiModel: null,
+  aiSystemPrompt: null,
+  aiMaxTokens: null,
+  aiTemperature: null,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   ...overrides,
@@ -160,15 +165,13 @@ describe('ApiEndpointForm', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('should show validation error for invalid URL', async () => {
+  it('should show validation error for empty URL when not in AI mode', async () => {
     render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
 
     fireEvent.change(screen.getByTestId('endpoint-name-input'), {
       target: { value: 'testEndpoint' },
     });
-    fireEvent.change(screen.getByTestId('endpoint-url-input'), {
-      target: { value: 'not-a-url' },
-    });
+    // Leave URL empty (default)
 
     fireEvent.click(screen.getByTestId('save-endpoint-btn'));
 
@@ -365,6 +368,165 @@ describe('ApiEndpointForm', () => {
       expect(screen.getByTestId('mock-response-editor')).toBeInTheDocument();
       const editorTextarea = screen.getByTestId('mock-editor-textarea');
       expect(editorTextarea).toHaveValue(JSON.stringify({ id: 1, name: 'test' }, null, 2));
+    });
+  });
+
+  // =========================================================================
+  // Story 10.4: AI mode form tests
+  // =========================================================================
+
+  describe('AI mode (Story 10.4)', () => {
+    it('should render AI mode toggle', () => {
+      render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+      expect(screen.getByTestId('endpoint-ai-toggle')).toBeInTheDocument();
+      expect(screen.getByText('AI Mode')).toBeInTheDocument();
+    });
+
+    it('should not show AI config section by default', () => {
+      render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+      expect(screen.queryByTestId('ai-config-section')).not.toBeInTheDocument();
+    });
+
+    it('should show AI config section when AI toggle is enabled', async () => {
+      render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+      fireEvent.click(screen.getByTestId('endpoint-ai-toggle'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('ai-config-section')).toBeInTheDocument();
+        expect(screen.getByTestId('ai-model-select')).toBeInTheDocument();
+        expect(screen.getByTestId('ai-system-prompt-input')).toBeInTheDocument();
+        expect(screen.getByTestId('ai-max-tokens-input')).toBeInTheDocument();
+        expect(screen.getByTestId('ai-temperature-input')).toBeInTheDocument();
+      });
+    });
+
+    it('should hide URL, Method, Headers when AI toggle is enabled', async () => {
+      render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+      // Standard fields should be visible initially
+      expect(screen.getByTestId('endpoint-url-input')).toBeInTheDocument();
+      expect(screen.getByTestId('endpoint-method-select')).toBeInTheDocument();
+
+      // Toggle AI mode on
+      fireEvent.click(screen.getByTestId('endpoint-ai-toggle'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('endpoint-url-input')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('endpoint-method-select')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show URL, Method, Headers when AI toggle is disabled', async () => {
+      render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+      // Toggle AI on
+      fireEvent.click(screen.getByTestId('endpoint-ai-toggle'));
+      await waitFor(() => {
+        expect(screen.queryByTestId('endpoint-url-input')).not.toBeInTheDocument();
+      });
+
+      // Toggle AI off
+      fireEvent.click(screen.getByTestId('endpoint-ai-toggle'));
+      await waitFor(() => {
+        expect(screen.getByTestId('endpoint-url-input')).toBeInTheDocument();
+        expect(screen.getByTestId('endpoint-method-select')).toBeInTheDocument();
+      });
+    });
+
+    it('should pre-populate AI fields in edit mode for AI endpoint', async () => {
+      const aiConfig = makeConfig({
+        isAi: true,
+        aiModel: 'gemini-2.0-flash',
+        aiSystemPrompt: 'Generate product descriptions.',
+        aiMaxTokens: 2048,
+        aiTemperature: 0.5,
+      });
+
+      render(
+        <ApiEndpointForm initialValues={aiConfig} onSubmit={onSubmit} onCancel={onCancel} />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('ai-config-section')).toBeInTheDocument();
+        expect(screen.getByTestId('ai-model-select')).toHaveValue('gemini-2.0-flash');
+        expect(screen.getByTestId('ai-system-prompt-input')).toHaveValue('Generate product descriptions.');
+        expect(screen.getByTestId('ai-max-tokens-input')).toHaveValue(2048);
+        expect(screen.getByTestId('ai-temperature-input')).toHaveValue('0.5');
+      });
+    });
+
+    it('should show mock toggle alongside AI mode', async () => {
+      render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+      fireEvent.click(screen.getByTestId('endpoint-ai-toggle'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('ai-config-section')).toBeInTheDocument();
+        // Mock toggle should still be visible
+        expect(screen.getByTestId('endpoint-mock-toggle')).toBeInTheDocument();
+      });
+    });
+
+    it('should submit AI endpoint data with correct fields', async () => {
+      render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+      // Fill name
+      fireEvent.change(screen.getByTestId('endpoint-name-input'), {
+        target: { value: 'generateDesc' },
+      });
+
+      // Toggle AI mode
+      fireEvent.click(screen.getByTestId('endpoint-ai-toggle'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('ai-config-section')).toBeInTheDocument();
+      });
+
+      // Fill system prompt
+      fireEvent.change(screen.getByTestId('ai-system-prompt-input'), {
+        target: { value: 'You are a helpful assistant.' },
+      });
+
+      // Submit
+      fireEvent.click(screen.getByTestId('save-endpoint-btn'));
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: 'generateDesc',
+            isAi: true,
+            aiSystemPrompt: 'You are a helpful assistant.',
+          }),
+        );
+      });
+    });
+
+    it('should show validation error when AI mode is on but system prompt is empty', async () => {
+      render(<ApiEndpointForm onSubmit={onSubmit} onCancel={onCancel} />);
+
+      // Fill name
+      fireEvent.change(screen.getByTestId('endpoint-name-input'), {
+        target: { value: 'generateDesc' },
+      });
+
+      // Toggle AI mode
+      fireEvent.click(screen.getByTestId('endpoint-ai-toggle'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('ai-config-section')).toBeInTheDocument();
+      });
+
+      // Submit without filling system prompt
+      fireEvent.click(screen.getByTestId('save-endpoint-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/system prompt is required/i)).toBeInTheDocument();
+      });
+
+      expect(onSubmit).not.toHaveBeenCalled();
     });
   });
 });

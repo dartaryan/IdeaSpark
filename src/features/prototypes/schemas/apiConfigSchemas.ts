@@ -9,23 +9,37 @@ export const httpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
  * Zod schema for API endpoint configuration form validation.
  * Used with react-hook-form + @hookform/resolvers/zod.
  */
-export const apiConfigSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Endpoint name is required')
-    .max(100, 'Name must be 100 characters or fewer')
-    .regex(
-      /^[a-zA-Z][a-zA-Z0-9_-]*$/,
-      'Name must start with a letter and contain only letters, numbers, hyphens, and underscores',
-    ),
-  url: z.string().url('Must be a valid URL'),
-  method: httpMethodSchema,
-  headers: z.record(z.string(), z.string()).default({}),
-  isMock: z.boolean().default(false),
-  mockResponse: z.unknown().optional(),
-  mockStatusCode: z.number().int().min(100).max(599).default(200),
-  mockDelayMs: z.number().int().min(0).max(10000).default(0),
-});
+export const apiConfigSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1, 'Endpoint name is required')
+      .max(100, 'Name must be 100 characters or fewer')
+      .regex(
+        /^[a-zA-Z][a-zA-Z0-9_-]*$/,
+        'Name must start with a letter and contain only letters, numbers, hyphens, and underscores',
+      ),
+    url: z.string().default(''),
+    method: httpMethodSchema,
+    headers: z.record(z.string(), z.string()).default({}),
+    isMock: z.boolean().default(false),
+    mockResponse: z.unknown().optional(),
+    mockStatusCode: z.number().int().min(100).max(599).default(200),
+    mockDelayMs: z.number().int().min(0).max(10000).default(0),
+    isAi: z.boolean().default(false),
+    aiModel: z.string().default('gemini-2.5-flash'),
+    aiSystemPrompt: z.string().max(10000, 'System prompt must be 10000 characters or fewer').optional(),
+    aiMaxTokens: z.number().int().min(1).max(8192).default(1024),
+    aiTemperature: z.number().min(0).max(2).default(0.7),
+  })
+  .refine(
+    (data) => !data.isAi || (data.aiSystemPrompt && data.aiSystemPrompt.trim().length > 0),
+    { message: 'System prompt is required for AI endpoints', path: ['aiSystemPrompt'] },
+  )
+  .refine(
+    (data) => data.isAi || (data.url && data.url.length > 0),
+    { message: 'Must be a valid URL', path: ['url'] },
+  );
 
 /** Inferred TypeScript type from the Zod schema */
 export type ApiConfigFormValues = z.infer<typeof apiConfigSchema>;

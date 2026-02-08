@@ -77,9 +77,14 @@ describe('apiConfigSchemas', () => {
     });
 
     describe('url validation', () => {
-      it('should reject invalid URL', () => {
-        const result = apiConfigSchema.safeParse({ ...validConfig, url: 'not-a-url' });
+      it('should reject empty URL for non-AI endpoints', () => {
+        const result = apiConfigSchema.safeParse({ ...validConfig, url: '', isAi: false });
         expect(result.success).toBe(false);
+      });
+
+      it('should accept any non-empty URL string for non-AI endpoints', () => {
+        const result = apiConfigSchema.safeParse({ ...validConfig, url: 'not-a-url' });
+        expect(result.success).toBe(true);
       });
 
       it('should accept valid HTTPS URL', () => {
@@ -159,6 +164,181 @@ describe('apiConfigSchemas', () => {
           expect(result.data.mockStatusCode).toBe(200);
           expect(result.data.mockDelayMs).toBe(0);
         }
+      });
+    });
+
+    // =========================================================================
+    // Story 10.4: AI field validation tests
+    // =========================================================================
+
+    describe('AI field validation (Story 10.4)', () => {
+      const validAiConfig = {
+        name: 'generateDescription',
+        method: 'GET' as const,
+        isAi: true,
+        aiModel: 'gemini-2.5-flash',
+        aiSystemPrompt: 'You are a helpful assistant.',
+        aiMaxTokens: 1024,
+        aiTemperature: 0.7,
+      };
+
+      it('should accept valid AI config (with no URL)', () => {
+        const result = apiConfigSchema.safeParse(validAiConfig);
+        expect(result.success).toBe(true);
+      });
+
+      it('should require aiSystemPrompt when isAi is true', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          aiSystemPrompt: undefined,
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should reject empty aiSystemPrompt when isAi is true', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          aiSystemPrompt: '',
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should reject whitespace-only aiSystemPrompt when isAi is true', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          aiSystemPrompt: '   ',
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should not require URL when isAi is true', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          url: '',
+        });
+        expect(result.success).toBe(true);
+      });
+
+      it('should require URL when isAi is false', () => {
+        const result = apiConfigSchema.safeParse({
+          name: 'getUsers',
+          url: '',
+          method: 'GET' as const,
+          isAi: false,
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should not require aiSystemPrompt when isAi is false', () => {
+        const result = apiConfigSchema.safeParse({
+          name: 'getUsers',
+          url: 'https://api.test.com',
+          method: 'GET' as const,
+          isAi: false,
+        });
+        expect(result.success).toBe(true);
+      });
+
+      it('should default isAi to false', () => {
+        const result = apiConfigSchema.safeParse({
+          name: 'test',
+          url: 'https://api.test.com',
+          method: 'GET',
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.isAi).toBe(false);
+        }
+      });
+
+      it('should default aiModel to gemini-2.5-flash', () => {
+        const result = apiConfigSchema.safeParse(validAiConfig);
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.aiModel).toBe('gemini-2.5-flash');
+        }
+      });
+
+      it('should default aiMaxTokens to 1024', () => {
+        const result = apiConfigSchema.safeParse({
+          name: 'test',
+          url: 'https://api.test.com',
+          method: 'GET',
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.aiMaxTokens).toBe(1024);
+        }
+      });
+
+      it('should default aiTemperature to 0.7', () => {
+        const result = apiConfigSchema.safeParse({
+          name: 'test',
+          url: 'https://api.test.com',
+          method: 'GET',
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.aiTemperature).toBe(0.7);
+        }
+      });
+
+      it('should reject aiMaxTokens below 1', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          aiMaxTokens: 0,
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should reject aiMaxTokens above 8192', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          aiMaxTokens: 8193,
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should accept aiMaxTokens at boundaries (1, 8192)', () => {
+        expect(apiConfigSchema.safeParse({ ...validAiConfig, aiMaxTokens: 1 }).success).toBe(true);
+        expect(apiConfigSchema.safeParse({ ...validAiConfig, aiMaxTokens: 8192 }).success).toBe(true);
+      });
+
+      it('should reject aiTemperature below 0', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          aiTemperature: -0.1,
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should reject aiTemperature above 2', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          aiTemperature: 2.1,
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should accept aiTemperature at boundaries (0, 2)', () => {
+        expect(apiConfigSchema.safeParse({ ...validAiConfig, aiTemperature: 0 }).success).toBe(true);
+        expect(apiConfigSchema.safeParse({ ...validAiConfig, aiTemperature: 2 }).success).toBe(true);
+      });
+
+      it('should reject aiSystemPrompt longer than 10000 characters', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          aiSystemPrompt: 'A'.repeat(10001),
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should accept aiSystemPrompt at exactly 10000 characters', () => {
+        const result = apiConfigSchema.safeParse({
+          ...validAiConfig,
+          aiSystemPrompt: 'A'.repeat(10000),
+        });
+        expect(result.success).toBe(true);
       });
     });
   });
