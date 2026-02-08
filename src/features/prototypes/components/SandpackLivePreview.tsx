@@ -9,6 +9,8 @@ import {
 import type { EditorFile, ApiConfig } from '../types';
 import { generateGuardedStateCaptureScript } from '../scripts/stateCaptureInjector';
 import { generateApiClientFile } from '../utils/apiClientInjector';
+import type { ProxyConfig } from '../utils/apiClientInjector';
+import { useAuth } from '../../auth/hooks/useAuth';
 
 // Note: State capture is injected ONLY via SandpackStateCaptureInjector (postMessage eval)
 // after the iframe reports 'done'. Adding capture as a Sandpack file was considered but
@@ -59,6 +61,26 @@ export function SandpackLivePreview({
 }: SandpackLivePreviewProps) {
   // Determine whether to inject the state capture script (via SandpackStateCaptureInjector)
   const shouldInjectCapture = !!(prototypeId && stateCaptureEnabled);
+
+  // Get auth session for proxy config (Story 10.3)
+  const { session } = useAuth();
+  const accessToken = session?.access_token ?? null;
+
+  // Build proxy config for non-mock API calls (Story 10.3)
+  const proxyConfig: ProxyConfig | undefined = useMemo(() => {
+    if (!accessToken || !prototypeId || !apiConfigs) return undefined;
+
+    // Only build proxyConfig when there are non-mock endpoints
+    const hasNonMockEndpoints = apiConfigs.some((cfg) => !cfg.isMock);
+    if (!hasNonMockEndpoints) return undefined;
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) return undefined;
+
+    return { supabaseUrl, supabaseAnonKey, prototypeId, accessToken };
+  }, [accessToken, prototypeId, apiConfigs]);
+
   // Convert editor files to Sandpack format, conditionally injecting apiClient.js (Story 10.1)
   const sandpackFiles = useMemo(() => {
     const converted = editorFilesToSandpackFiles(files);
@@ -66,12 +88,12 @@ export function SandpackLivePreview({
     // Inject apiClient.js when configs exist (AC #7)
     if (apiConfigs && apiConfigs.length > 0) {
       converted['/apiClient.js'] = {
-        code: generateApiClientFile(apiConfigs),
+        code: generateApiClientFile(apiConfigs, proxyConfig),
       };
     }
 
     return converted;
-  }, [files, apiConfigs]);
+  }, [files, apiConfigs, proxyConfig]);
 
   const hasFiles = Object.keys(files).length > 0;
 

@@ -1,10 +1,37 @@
 // src/features/prototypes/components/SandpackLivePreview.test.tsx
-// Unit tests for SandpackLivePreview component (Story 7.3)
+// Unit tests for SandpackLivePreview component (Story 7.3 + Story 10.3)
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../../../test/test-utils';
 import { SandpackLivePreview } from './SandpackLivePreview';
-import type { EditorFile } from '../types';
+import type { EditorFile, ApiConfig } from '../types';
+
+// Mock the generateApiClientFile function to track calls (Story 10.3)
+const mockGenerateApiClientFile = vi.fn().mockReturnValue('// mocked apiClient.js');
+vi.mock('../utils/apiClientInjector', () => ({
+  generateApiClientFile: (...args: unknown[]) => mockGenerateApiClientFile(...args),
+}));
+
+// Mock useAuth hook (Story 10.3)
+const mockSession = {
+  access_token: 'test-access-token',
+  user: { id: 'user-1' },
+};
+let mockAuthReturn: Record<string, unknown> = {
+  session: mockSession,
+  user: null,
+  authUser: null,
+  isLoading: false,
+  isAuthenticated: false,
+  sessionExpired: false,
+  logout: vi.fn(),
+  signOut: vi.fn(),
+  setSessionExpired: vi.fn(),
+  clearSessionExpired: vi.fn(),
+};
+vi.mock('../../auth/hooks/useAuth', () => ({
+  useAuth: () => mockAuthReturn,
+}));
 
 // Mock Sandpack components since they require browser runtime
 let mockSandpackError: { message: string } | null = null;
@@ -28,8 +55,13 @@ vi.mock('@codesandbox/sandpack-react', () => ({
     sandpack: {
       error: mockSandpackError,
     },
+    listen: vi.fn().mockReturnValue(vi.fn()), // Returns unsubscribe function
   }),
 }));
+
+// Mock import.meta.env
+vi.stubEnv('VITE_SUPABASE_URL', 'https://test.supabase.co');
+vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'test-anon-key');
 
 const singleFile: Record<string, EditorFile> = {
   '/App.tsx': {
@@ -57,9 +89,38 @@ const multipleFiles: Record<string, EditorFile> = {
   },
 };
 
+const makeApiConfig = (overrides: Partial<ApiConfig> = {}): ApiConfig => ({
+  id: 'cfg-1',
+  prototypeId: 'proto-1',
+  name: 'getUsers',
+  url: 'https://api.example.com/users',
+  method: 'GET',
+  headers: {},
+  isMock: false,
+  mockResponse: null,
+  mockStatusCode: 200,
+  mockDelayMs: 0,
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
+  ...overrides,
+});
+
 describe('SandpackLivePreview', () => {
   beforeEach(() => {
     mockSandpackError = null;
+    mockGenerateApiClientFile.mockClear();
+    mockAuthReturn = {
+      session: mockSession,
+      user: null,
+      authUser: null,
+      isLoading: false,
+      isAuthenticated: false,
+      sessionExpired: false,
+      logout: vi.fn(),
+      signOut: vi.fn(),
+      setSessionExpired: vi.fn(),
+      clearSessionExpired: vi.fn(),
+    };
   });
 
   describe('Rendering', () => {
@@ -169,6 +230,110 @@ describe('SandpackLivePreview', () => {
       // so onError should NOT fire on initial render with no error
       expect(screen.getByTestId('sandpack-live-preview')).toBeInTheDocument();
       expect(onError).not.toHaveBeenCalled();
+    });
+  });
+
+  // =======================================================================
+  // Story 10.3: Proxy config tests
+  // =======================================================================
+
+  describe('Proxy Config (Story 10.3)', () => {
+    it('passes proxyConfig to generateApiClientFile when auth session exists and apiConfigs contain non-mock endpoints', () => {
+      const apiConfigs = [makeApiConfig({ isMock: false })];
+
+      render(
+        <SandpackLivePreview
+          files={singleFile}
+          apiConfigs={apiConfigs}
+          prototypeId="proto-1"
+        />,
+      );
+
+      expect(mockGenerateApiClientFile).toHaveBeenCalledWith(
+        apiConfigs,
+        expect.objectContaining({
+          supabaseUrl: 'https://test.supabase.co',
+          supabaseAnonKey: 'test-anon-key',
+          prototypeId: 'proto-1',
+          accessToken: 'test-access-token',
+        }),
+      );
+    });
+
+    it('does not pass proxyConfig when no auth session exists', () => {
+      mockAuthReturn = { ...mockAuthReturn, session: null };
+
+      const apiConfigs = [makeApiConfig({ isMock: false })];
+
+      render(
+        <SandpackLivePreview
+          files={singleFile}
+          apiConfigs={apiConfigs}
+          prototypeId="proto-1"
+        />,
+      );
+
+      // Should be called with undefined proxyConfig
+      expect(mockGenerateApiClientFile).toHaveBeenCalledWith(apiConfigs, undefined);
+    });
+
+    it('does not pass proxyConfig when all endpoints are mock', () => {
+      const apiConfigs = [makeApiConfig({ isMock: true })];
+
+      render(
+        <SandpackLivePreview
+          files={singleFile}
+          apiConfigs={apiConfigs}
+          prototypeId="proto-1"
+        />,
+      );
+
+      // Should be called with undefined proxyConfig (all mock)
+      expect(mockGenerateApiClientFile).toHaveBeenCalledWith(apiConfigs, undefined);
+    });
+
+    it('does not pass proxyConfig when prototypeId is not provided', () => {
+      const apiConfigs = [makeApiConfig({ isMock: false })];
+
+      render(
+        <SandpackLivePreview
+          files={singleFile}
+          apiConfigs={apiConfigs}
+        />,
+      );
+
+      // Should be called with undefined proxyConfig (no prototypeId)
+      expect(mockGenerateApiClientFile).toHaveBeenCalledWith(apiConfigs, undefined);
+    });
+
+    it('does not call generateApiClientFile when no apiConfigs are provided', () => {
+      render(<SandpackLivePreview files={singleFile} prototypeId="proto-1" />);
+
+      expect(mockGenerateApiClientFile).not.toHaveBeenCalled();
+    });
+
+    it('passes proxyConfig with mixed mock and non-mock endpoints', () => {
+      const apiConfigs = [
+        makeApiConfig({ name: 'mockEndpoint', isMock: true }),
+        makeApiConfig({ name: 'realEndpoint', isMock: false }),
+      ];
+
+      render(
+        <SandpackLivePreview
+          files={singleFile}
+          apiConfigs={apiConfigs}
+          prototypeId="proto-1"
+        />,
+      );
+
+      // Has non-mock endpoints, so proxyConfig should be passed
+      expect(mockGenerateApiClientFile).toHaveBeenCalledWith(
+        apiConfigs,
+        expect.objectContaining({
+          prototypeId: 'proto-1',
+          accessToken: 'test-access-token',
+        }),
+      );
     });
   });
 });

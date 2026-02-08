@@ -143,7 +143,7 @@ development_status:
   epic-10: in-progress
   10-1-api-configuration-interface: done
   10-2-mock-api-response-system: done
-  10-3-real-api-calls-from-prototypes: backlog
+  10-3-real-api-calls-from-prototypes: done
   10-4-ai-api-integration-in-prototypes: backlog
   10-5-api-call-monitoring-and-debugging: backlog
   epic-10-retrospective: optional
